@@ -10,7 +10,7 @@
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
 [![Tests](https://img.shields.io/badge/Tests-162%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-SHA--256%20%2B%20Biometrics-darkgreen)](lib/core/security/)
-[![License](https://img.shields.io/badge/License-Proprietary-slate)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
@@ -183,5 +183,15 @@ The logo is optically aligned across all standard and adaptive Android icon dens
 
 ## 📄 License & Attribution
 
-Copyright © 2026 Hosam. All rights reserved.  
-Developed as a high-performance, private, offline-first personal finance application.
+Copyright © 2026 Hosam. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the [LICENSE](LICENSE) file for the full text.
