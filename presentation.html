@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SpendWise - App Presentation</title>
+  <title>SpendWise - Official Presentation Deck</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     :root {
-      --primary: #22c55e;
-      --primary-dark: #16a34a;
-      --indigo: #4f46e5;
-      --indigo-dark: #4338ca;
+      --primary: #16a34a;
+      --primary-dark: #0f5132;
+      --emerald-glow: rgba(22, 163, 74, 0.25);
     }
     .slide {
       display: none;
       opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 0.35s ease, transform 0.35s ease;
+      transform: translateY(10px);
+      transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .slide.active {
       display: block;
@@ -24,81 +23,87 @@
       transform: translateY(0);
     }
     .glass-card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .brand-gradient {
+      background: linear-gradient(135deg, #0F5132 0%, #16A34A 100%);
     }
   </style>
 </head>
-<body class="bg-[#0f172a] text-[#f8fafc] font-sans min-h-screen flex flex-col justify-between p-4 md:p-8 antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-[#0b1320] text-[#f8fafc] font-sans min-h-screen flex flex-col justify-between p-4 md:p-8 antialiased selection:bg-emerald-500 selection:text-white">
 
   <!-- Top Bar: Logo, Title & Progress -->
-  <header class="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-slate-800">
-    <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-indigo-500/20 bg-indigo-600 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="w-8 h-8">
-          <rect width="200" height="200" rx="46" fill="#3B2FB5"/>
-          <path d="M126 66 C110 48 70 48 70 78 C70 106 130 96 130 126 C130 156 88 156 70 136" fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="134" cy="62" r="17" fill="#3DDC97"/>
-          <circle cx="134" cy="62" r="9" fill="none" stroke="#3B2FB5" stroke-width="4"/>
+  <header class="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-slate-800/80">
+    <div class="flex items-center space-x-3.5">
+      <!-- Growth Cycle SVG Emblem -->
+      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-900/30 bg-[#0F5132] flex items-center justify-center p-1.5 border border-emerald-500/20">
+        <svg viewBox="0 0 100 100" class="w-full h-full fill-none stroke-white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Circular S & Trend Loop -->
+          <circle cx="50" cy="50" r="34" stroke="#16A34A" stroke-width="7" stroke-dasharray="160 50" opacity="0.4"/>
+          <path d="M64 36 C64 24 36 24 36 42 C36 60 64 56 64 74 C64 92 36 92 36 80" stroke="#FFFFFF" stroke-width="7"/>
+          <polyline points="52,42 70,24 88,24" stroke="#16A34A" stroke-width="7"/>
+          <polyline points="72,20 88,24 84,40" stroke="#16A34A" stroke-width="7"/>
         </svg>
       </div>
       <div>
         <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
           SpendWise
-          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">v1.2</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold border border-emerald-500/30">v1.0.0</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 font-medium border border-blue-500/20">Apache 2.0</span>
         </h1>
-        <p class="text-xs text-slate-400">Smart, Simple & Offline-First Personal Finance</p>
+        <p class="text-xs text-slate-400">Offline-First Personal Finance & Cycle Budgeting</p>
       </div>
     </div>
 
     <!-- Slide Indicator -->
     <div class="flex items-center space-x-3">
-      <span id="slideCounter" class="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700">Slide 1 / 9</span>
+      <span id="slideCounter" class="text-xs font-mono text-slate-300 bg-slate-800/90 px-2.5 py-1 rounded-md border border-slate-700/80">Slide 1 / 10</span>
       <div class="w-24 bg-slate-800 h-1.5 rounded-full overflow-hidden">
-        <div id="progressBar" class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-full w-[11.1%] transition-all duration-300"></div>
+        <div id="progressBar" class="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full w-[10%] transition-all duration-300"></div>
       </div>
     </div>
   </header>
 
   <!-- Main Slide Deck Container -->
-  <main class="max-w-5xl w-full mx-auto my-auto py-8">
+  <main class="max-w-5xl w-full mx-auto my-auto py-6">
 
     <!-- SLIDE 1: Cover / Hero -->
     <section class="slide active" data-index="1">
-      <div class="text-center py-6">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/60 border border-indigo-700/40 text-indigo-300 text-xs font-medium mb-6">
+      <div class="text-center py-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/70 border border-emerald-600/40 text-emerald-300 text-xs font-medium mb-5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Product Showcase & Architecture
+          Official Product Showcase & Engineering Architecture
         </div>
         <h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-          Master Daily Spending with <span class="bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">Zero Friction</span>
+          Master Your Finances with <span class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Zero Cloud Friction</span>
         </h2>
-        <p class="text-slate-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-8">
-          SpendWise is a privacy-first, lightning-fast expense tracking app built around real-world monthly salary cycles (25th to 24th) with instant 1-tap logging and zero cloud bloat.
+        <p class="text-slate-300 text-sm md:text-base max-w-2xl mx-auto leading-relaxed mb-7">
+          SpendWise is an offline-first mobile money tracker engineered around real-world payday cycles (e.g. 25th-to-24th), exact integer arithmetic, dynamic surplus sweeping, and bank-grade on-device security.
         </p>
 
         <!-- Highlights Row -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto text-left">
-          <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60">
-            <div class="text-emerald-400 text-2xl font-bold mb-1">100%</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 max-w-3xl mx-auto text-left">
+          <div class="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
+            <div class="text-emerald-400 text-2xl font-bold mb-0.5">100%</div>
             <div class="text-xs font-semibold text-slate-200">Offline & Private</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">Local SQLite, zero telemetry</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Local Drift SQLite, zero telemetry</div>
           </div>
-          <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60">
-            <div class="text-indigo-400 text-2xl font-bold mb-1">25th - 24th</div>
-            <div class="text-xs font-semibold text-slate-200">Salary-Aligned Cycle</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">Matches real paydays</div>
+          <div class="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
+            <div class="text-teal-400 text-2xl font-bold mb-0.5">25th - 24th</div>
+            <div class="text-xs font-semibold text-slate-200">Payday-Aligned Cycles</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Matches real monthly paydays</div>
           </div>
-          <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60">
-            <div class="text-amber-400 text-2xl font-bold mb-1">&lt; 1 sec</div>
-            <div class="text-xs font-semibold text-slate-200">1-Tap Quick Presets</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">Direct add with Undo</div>
+          <div class="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
+            <div class="text-amber-400 text-2xl font-bold mb-0.5">1-Tap</div>
+            <div class="text-xs font-semibold text-slate-200">Quick Presets & Undo</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Instant logging with soft restore</div>
           </div>
-          <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60">
-            <div class="text-cyan-400 text-2xl font-bold mb-1">90 / 90</div>
+          <div class="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/60">
+            <div class="text-emerald-400 text-2xl font-bold mb-0.5">162 / 162</div>
             <div class="text-xs font-semibold text-slate-200">Automated Tests</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">100% verified test suite</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">100% green verification suite</div>
           </div>
         </div>
       </div>
@@ -106,451 +111,432 @@
 
     <!-- SLIDE 2: The Problem -->
     <section class="slide" data-index="2">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">The Problem</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Why Traditional Money Trackers Fail</h2>
-        <p class="text-slate-400 text-sm mt-1">Users abandon financial apps within 7 days because of friction, clutter, and misalignment with real financial life.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">The Market Problem</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Why Traditional Budgeting Apps Fail</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Most personal finance apps suffer from three fatal friction points that cause users to abandon them within 14 days.</p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="p-5 rounded-xl bg-slate-900/80 border border-rose-500/20 hover:border-rose-500/40 transition">
-          <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-lg mb-4">1</div>
-          <h3 class="text-base font-bold text-white mb-2">Painful Entry Friction</h3>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-lg font-bold mb-3">1</div>
+          <h3 class="text-sm font-bold text-white mb-1.5">The "1st of the Month" Fallacy</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
-            Logging a cup of coffee requires opening 4 nested dialogs, selecting dates, picking tags, and tapping confirm. People quit logging when entry takes more than 3 seconds.
+            Conventional apps force budgets into 1st-to-31st calendar windows. In reality, salaries arrive on the 25th, leaving end-of-month finances completely disjointed from real liquidity.
           </p>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/80 border border-rose-500/20 hover:border-rose-500/40 transition">
-          <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-lg mb-4">2</div>
-          <h3 class="text-base font-bold text-white mb-2">The "1st of the Month" Myth</h3>
+        <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-lg font-bold mb-3">2</div>
+          <h3 class="text-sm font-bold text-white mb-1.5">High Entry Friction</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
-            Standard apps tie budgets to calendar months (1st to 30th). But the majority of working professionals receive salaries on the <strong>25th</strong>, making calendar-month budgeting inaccurate and frustrating.
+            Logging a single espresso requires 5 taps, category dropdowns, account pickers, and date confirmations. If logging an expense takes longer than 3 seconds, daily habits break.
           </p>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/80 border border-rose-500/20 hover:border-rose-500/40 transition">
-          <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold text-lg mb-4">3</div>
-          <h3 class="text-base font-bold text-white mb-2">Cloud Bloat & Privacy Risks</h3>
+        <div class="p-5 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-lg font-bold mb-3">3</div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Cloud Bloat & Privacy Loss</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
-            Forced cloud signups, intrusive analytics, bank account linking, and oversized app bundles (200MB+) that drain battery and put sensitive financial data on third-party servers.
+            Forced cloud signups, third-party analytics trackers, bank credentials sharing, and 150MB+ download payloads turn simple ledgers into privacy liabilities.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 3: The SpendWise Philosophy -->
+    <!-- SLIDE 3: The SpendWise Solution -->
     <section class="slide" data-index="3">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Product Philosophy</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Designed for Daily Speed & Clarity</h2>
-        <p class="text-slate-400 text-sm mt-1">Every architectural decision was made to keep the app lightweight, private, and effortless.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">The Solution</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">The SpendWise Architectural Philosophy</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Built from first principles for instant daily logging, complete privacy, and exact mathematical precision.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 font-bold">📅</div>
-            <h3 class="text-lg font-bold text-white">Realistic 25th-to-24th Cycles</h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl glass-card border border-emerald-500/20 flex gap-3.5">
+          <div class="text-2xl">🗓️</div>
+          <div>
+            <h3 class="text-sm font-bold text-white mb-1">Discrete Payday Cycles</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Native support for custom start days (e.g. 25th) and standard 1st. Automatic clamping for February and short months (28/29/30/31 days) with leap year immunity.
+            </p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Budgets automatically align with your actual payday cycle. Automatically transitions every 25th with rollover notifications, safe-to-spend daily pace metrics, and zero manual cycle resets.
-          </p>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold">⚡</div>
-            <h3 class="text-lg font-bold text-white">Zero Cloud, Zero Waiting</h3>
+        <div class="p-4 rounded-xl glass-card border border-emerald-500/20 flex gap-3.5">
+          <div class="text-2xl">⚡</div>
+          <div>
+            <h3 class="text-sm font-bold text-white mb-1">100% Offline Local SQLite</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Drift ORM with encrypted on-device SQLite database. Zero external servers, zero background analytics, instant launch and works seamlessly in airplane mode.
+            </p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            100% on-device SQLite database powered by Drift. Instant queries, instant inserts, works in airplane mode, zero registration, and complete privacy of your financial records.
-          </p>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 font-bold">🏷️</div>
-            <h3 class="text-lg font-bold text-white">Separated Expense & Income Taxonomies</h3>
+        <div class="p-4 rounded-xl glass-card border border-emerald-500/20 flex gap-3.5">
+          <div class="text-2xl">🎯</div>
+          <div>
+            <h3 class="text-sm font-bold text-white mb-1">Exact Integer Minor Units</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Eliminates IEEE-754 floating-point rounding errors by performing all financial arithmetic in 64-bit integer minor units (piastres / cents) with an embedded BODMAS calculator.
+            </p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            No confusing merged categories. Expense categories carry monthly budget limits, while Income categories track salary and revenue with custom default expectations.
-          </p>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 font-bold">🪶</div>
-            <h3 class="text-lg font-bold text-white">Ultra Lightweight & Fast</h3>
+        <div class="p-4 rounded-xl glass-card border border-emerald-500/20 flex gap-3.5">
+          <div class="text-2xl">🏦</div>
+          <div>
+            <h3 class="text-sm font-bold text-white mb-1">Dynamic Savings Vault</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Automatically captures unspent surplus at cycle closeout, sweeping it into a persistent vault, and routes unallocated income straight to Savings.
+            </p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Optimized APK size under 80MB. Clean minimal Material Design 3 with high-contrast Dark Mode tokens, smooth 60fps animations, and zero heavy third-party tracking SDKs.
-          </p>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 4: 1-Tap Daily Logging -->
+    <!-- SLIDE 4: 1-Tap Quick Presets -->
     <section class="slide" data-index="4">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Frictionless UX</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">1-Tap Direct Quick Presets</h2>
-        <p class="text-slate-400 text-sm mt-1">Record recurring expenses directly from the home screen in under one second.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Speed & UX</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">1-Tap Daily Quick Presets & Soft Undo</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Reduce transaction entry time to less than 1 second directly from the home screen.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-8 items-center">
-        <div class="space-y-4">
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-              Direct Ledger Insertion
-            </h3>
-            <p class="text-xs text-slate-300 mt-1">
-              Tapping a preset chip (e.g., <em>"Morning Espresso • 45.00 EGP"</em>) instantly saves the transaction to the database without presenting any modal dialogs.
-            </p>
+      <div class="grid md:grid-cols-2 gap-5 items-center">
+        <div class="space-y-3.5 text-xs text-slate-300">
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1 flex items-center gap-2">
+              <span class="text-amber-400">⚡</span> Direct Dashboard Chips
+            </h4>
+            <p>Users tap customizable preset chips (e.g. "Espresso • 45 EGP", "Metro • 10 EGP", "Salary") to record transactions instantly without opening input dialogs.</p>
           </div>
-
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              3-Second Auto-Dismissing Undo
-            </h3>
-            <p class="text-xs text-slate-300 mt-1">
-              Displays a sleek floating confirmation card with an <strong>Undo</strong> button. If tapped accidentally, one touch reverses the insertion; otherwise, it slides away after 3 seconds.
-            </p>
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1 flex items-center gap-2">
+              <span class="text-emerald-400">↺</span> Non-Intrusive Soft Undo
+            </h4>
+            <p>Every quick preset triggers a floating SnackBar with an <strong>Undo</strong> button that auto-dismisses after 3 seconds, enabling instant recovery from accidental taps.</p>
           </div>
-
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-              Real-Time Threshold Monitoring
-            </h3>
-            <p class="text-xs text-slate-300 mt-1">
-              Even with 1-tap presets, the app continuously monitors budget limits, notifying users if a quick preset pushes a category near or over its allocated budget.
-            </p>
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1 flex items-center gap-2">
+              <span class="text-teal-400">🔔</span> Real-Time Threshold Checks
+            </h4>
+            <p>Presets evaluate category budget thresholds upon tap, alerting users if an entry pushes them past 80% or 100% of budgeted limits.</p>
           </div>
         </div>
 
         <!-- Visual Mockup Card -->
-        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950/40 border border-slate-700 shadow-xl">
-          <div class="text-xs font-mono text-slate-400 mb-3 uppercase tracking-wider">Dashboard Quick Presets Bar</div>
-          <div class="flex flex-wrap gap-2 mb-6">
-            <div class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-              <span>☕</span> Espresso • 45.00 EGP
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 shadow-xl">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Preset Bar Preview</div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <div class="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+              <span>☕</span> Espresso <span class="text-emerald-400 font-mono">45.00</span>
             </div>
-            <div class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium">
-              <span>🥗</span> Lunch • 120.00 EGP
+            <div class="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+              <span>🍔</span> Lunch <span class="text-emerald-400 font-mono">120.00</span>
             </div>
-            <div class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium">
-              <span>🚕</span> Commute • 35.00 EGP
+            <div class="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+              <span>🚇</span> Metro <span class="text-emerald-400 font-mono">12.00</span>
+            </div>
+            <div class="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+              <span>🛒</span> Groceries <span class="text-emerald-400 font-mono">350.00</span>
             </div>
           </div>
-
-          <!-- SnackBar Simulation -->
-          <div class="p-3 rounded-xl bg-slate-800/90 border border-emerald-500/40 shadow-lg flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-emerald-400 text-sm">✓</span>
-              <span class="text-xs text-slate-200">Added "Espresso" (45.00 EGP)</span>
-            </div>
-            <span class="text-xs font-bold text-amber-400 uppercase tracking-wide cursor-pointer">Undo</span>
+          <!-- SnackBar Mock -->
+          <div class="p-3 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-between text-xs">
+            <span class="text-slate-200">Logged 45.00 EGP for Espresso</span>
+            <span class="text-amber-400 font-bold uppercase tracking-wider text-[11px]">Undo (3s)</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 5: Daily Spending & Safe Pace -->
+    <!-- SLIDE 5: Daily Clarity & Safe Pace -->
     <section class="slide" data-index="5">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Real-Time Awareness</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Daily Spent Sum & Safe Pace</h2>
-        <p class="text-slate-400 text-sm mt-1">Know your daily total instantly, without mental math or opening spreadsheets.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-teal-400 uppercase tracking-wider">Financial Awareness</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Daily Spending Clarity & Dynamic Safe Pace</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Prevent month-end deficits through proactive daily pacing instead of reactive end-of-month regret.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
-        <!-- Dashboard Today's Spending Card -->
-        <div class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-bold text-slate-400 tracking-wider uppercase">TODAY'S SPENDING</span>
-              <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-800 text-emerald-400 border border-slate-700">
-                Pace: ~958.22 EGP/d
-              </span>
-            </div>
-            <div class="text-4xl font-extrabold text-white mb-2">355.00 <span class="text-lg font-medium text-slate-400">EGP</span></div>
-            <p class="text-xs text-slate-400">2 expenses logged today • Within safe pace</p>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+            <span>📊</span> The Dynamic Safe Pace Algorithm
+          </h3>
+          <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+            SpendWise computes a daily spending allowance that adapts dynamically as you log expenses or days pass:
+          </p>
+          <div class="p-3.5 rounded-xl bg-[#0b1320] border border-slate-800 font-mono text-center text-xs text-emerald-400 mb-4">
+            Safe Daily Pace = Net Remaining Budget / Days Remaining in Cycle
           </div>
-
-          <div class="mt-6 pt-4 border-t border-slate-800/80">
-            <h4 class="text-xs font-bold text-slate-300 uppercase mb-2">How Safe Pace Works</h4>
-            <div class="p-3 rounded-lg bg-slate-950 font-mono text-[11px] text-emerald-300 border border-slate-800">
-              Safe Pace = Remaining Cycle Budget ÷ Days Remaining
-            </div>
-            <p class="text-[11px] text-slate-400 mt-2">
-              If you spend less today, your allowance increases for tomorrow. Dynamic and adaptive.
-            </p>
-          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Calculated using timezone-normalized UTC arithmetic to eliminate daylight saving time (DST) day-drift errors.
+          </p>
         </div>
 
-        <!-- Transactions Screen Day Grouping -->
-        <div class="p-6 rounded-2xl bg-slate-900/90 border border-slate-800">
-          <div class="flex items-center justify-between mb-4">
-            <span class="text-xs font-bold text-slate-400 uppercase">Chronological Day Headers</span>
-            <span class="text-xs text-indigo-400">Ledger View</span>
+        <div class="space-y-3">
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+            <h4 class="font-bold text-xs text-white mb-1">Today's Spending Card</h4>
+            <p class="text-xs text-slate-300">Displays total money spent today alongside transaction count, giving users an immediate daily anchor on the dashboard.</p>
           </div>
-
-          <div class="space-y-3">
-            <div class="rounded-xl bg-slate-950/70 p-3 border border-slate-800">
-              <div class="flex items-center justify-between text-xs mb-2">
-                <span class="font-bold text-white">Today</span>
-                <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold text-[11px]">Spent: 355.00 EGP</span>
-              </div>
-              <div class="text-[11px] text-slate-400 flex justify-between py-1">
-                <span>Grocery Supermarket</span>
-                <span class="text-slate-200 font-medium">310.00 EGP</span>
-              </div>
-              <div class="text-[11px] text-slate-400 flex justify-between py-1">
-                <span>Morning Espresso</span>
-                <span class="text-slate-200 font-medium">45.00 EGP</span>
-              </div>
-            </div>
-
-            <div class="rounded-xl bg-slate-950/70 p-3 border border-slate-800">
-              <div class="flex items-center justify-between text-xs mb-2">
-                <span class="font-bold text-white">Yesterday</span>
-                <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold text-[11px]">Spent: 180.00 EGP</span>
-              </div>
-              <div class="text-[11px] text-slate-400 flex justify-between py-1">
-                <span>Pharmacy Medicines</span>
-                <span class="text-slate-200 font-medium">180.00 EGP</span>
-              </div>
-            </div>
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+            <h4 class="font-bold text-xs text-white mb-1">Chronological Day Headers</h4>
+            <p class="text-xs text-slate-300">Transaction ledgers group transactions under clean calendar badges ("Today", "Yesterday", "22 Oct") with computed daily spend totals.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+            <h4 class="font-bold text-xs text-white mb-1">Month-over-Month Cash Flow</h4>
+            <p class="text-xs text-slate-300">Side-by-side comparative bar chart visualizing Total Income vs. Total Expenses across current and historical cycles.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 6: Visual Analytics & Reports -->
+    <!-- SLIDE 6: Savings Vault & Surplus Sweeper -->
     <section class="slide" data-index="6">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Reports & Insights</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Visual Analytics & Cash Flow Trends</h2>
-        <p class="text-slate-400 text-sm mt-1">Multi-perspective reporting without complex accounting spreadsheets.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Flagship Feature</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">The Savings Vault & Surplus Sweeper</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Transform unspent budget into accumulated wealth automatically at the end of each cycle.</p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="p-5 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="text-indigo-400 text-xl mb-3">📊</div>
-          <h3 class="text-base font-bold text-white mb-2">Category Spending</h3>
-          <p class="text-xs text-slate-300 leading-relaxed mb-3">
-            Ranked expense breakdowns with percentage share bars showing exactly where your money went in the active cycle.
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-2xl mb-2">🧹</div>
+          <h3 class="text-sm font-bold text-white mb-1">Surplus Sweep Banner</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            When a budget cycle concludes with positive unused balance, a prominent banner appears on the dashboard offering a 1-tap sweep into your Savings Vault.
           </p>
-          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div class="bg-indigo-500 h-full w-[65%]"></div>
-          </div>
-          <span class="text-[10px] text-slate-400 block mt-1">Food & Dining (65%)</span>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="text-emerald-400 text-xl mb-3">🎯</div>
-          <h3 class="text-base font-bold text-white mb-2">Budget vs. Actual</h3>
-          <p class="text-xs text-slate-300 leading-relaxed mb-3">
-            Real-time tracking against allocated limits with dynamic color indicators: Green (Safe), Amber (Near Limit), and Red (Overspent).
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-2xl mb-2">💎</div>
+          <h3 class="text-sm font-bold text-white mb-1">Persistent Vault Balance</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            The vault accumulates swept surplus across all historical cycles. Supports manual deposits and emergency withdrawals with overdraft protection.
           </p>
-          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div class="bg-emerald-500 h-full w-[42%]"></div>
-          </div>
-          <span class="text-[10px] text-slate-400 block mt-1">2,100 / 5,000 EGP (Safe)</span>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div class="text-cyan-400 text-xl mb-3">📈</div>
-          <h3 class="text-base font-bold text-white mb-2">Month-over-Month Cash Flow</h3>
-          <p class="text-xs text-slate-300 leading-relaxed mb-3">
-            Interactive side-by-side bar chart comparing Total Income vs. Total Expenses across historical 25th-to-24th salary cycles.
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-2xl mb-2">⚖️</div>
+          <h3 class="text-sm font-bold text-white mb-1">Unallocated Income Sync</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            When income exceeds assigned category allocations, SpendWise automatically syncs and rebalances the difference into a dedicated Savings category.
           </p>
-          <div class="flex items-end gap-2 h-8 mt-2">
-            <div class="w-3 bg-emerald-500 h-[100%] rounded-t"></div>
-            <div class="w-3 bg-rose-500 h-[65%] rounded-t"></div>
-            <div class="w-3 bg-emerald-500 h-[90%] rounded-t ml-2"></div>
-            <div class="w-3 bg-rose-500 h-[50%] rounded-t"></div>
-          </div>
-          <span class="text-[10px] text-slate-400 block mt-1">Net Savings Rate: +35%</span>
         </div>
+      </div>
+
+      <div class="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/20 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">✓</span>
+          <span class="text-slate-200">Swept cycles tracked persistently in SQLite, immune to cycle transitions or app restarts.</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 font-semibold text-[11px]">Fully Tested</span>
       </div>
     </section>
 
-    <!-- SLIDE 7: Security & Smart Lifecycle -->
+    <!-- SLIDE 7: Bilingual & Arabic RTL -->
     <section class="slide" data-index="7">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Privacy & Security</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Bank-Grade Privacy & Smart PIN Lock</h2>
-        <p class="text-slate-400 text-sm mt-1">Financial privacy without frustrating usability interruptions.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Localization</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Native Bilingual Experience (العربية / English)</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Crafted with first-class Arabic support, right-to-left layout symmetry, and localized financial math.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">🔒</div>
-            <h3 class="text-base font-bold text-white">Cryptographic SHA-256 PIN Lock</h3>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="space-y-3 text-xs text-slate-300">
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1">Bilingual Onboarding Selector</h4>
+            <p>First-time users choose between English and العربية with clean, clear language cards showing no confusing LTR/RTL technical jargon.</p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Your 4-digit PIN is salted and hashed using standard SHA-256 before storing locally in SQLite. The raw PIN never touches disk, memory leaks, or cloud endpoints.
-          </p>
-
-          <div class="flex items-center gap-3 pt-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">📱</div>
-            <h3 class="text-base font-bold text-white">Smart Lifecycle State Awareness</h3>
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1">Eastern Arabic & Persian Numeral Normalization</h4>
+            <p>Calculators and input fields natively parse numerals (<code>٠١٢٣٤٥٦٧٨٩</code>) and Arabic decimal separators (<code>٫</code>), converting them transparently to exact numbers.</p>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Unlike crude PIN locks that trigger on any screen touch, SpendWise understands Android/iOS lifecycle states:
-          </p>
-          <ul class="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
-            <li><strong class="text-emerald-300">Swiping status bar / Wi-Fi toggle</strong>: App remains unlocked. Zero annoying interruptions.</li>
-            <li><strong class="text-rose-300">Leaving app or locking screen</strong>: Enters background paused state; immediately locks your session.</li>
-          </ul>
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+            <h4 class="font-bold text-white mb-1">Dynamic Currency Symbols</h4>
+            <p>Ties currency symbols dynamically to the active locale: displays <code>EGP</code> in English and <code>ج.م</code> in Arabic across all cards, dialogs, and summaries.</p>
+          </div>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">⏰</div>
-            <h3 class="text-base font-bold text-white">Daily Evening Reminder Notification</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Local background notification scheduled at your chosen time (default 9:00 PM). Automatically detects device IANA time zone (e.g. <code>Africa/Cairo</code>) and uses Android exact alarms.
+        <div class="p-5 rounded-2xl bg-[#0F291E] border border-emerald-500/30 text-right font-sans">
+          <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 text-left">عربي / RTL Preview</div>
+          <h3 class="text-lg font-bold text-white mb-1">سبيند وايز: إدارة المصاريف بكل ذكاء</h3>
+          <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+            تتبع ميزانيتك الشهرية وفقاً لموعد راتبك الحقيقي (من يوم ٢٥ إلى يوم ٢٤) بخصوصية تامة وبدون أي اتصال بالإنترنت.
           </p>
-
-          <div class="flex items-center gap-3 pt-2">
-            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">📁</div>
-            <h3 class="text-base font-bold text-white">Full CSV Data Ownership</h3>
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="p-2.5 rounded-xl bg-[#0b1c14] border border-emerald-600/30">
+              <div class="text-emerald-400 font-bold">المتبقي الآمن</div>
+              <div class="text-white font-mono mt-0.5">٣٥٠.٠٠ ج.م / يوم</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0b1c14] border border-emerald-600/30">
+              <div class="text-emerald-400 font-bold">خزنة المدخرات</div>
+              <div class="text-white font-mono mt-0.5">٤,٢٥٠.٠٠ ج.م</div>
+            </div>
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            1-tap export to standard CSV. Export all transactions or current cycle summary to Excel, Google Sheets, or WhatsApp. You own 100% of your data.
-          </p>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 8: Architecture & Testing -->
+    <!-- SLIDE 8: Security & Data Portability -->
     <section class="slide" data-index="8">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Engineering Rigor</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">Clean Architecture & Quality Assurance</h2>
-        <p class="text-slate-400 text-sm mt-1">Engineered with modern Flutter best practices for long-term maintainability.</p>
+      <div class="mb-5">
+        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Privacy & Portability</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Bank-Grade Security & Open Portability</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Complete user ownership with hardware-backed security and zero vendor lock-in.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 text-emerald-400">Technology Stack</h3>
-          <div class="space-y-3 text-xs">
-            <div class="flex justify-between py-1.5 border-b border-slate-800">
-              <span class="text-slate-400">Framework</span>
-              <span class="font-semibold text-white">Flutter 3.x (Dart 3.x)</span>
-            </div>
-            <div class="flex justify-between py-1.5 border-b border-slate-800">
-              <span class="text-slate-400">State Management</span>
-              <span class="font-semibold text-white">Riverpod 2 (Notifier / Providers)</span>
-            </div>
-            <div class="flex justify-between py-1.5 border-b border-slate-800">
-              <span class="text-slate-400">Local Database</span>
-              <span class="font-semibold text-white">Drift (Type-safe SQLite)</span>
-            </div>
-            <div class="flex justify-between py-1.5 border-b border-slate-800">
-              <span class="text-slate-400">Monetary Precision</span>
-              <span class="font-semibold text-white">Integer Minor Units (Zero float errors)</span>
-            </div>
-            <div class="flex justify-between py-1.5 border-b border-slate-800">
-              <span class="text-slate-400">Notifications</span>
-              <span class="font-semibold text-white">flutter_local_notifications + flutter_timezone</span>
-            </div>
-            <div class="flex justify-between py-1.5">
-              <span class="text-slate-400">App Bundle Size</span>
-              <span class="font-semibold text-emerald-400">&lt; 80 MB (Zero heavy bloat)</span>
-            </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <h3 class="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
+            <span>🔒</span> Cryptographic SHA-256 PIN & Biometrics
+          </h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Local salted PIN hashing with fingerprint/face biometric unlock. Includes failed-attempt throttling (30-second lockout) and intelligent lifecycle sensing:
+          </p>
+          <div class="space-y-1.5 text-[11px] text-slate-400 font-mono">
+            <div>• <strong class="text-slate-200">Swiping status bar (inactive)</strong>: No lock, zero interruption</div>
+            <div>• <strong class="text-slate-200">Leaving app / screen lock (paused)</strong>: Locks immediately</div>
           </div>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 text-indigo-400">Verification & Automated Tests</h3>
-          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 mb-4 text-center">
-            <div class="text-3xl font-extrabold text-emerald-400">90 / 90 Passing</div>
-            <div class="text-xs text-slate-400 mt-1">100% green test suite • 0 analyze warnings</div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <h3 class="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
+            <span>💾</span> Offline JSON Backup & CSV Export
+          </h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Full data portability without cloud servers:
+          </p>
+          <div class="space-y-1.5 text-[11px] text-slate-300">
+            <div>• <strong>Full JSON Snapshot</strong>: Exports complete SQLite state with schema validation.</div>
+            <div>• <strong>PIN Preservation</strong>: Choice to keep current PIN or overwrite during restore.</div>
+            <div>• <strong>Clean Decimal CSV</strong>: Unformatted numbers without comma splits for Excel.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Technical Architecture & 162 Tests -->
+    <section class="slide" data-index="9">
+      <div class="mb-5">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Engineering Quality</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Modern Stack & 162 Verified Automated Tests</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">Engineered with high test coverage, clean separation of concerns, and zero static analysis issues.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs text-slate-400">Framework</span>
+            <span class="text-xs font-bold text-white">Flutter 3.x / Dart 3.x</span>
+          </div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs text-slate-400">State Management</span>
+            <span class="text-xs font-bold text-emerald-400">Riverpod 2 (Notifier Architecture)</span>
+          </div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs text-slate-400">Database Engine</span>
+            <span class="text-xs font-bold text-white">Drift SQLite ORM (v1-v4 migrations)</span>
+          </div>
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs text-slate-400">ARM64 APK Size</span>
+            <span class="text-xs font-bold text-emerald-400 font-mono">22.7 MB (Lightweight)</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Static Analysis</span>
+            <span class="text-xs font-bold text-emerald-400">0 issues (flutter analyze clean)</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-950/30 to-slate-900 border border-emerald-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-white">Automated Test Suite</h3>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs">162 / 162 Passed</span>
           </div>
           <div class="space-y-2 text-xs text-slate-300">
             <div class="flex items-center gap-2">
               <span class="text-emerald-400">✓</span>
-              <span><strong>Money Value Object</strong>: Exact addition, subtraction, division & formatting.</span>
+              <span><strong>Exact Financial Arithmetic</strong>: Minor units, zero IEEE drift, BODMAS parser.</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-emerald-400">✓</span>
-              <span><strong>Budget Cycle Calculator</strong>: 25th-to-24th leap year & rollover tests.</span>
+              <span><strong>Cycle Engine</strong>: 28/29/30/31 days, leap years, ASCII healing.</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-emerald-400">✓</span>
-              <span><strong>Database Integrity</strong>: Foreign keys, cascade name updates, archive rules.</span>
+              <span><strong>Savings Vault</strong>: Multi-cycle surplus sweeping, unallocated rebalancing.</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-emerald-400">✓</span>
-              <span><strong>Lifecycle & Security</strong>: Status bar swiping vs background lock verification.</span>
+              <span><strong>Category & Preset Cascades</strong>: Rename cascades, delete detachment.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-400">✓</span>
+              <span><strong>Threshold Monitoring</strong>: Pruning obsolete notifications on delete/undo.</span>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 9: Summary & Future Roadmap -->
-    <section class="slide" data-index="9">
-      <div class="mb-6">
-        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Conclusion</span>
-        <h2 class="text-3xl font-extrabold text-white mt-1">SpendWise: The Future of Personal Finance</h2>
-        <p class="text-slate-400 text-sm mt-1">A reliable, polished companion for everyday financial freedom.</p>
+    <!-- SLIDE 10: Open Source & Roadmap -->
+    <section class="slide" data-index="10">
+      <div class="mb-5">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Milestone & Future</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Open Source & The Future of SpendWise</h2>
+        <p class="text-slate-400 text-xs md:text-sm mt-1">A production-ready v1.0.0 personal finance companion, fully open-sourced.</p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6 mb-6">
-        <div class="p-6 rounded-xl bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30">
-          <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
-            <span>✨</span> What Makes SpendWise Great
+      <div class="grid md:grid-cols-2 gap-5 mb-5">
+        <div class="p-5 rounded-xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30">
+          <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+            <span>✨</span> Built & Ready Today (v1.0.0)
           </h3>
-          <ul class="text-xs text-slate-300 space-y-2">
-            <li>• <strong>Instant Daily Feedback</strong>: Today's spending sum & remaining safe pace.</li>
-            <li>• <strong>1-Tap Presets</strong>: Record recurring coffee/lunch without dialog friction.</li>
-            <li>• <strong>100% Private</strong>: No server storage, no forced accounts, complete ownership.</li>
-            <li>• <strong>Salary-Cycle Native</strong>: Aligned with the 25th of each month.</li>
+          <ul class="text-xs text-slate-300 space-y-1.5">
+            <li>• <strong>Salary-Cycle Native</strong>: 25th-to-24th or calendar 1st.</li>
+            <li>• <strong>Savings Vault</strong>: Surplus sweeping & unbudgeted rebalancing.</li>
+            <li>• <strong>1-Tap Presets & Soft Undo</strong>: Sub-second daily logging.</li>
+            <li>• <strong>Full Bilingual Localization</strong>: English & Arabic RTL.</li>
+            <li>• <strong>Offline Backup & CSV Export</strong>: Full data ownership.</li>
+            <li>• <strong>Biometric & PIN Lock</strong>: Bank-grade security.</li>
           </ul>
         </div>
 
-        <div class="p-6 rounded-xl bg-slate-900/90 border border-slate-800">
-          <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2 text-cyan-400">
-            <span>🚀</span> Future Horizons
+        <div class="p-5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <h3 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">
+            <span>🚀</span> Future Horizons (v1.1+)
           </h3>
-          <ul class="text-xs text-slate-300 space-y-2">
-            <li>• <strong>Interactive Donut Chart</strong>: Category percentage breakdown in Reports.</li>
-            <li>• <strong>1-Tap Duplicate Transaction</strong>: Clone recurring expenses directly from ledger.</li>
-            <li>• <strong>Offline Backup & Restore</strong>: Portable JSON snapshots for device upgrades.</li>
-            <li>• <strong>Subtle Haptic Feedback</strong>: Native tactile response for preset taps.</li>
+          <ul class="text-xs text-slate-300 space-y-1.5">
+            <li>• <strong>Auto-Recurring Fixed Bills</strong>: Auto-log rent/subscriptions on day X.</li>
+            <li>• <strong>Multi-Currency Selector</strong>: USD, SAR, AED, and EUR support.</li>
+            <li>• <strong>Interactive Donut Charts</strong>: Drilldown category spending views.</li>
+            <li>• <strong>Receipt Attachments</strong>: Store invoice/receipt images locally.</li>
           </ul>
         </div>
       </div>
 
-      <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center">
-        <p class="text-xs text-slate-400">
-          Crafted with care for users who value simplicity, speed, and privacy.
-        </p>
+      <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
+        <div class="text-slate-400">
+          Open Source under <strong class="text-white">Apache License 2.0</strong> • GitHub: <a href="https://github.com/hosamsemry/SpendWise" class="text-emerald-400 hover:underline">hosamsemry/SpendWise</a>
+        </div>
+        <span class="text-slate-500 text-[11px]">SpendWise v1.0.0</span>
       </div>
     </section>
 
   </main>
 
   <!-- Navigation Footer -->
-  <footer class="max-w-5xl w-full mx-auto flex items-center justify-between pt-4 border-t border-slate-800">
+  <footer class="max-w-5xl w-full mx-auto flex items-center justify-between pt-4 border-t border-slate-800/80">
     <div class="flex items-center space-x-1.5" id="dotsContainer">
       <!-- Generated via JS -->
     </div>
 
     <div class="flex items-center space-x-3">
-      <button id="prevBtn" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+      <button id="prevBtn" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
         ← Previous
       </button>
-      <button id="nextBtn" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition">
+      <button id="nextBtn" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition">
         Next →
       </button>
     </div>
