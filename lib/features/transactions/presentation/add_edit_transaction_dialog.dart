@@ -199,7 +199,8 @@ class _AddEditTransactionDialogState
                     setState(() {
                       _selectedCategoryId = created.id;
                       _categoryError = null;
-                      if (_amountController.text.trim().isEmpty &&
+                      if (categoryType.isIncome &&
+                          _amountController.text.trim().isEmpty &&
                           created.defaultBudget.inMinorUnits > 0) {
                         _amountController.text = created.defaultBudget
                             .toFormattedString(includeCurrency: false);
@@ -547,6 +548,7 @@ class _AddEditTransactionDialogState
                                 _selectedCategoryId = selected ? cat.id : null;
                                 _categoryError = null;
                                 if (selected &&
+                                    cat.type.isIncome &&
                                     _amountController.text.trim().isEmpty &&
                                     cat.defaultBudget.inMinorUnits > 0) {
                                   _amountController.text = cat.defaultBudget

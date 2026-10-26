@@ -320,7 +320,10 @@ class BudgetsScreen extends ConsumerWidget {
           error: (e, s) => const SizedBox.shrink(),
           data: (cycles) {
             if (cycles.isEmpty) return const SizedBox.shrink();
-            final current = activeCycle ?? cycles.first;
+            final current = (activeCycle != null &&
+                    cycles.any((c) => c.id == activeCycle.id))
+                ? activeCycle
+                : cycles.first;
 
             return Container(
               padding: const EdgeInsets.symmetric(
