@@ -323,6 +323,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.invalidate(dailyReminderProvider);
 
       if (mounted) {
+        setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -542,6 +543,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     await ref
                         .read(budgetCycleStartDayProvider.notifier)
                         .setStartDay(selectedDay);
+                    final currentCycle = await ref
+                        .read(budgetCycleRepositoryProvider)
+                        .getCycleForDateOrNull(DateTime.now());
+                    if (currentCycle != null) {
+                      await ref
+                          .read(savingsSyncServiceProvider)
+                          .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
+                    }
                     ref.read(selectedCycleProvider.notifier).select(null);
                     ref.read(refreshTriggerProvider.notifier).trigger();
                     if (mounted) {

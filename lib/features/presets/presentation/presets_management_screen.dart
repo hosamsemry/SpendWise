@@ -99,8 +99,14 @@ class _PresetsManagementScreenState
                           )
                           .toList();
 
+                      final validCategoryId = filtered.any(
+                        (c) => c.id == selectedCategoryId,
+                      )
+                          ? selectedCategoryId
+                          : null;
+
                       return DropdownButtonFormField<String?>(
-                        initialValue: selectedCategoryId,
+                        initialValue: validCategoryId,
                         decoration: InputDecoration(
                           labelText: context.l10n.categoryLabelOptional,
                         ),
@@ -211,6 +217,7 @@ class _PresetsManagementScreenState
               type: preset.type,
               amount: preset.amount,
               categoryId: preset.categoryId,
+              note: preset.note,
             );
             ref.read(refreshTriggerProvider.notifier).trigger();
           },
