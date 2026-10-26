@@ -9,6 +9,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
+import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
 import 'package:money_tracker/core/security/presentation/pin_lock_screen.dart';
 import 'package:money_tracker/core/security/security_service.dart';
@@ -96,7 +97,11 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
 
       // 2. Reconcile current cycle for today's local date
       final now = DateTime.now();
-      await cycleRepo.getOrCreateCycleForDate(now);
+      final cycle = await cycleRepo.getOrCreateCycleForDate(now);
+      await cycleRepo.syncCategoriesForCycle(cycle.id);
+      await ref
+          .read(savingsSyncServiceProvider)
+          .syncSavingsBudgetForCycle(cycleId: cycle.id);
 
       // 3. Reconcile 25th reminder
       await notificationService.initialize();

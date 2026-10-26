@@ -10,7 +10,9 @@ import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
 import 'package:money_tracker/core/providers/reminder_provider.dart';
+import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
+import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/core/security/biometric_service.dart';
 import 'package:money_tracker/core/security/presentation/pin_lock_screen.dart';
 import 'package:money_tracker/core/security/security_service.dart';
@@ -171,8 +173,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _restoreBackup() async {
     try {
       final files = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['spendwise', 'json'],
+        type: FileType.any,
       );
 
       if (files.isEmpty) return;
@@ -299,6 +300,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         backupData,
         keepCurrentPin: keepCurrentPin,
       );
+
+      ref.read(selectedCycleProvider.notifier).select(null);
+      ref.invalidate(budgetCycleStartDayProvider);
+      ref.invalidate(appLanguageProvider);
+      ref.invalidate(currentCycleProvider);
+      ref.invalidate(allCyclesProvider);
+      ref.invalidate(cycleSummaryProvider);
+      ref.invalidate(transactionsForCycleProvider);
+
+      final cycleRepo = ref.read(budgetCycleRepositoryProvider);
+      final currentCycle = await cycleRepo.getCycleForDateOrNull(DateTime.now());
+      if (currentCycle != null) {
+        await cycleRepo.syncCategoriesForCycle(currentCycle.id);
+        await ref
+            .read(savingsSyncServiceProvider)
+            .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
+      }
 
       ref.read(refreshTriggerProvider.notifier).trigger();
       ref.invalidate(themeModeProvider);

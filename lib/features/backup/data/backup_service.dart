@@ -5,9 +5,11 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 
 class BackupService {
   final AppDatabase db;
+  static const Uuid _uuid = Uuid();
 
   BackupService(this.db);
 
@@ -99,7 +101,7 @@ class BackupService {
 
     final dir = await getApplicationDocumentsDirectory();
     final dateStr = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(backup.metadata.createdAt);
-    final fileName = 'SpendWise_Backup_$dateStr.spendwise';
+    final fileName = 'SpendWise_Backup_$dateStr.json';
     final file = File('${dir.path}/$fileName');
     await file.writeAsString(jsonContent);
 
@@ -107,7 +109,7 @@ class BackupService {
     final formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(backup.metadata.createdAt);
     await SharePlus.instance.share(
       ShareParams(
-        files: [XFile(file.path)],
+        files: [XFile(file.path, mimeType: 'application/json')],
         subject: isArabic ? 'نسخة احتياطية لـ SpendWise $dateStr' : 'SpendWise Backup $dateStr',
         text: isArabic
             ? 'نسخة احتياطية محلية لـ SpendWise أنشئت في $formattedDate'
@@ -138,7 +140,7 @@ class BackupService {
   /// will be preserved rather than overwritten by the backup file.
   Future<void> restoreFromBackup(BackupData backup, {bool keepCurrentPin = true}) async {
     await db.transaction(() async {
-      // 1. Capture current PIN settings if preservation is requested
+      // 1. Capture current PIN settings if preservation is requested, plus onboarding fallback settings
       List<AppSettingEntry> currentPinSettings = [];
       if (keepCurrentPin) {
         final pinSettings = await (db.select(db.appSettingsTable)
@@ -146,71 +148,135 @@ class BackupService {
             .get();
         currentPinSettings = pinSettings;
       }
+      final fallbackOnboardingSettings = await (db.select(db.appSettingsTable)
+            ..where((tbl) => tbl.key.isIn(['app_language', 'budget_cycle_start_day'])))
+          .get();
 
       // 2. Clear all tables in reverse foreign key dependency order
+      await db.delete(db.notificationEventsTable).go();
       await db.delete(db.transactionsTable).go();
       await db.delete(db.categoryBudgetsTable).go();
-      await db.delete(db.budgetCyclesTable).go();
       await db.delete(db.transactionPresetsTable).go();
+      await db.delete(db.budgetCyclesTable).go();
       await db.delete(db.categoriesTable).go();
-      await db.delete(db.notificationEventsTable).go();
       await db.delete(db.appSettingsTable).go();
+
+      final restoredCategoryIds = <String>{};
+      final restoredCycleIds = <String>{};
+      final categoryDefaultBudgets = <String, int>{};
+      final activeExpenseCategoryIds = <String>{};
+      final savingsCategoryIds = <String>{};
 
       // 3. Insert categories
       for (final row in backup.categories) {
         final nowIso = DateTime.now().toIso8601String();
+        final id = row['id'] as String;
+        final name = row['name'] as String;
+        final defaultBudgetMinor = row['defaultBudgetMinor'] as int? ?? 0;
+        final isActive = row['isActive'] as bool? ?? true;
+        final type = row['type'] as String? ?? 'expense';
         await db.into(db.categoriesTable).insert(
           CategoriesTableCompanion.insert(
-            id: row['id'] as String,
-            name: row['name'] as String,
+            id: id,
+            name: name,
             color: Value(row['color'] as String?),
             icon: Value(row['icon'] as String?),
-            defaultBudgetMinor: Value(row['defaultBudgetMinor'] as int? ?? 0),
-            isActive: Value(row['isActive'] as bool? ?? true),
-            type: Value(row['type'] as String? ?? 'expense'),
+            defaultBudgetMinor: Value(defaultBudgetMinor),
+            isActive: Value(isActive),
+            type: Value(type),
             createdAt: row['createdAt'] as String? ?? nowIso,
             updatedAt: row['updatedAt'] as String? ?? nowIso,
           ),
         );
+        restoredCategoryIds.add(id);
+        categoryDefaultBudgets[id] = defaultBudgetMinor;
+        if (type == 'expense' && isActive) {
+          activeExpenseCategoryIds.add(id);
+        }
+        final lowerName = name.trim().toLowerCase();
+        if (lowerName == 'savings' || lowerName == 'مدخرات') {
+          savingsCategoryIds.add(id);
+        }
       }
 
       // 4. Insert budget cycles
       for (final row in backup.budgetCycles) {
         final nowIso = DateTime.now().toIso8601String();
+        final id = row['id'] as String;
         await db.into(db.budgetCyclesTable).insert(
           BudgetCyclesTableCompanion.insert(
-            id: row['id'] as String,
+            id: id,
             startDate: row['startDate'] as String,
             endDate: row['endDate'] as String,
             createdAt: row['createdAt'] as String? ?? nowIso,
           ),
         );
+        restoredCycleIds.add(id);
       }
 
       // 5. Insert category budgets
+      final insertedBudgetKeys = <String>{};
       for (final row in backup.categoryBudgets) {
+        final cycleId = row['cycleId'] as String;
+        final categoryId = row['categoryId'] as String;
+        if (!restoredCycleIds.contains(cycleId) ||
+            !restoredCategoryIds.contains(categoryId)) {
+          continue;
+        }
         final nowIso = DateTime.now().toIso8601String();
+        var budgetMinor = row['budgetAmountMinor'] as int? ?? 0;
+        if (budgetMinor == 0 &&
+            !savingsCategoryIds.contains(categoryId) &&
+            (categoryDefaultBudgets[categoryId] ?? 0) > 0) {
+          budgetMinor = categoryDefaultBudgets[categoryId]!;
+        }
         await db.into(db.categoryBudgetsTable).insert(
           CategoryBudgetsTableCompanion.insert(
             id: row['id'] as String,
-            cycleId: row['cycleId'] as String,
-            categoryId: row['categoryId'] as String,
-            budgetAmountMinor: row['budgetAmountMinor'] as int? ?? 0,
+            cycleId: cycleId,
+            categoryId: categoryId,
+            budgetAmountMinor: budgetMinor,
             createdAt: row['createdAt'] as String? ?? nowIso,
             updatedAt: row['updatedAt'] as String? ?? nowIso,
           ),
         );
+        insertedBudgetKeys.add('${cycleId}_$categoryId');
+      }
+
+      // Ensure active expense categories with default allocations have a budget row in restored cycles
+      for (final cycleId in restoredCycleIds) {
+        final nowIso = DateTime.now().toIso8601String();
+        for (final catId in activeExpenseCategoryIds) {
+          if (!insertedBudgetKeys.contains('${cycleId}_$catId') &&
+              (categoryDefaultBudgets[catId] ?? 0) > 0) {
+            await db.into(db.categoryBudgetsTable).insert(
+              CategoryBudgetsTableCompanion.insert(
+                id: _uuid.v4(),
+                cycleId: cycleId,
+                categoryId: catId,
+                budgetAmountMinor: categoryDefaultBudgets[catId]!,
+                createdAt: nowIso,
+                updatedAt: nowIso,
+              ),
+            );
+          }
+        }
       }
 
       // 6. Insert transactions
       for (final row in backup.transactions) {
         final nowIso = DateTime.now().toIso8601String();
+        final rawCatId = row['categoryId'] as String?;
+        final validCatId =
+            (rawCatId != null && restoredCategoryIds.contains(rawCatId))
+                ? rawCatId
+                : null;
         await db.into(db.transactionsTable).insert(
           TransactionsTableCompanion.insert(
             id: row['id'] as String,
             type: row['type'] as String? ?? 'expense',
             amountMinor: row['amountMinor'] as int? ?? 0,
-            categoryId: Value(row['categoryId'] as String?),
+            categoryId: Value(validCatId),
             categoryName: Value(row['categoryName'] as String?),
             transactionDate: row['transactionDate'] as String,
             note: Value(row['note'] as String?),
@@ -223,12 +289,17 @@ class BackupService {
       // 7. Insert presets
       for (final row in backup.transactionPresets) {
         final nowIso = DateTime.now().toIso8601String();
+        final rawCatId = row['categoryId'] as String?;
+        final validCatId =
+            (rawCatId != null && restoredCategoryIds.contains(rawCatId))
+                ? rawCatId
+                : null;
         await db.into(db.transactionPresetsTable).insert(
           TransactionPresetsTableCompanion.insert(
             id: row['id'] as String,
             title: row['title'] as String,
             type: row['type'] as String? ?? 'expense',
-            categoryId: Value(row['categoryId'] as String?),
+            categoryId: Value(validCatId),
             categoryName: Value(row['categoryName'] as String?),
             amountMinor: row['amountMinor'] as int? ?? 0,
             note: Value(row['note'] as String?),
@@ -240,12 +311,18 @@ class BackupService {
 
       // 8. Insert notification events
       for (final row in backup.notificationEvents) {
+        final cycleId = row['cycleId'] as String;
+        final categoryId = row['categoryId'] as String;
+        if (!restoredCycleIds.contains(cycleId) ||
+            !restoredCategoryIds.contains(categoryId)) {
+          continue;
+        }
         final nowIso = DateTime.now().toIso8601String();
         await db.into(db.notificationEventsTable).insert(
           NotificationEventsTableCompanion.insert(
             id: row['id'] as String,
-            cycleId: row['cycleId'] as String,
-            categoryId: row['categoryId'] as String,
+            cycleId: cycleId,
+            categoryId: categoryId,
             eventType: row['eventType'] as String,
             createdAt: row['createdAt'] as String? ?? nowIso,
           ),
@@ -253,6 +330,7 @@ class BackupService {
       }
 
       // 9. Insert app settings
+      final restoredSettingKeys = <String>{};
       for (final row in backup.appSettings) {
         final key = row['key'] as String;
         final value = row['value'] as String;
@@ -268,6 +346,7 @@ class BackupService {
             value: value,
           ),
         );
+        restoredSettingKeys.add(key);
       }
 
       // Restore preserved PIN settings if any
@@ -277,6 +356,18 @@ class BackupService {
             AppSettingsTableCompanion.insert(
               key: pinSetting.key,
               value: pinSetting.value,
+            ),
+          );
+        }
+      }
+
+      // Restore onboarding fallback settings only if missing from backup
+      for (final fallback in fallbackOnboardingSettings) {
+        if (!restoredSettingKeys.contains(fallback.key)) {
+          await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(
+              key: fallback.key,
+              value: fallback.value,
             ),
           );
         }

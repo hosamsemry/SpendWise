@@ -169,12 +169,21 @@ void main() {
       expect(parsed.transactions.first['amountMinor'], equals(35000));
     });
 
-    test('restoreFromBackup replaces database state and respects keepCurrentPin', () async {
+    test('restoreFromBackup replaces database state (even with active notification_events) and respects keepCurrentPin', () async {
       await seedTestData();
 
       final backup = await service.createBackupData();
 
-      // Modify the active database
+      // Modify the active database (including inserting a notification_event referencing cycle-1 and cat-1)
+      await db.into(db.notificationEventsTable).insert(
+        NotificationEventsTableCompanion.insert(
+          id: 'notif-1',
+          cycleId: 'cycle-1',
+          categoryId: 'cat-1',
+          eventType: 'reached_80_percent',
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
       await db.into(db.transactionsTable).insert(
         TransactionsTableCompanion.insert(
           id: 'tx-temporary',

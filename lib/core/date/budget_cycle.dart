@@ -55,11 +55,12 @@ class BudgetCycle {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is BudgetCycle &&
+          id == other.id &&
           startDateString == other.startDateString &&
           endDateString == other.endDateString);
 
   @override
-  int get hashCode => Object.hash(startDateString, endDateString);
+  int get hashCode => Object.hash(id, startDateString, endDateString);
 
   @override
   String toString() => 'BudgetCycle($formattedRange)';
