@@ -125,12 +125,21 @@ final cycleSummaryProvider = FutureProvider.family<CycleSummary, BudgetCycle>((
   final txRepo = ref.watch(transactionRepositoryProvider);
   final calcService = ref.watch(budgetCalculationServiceProvider);
 
+  var effectiveCycle = cycle;
+  var budgetMap = await cycleRepo.getCycleBudgets(cycle.id);
+  if (budgetMap.isEmpty) {
+    final dbCycle = await cycleRepo.getCycleForDateOrNull(cycle.startDate);
+    if (dbCycle != null && dbCycle.id != cycle.id) {
+      effectiveCycle = dbCycle;
+      budgetMap = await cycleRepo.getCycleBudgets(dbCycle.id);
+    }
+  }
+
   final categories = await categoryRepo.getAllCategories(includeInactive: true);
-  final budgetMap = await cycleRepo.getCycleBudgets(cycle.id);
-  final transactions = await txRepo.getTransactionsForCycle(cycle);
+  final transactions = await txRepo.getTransactionsForCycle(effectiveCycle);
 
   return calcService.calculateCycleSummary(
-    cycle: cycle,
+    cycle: effectiveCycle,
     categories: categories,
     budgetMap: budgetMap,
     transactions: transactions,

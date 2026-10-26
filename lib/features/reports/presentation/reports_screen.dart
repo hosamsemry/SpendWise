@@ -38,7 +38,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               error: (e, s) => const SizedBox.shrink(),
               data: (cycles) {
                 if (cycles.isEmpty) return const SizedBox.shrink();
-                final current = activeCycle ?? cycles.first;
+                final current = (activeCycle != null &&
+                        cycles.any((c) => c.id == activeCycle.id))
+                    ? activeCycle
+                    : cycles.first;
 
                 return Container(
                   padding: const EdgeInsets.symmetric(
@@ -500,7 +503,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     CycleSummary currentSummary,
   ) {
     final startDayAsync = ref.watch(budgetCycleStartDayProvider);
-    final startDay = startDayAsync.value ?? 25;
+    final startDay = startDayAsync.value ?? 1;
     final calculator = BudgetCycleCalculator(startDay: startDay);
     final prevCycle = calculator.getPreviousCycle(activeCycle);
     final prevSummaryAsync = ref.watch(cycleSummaryProvider(prevCycle));

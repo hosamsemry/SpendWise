@@ -42,8 +42,21 @@ class CategoryBudget {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CategoryBudget && other.categoryId == categoryId);
+      (other is CategoryBudget &&
+          other.categoryId == categoryId &&
+          other.categoryName == categoryName &&
+          other.categoryColor == categoryColor &&
+          other.categoryIcon == categoryIcon &&
+          other.budgetedAmount == budgetedAmount &&
+          other.spentAmount == spentAmount);
 
   @override
-  int get hashCode => categoryId.hashCode;
+  int get hashCode => Object.hash(
+    categoryId,
+    categoryName,
+    categoryColor,
+    categoryIcon,
+    budgetedAmount,
+    spentAmount,
+  );
 }
