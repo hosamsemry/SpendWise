@@ -182,6 +182,18 @@ class _AddEditTransactionDialogState
                     type: categoryType,
                     defaultBudget: budget,
                   );
+                  if (categoryType == CategoryType.expense &&
+                      name.toLowerCase() != 'savings' &&
+                      name != 'مدخرات') {
+                    final cycle = await ref
+                        .read(budgetCycleRepositoryProvider)
+                        .getCycleForDateOrNull(DateTime.now());
+                    if (cycle != null) {
+                      await ref
+                          .read(savingsSyncServiceProvider)
+                          .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                    }
+                  }
                   ref.read(refreshTriggerProvider.notifier).trigger();
                   if (mounted) {
                     setState(() {

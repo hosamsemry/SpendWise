@@ -114,6 +114,18 @@ class BudgetsScreen extends ConsumerWidget {
                     type: selectedType,
                     defaultBudget: budget,
                   );
+                  if (selectedType == CategoryType.expense &&
+                      name.toLowerCase() != 'savings' &&
+                      name != 'مدخرات') {
+                    final cycle = await ref
+                        .read(budgetCycleRepositoryProvider)
+                        .getCycleForDateOrNull(DateTime.now());
+                    if (cycle != null) {
+                      await ref
+                          .read(savingsSyncServiceProvider)
+                          .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                    }
+                  }
                   ref.read(refreshTriggerProvider.notifier).trigger();
                   if (ctx.mounted) Navigator.pop(ctx);
                 } on DuplicateCategoryNameException catch (e) {

@@ -5,6 +5,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
+import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 
@@ -105,6 +106,18 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     type: _selectedType,
                     defaultBudget: budget,
                   );
+                  if (_selectedType == CategoryType.expense &&
+                      name.toLowerCase() != 'savings' &&
+                      name != 'مدخرات') {
+                    final cycle = await ref
+                        .read(budgetCycleRepositoryProvider)
+                        .getCycleForDateOrNull(DateTime.now());
+                    if (cycle != null) {
+                      await ref
+                          .read(savingsSyncServiceProvider)
+                          .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                    }
+                  }
                   ref.read(refreshTriggerProvider.notifier).trigger();
                   if (ctx.mounted) Navigator.pop(ctx);
                 } on DuplicateCategoryNameException catch (e) {
@@ -247,6 +260,25 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     name: name,
                     defaultBudget: budget,
                   );
+                  if (isExpense && budget != category.defaultBudget) {
+                    final cycle = await ref
+                        .read(budgetCycleRepositoryProvider)
+                        .getCycleForDateOrNull(DateTime.now());
+                    if (cycle != null) {
+                      await ref
+                          .read(budgetCycleRepositoryProvider)
+                          .updateCategoryBudget(
+                            cycleId: cycle.id,
+                            categoryId: category.id,
+                            budgetAmount: budget,
+                          );
+                      if (name.toLowerCase() != 'savings' && name != 'مدخرات') {
+                        await ref
+                            .read(savingsSyncServiceProvider)
+                            .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                      }
+                    }
+                  }
                   ref.read(refreshTriggerProvider.notifier).trigger();
                   if (ctx.mounted) Navigator.pop(ctx);
                 } on DuplicateCategoryNameException catch (e) {
@@ -284,6 +316,18 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             onPressed: () async {
               final repo = ref.read(categoryRepositoryProvider);
               await repo.deleteCategory(category.id);
+              if (category.type == CategoryType.expense &&
+                  category.name.trim().toLowerCase() != 'savings' &&
+                  category.name.trim() != 'مدخرات') {
+                final cycle = await ref
+                    .read(budgetCycleRepositoryProvider)
+                    .getCycleForDateOrNull(DateTime.now());
+                if (cycle != null) {
+                  await ref
+                      .read(savingsSyncServiceProvider)
+                      .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                }
+              }
               ref.read(refreshTriggerProvider.notifier).trigger();
               if (ctx.mounted) Navigator.pop(ctx);
             },

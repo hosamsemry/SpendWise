@@ -129,23 +129,113 @@ class CategoryRepository {
     await db.into(db.categoriesTable).insert(companion);
     final created = await getCategoryById(id);
     if (type == CategoryType.expense) {
-      await _syncToCurrentCycleIfPresent(id, defaultBudget.inMinorUnits);
+      await _syncToCurrentCycleIfPresent(
+        id,
+        defaultBudget.inMinorUnits,
+        rebalanceSavings: !_isSavingsCategoryName(trimmedName),
+      );
     }
     return created!;
   }
 
+  bool _isSavingsCategoryName(String name) {
+    final lower = name.trim().toLowerCase();
+    return lower == 'savings' || lower == 'مدخرات';
+  }
+
+  Future<BudgetCycleEntry?> _getCurrentCycleEntry() async {
+    final today = BudgetCycleCalculator.formatDate(DateTime.now());
+    return (db.select(db.budgetCyclesTable)
+          ..where(
+            (tbl) =>
+                tbl.startDate.isSmallerOrEqualValue(today) &
+                tbl.endDate.isBiggerOrEqualValue(today),
+          )
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.startDate)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<void> _rebalanceSavingsForCycleIfPresent(
+    BudgetCycleEntry cycle,
+  ) async {
+    final allExpenseCategories =
+        await (db.select(db.categoriesTable)..where(
+              (tbl) => tbl.type.equals('expense') & tbl.isActive.equals(true),
+            ))
+            .get();
+
+    final savingsCat = allExpenseCategories
+        .where((c) => _isSavingsCategoryName(c.name))
+        .firstOrNull;
+    if (savingsCat == null) return;
+
+    final incomeTxs =
+        await (db.select(db.transactionsTable)..where(
+              (tbl) =>
+                  tbl.type.equals('income') &
+                  tbl.transactionDate.isBiggerOrEqualValue(cycle.startDate) &
+                  tbl.transactionDate.isSmallerOrEqualValue(cycle.endDate),
+            ))
+            .get();
+
+    var totalIncomeMinor = 0;
+    for (final tx in incomeTxs) {
+      totalIncomeMinor += tx.amountMinor;
+    }
+
+    final cycleBudgets =
+        await (db.select(db.categoryBudgetsTable)
+              ..where((tbl) => tbl.cycleId.equals(cycle.id)))
+            .get();
+
+    var otherBudgetsMinor = 0;
+    CategoryBudgetEntry? existingSavingsBudget;
+    for (final entry in cycleBudgets) {
+      if (entry.categoryId == savingsCat.id) {
+        existingSavingsBudget = entry;
+      } else {
+        otherBudgetsMinor += entry.budgetAmountMinor;
+      }
+    }
+
+    final unallocatedMinor = totalIncomeMinor - otherBudgetsMinor;
+    final targetSavingsMinor = unallocatedMinor > 0 ? unallocatedMinor : 0;
+    final now = DateTime.now().toIso8601String();
+
+    if (existingSavingsBudget != null) {
+      if (existingSavingsBudget.budgetAmountMinor != targetSavingsMinor) {
+        await (db.update(db.categoryBudgetsTable)
+              ..where((tbl) => tbl.id.equals(existingSavingsBudget!.id)))
+            .write(
+              CategoryBudgetsTableCompanion(
+                budgetAmountMinor: Value(targetSavingsMinor),
+                updatedAt: Value(now),
+              ),
+            );
+      }
+    } else {
+      await db
+          .into(db.categoryBudgetsTable)
+          .insert(
+            CategoryBudgetsTableCompanion.insert(
+              id: _uuid.v4(),
+              cycleId: cycle.id,
+              categoryId: savingsCat.id,
+              budgetAmountMinor: targetSavingsMinor,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+    }
+  }
+
   Future<void> _syncToCurrentCycleIfPresent(
     String categoryId,
-    int defaultBudgetMinor,
-  ) async {
-    final today = BudgetCycleCalculator.formatDate(DateTime.now());
-    final currentCycle =
-        await (db.select(db.budgetCyclesTable)..where(
-              (tbl) =>
-                  tbl.startDate.isSmallerOrEqualValue(today) &
-                  tbl.endDate.isBiggerOrEqualValue(today),
-            ))
-            .getSingleOrNull();
+    int defaultBudgetMinor, {
+    bool rebalanceSavings = true,
+  }) async {
+    final currentCycle = await _getCurrentCycleEntry();
 
     if (currentCycle != null) {
       final existingBudget =
@@ -170,6 +260,10 @@ class CategoryRepository {
                 updatedAt: now,
               ),
             );
+      }
+
+      if (rebalanceSavings) {
+        await _rebalanceSavingsForCycleIfPresent(currentCycle);
       }
     }
   }
@@ -245,7 +339,11 @@ class CategoryRepository {
   Future<void> unarchiveCategory(String id) async {
     final cat = await updateCategory(id: id, isActive: true);
     if (cat.type == CategoryType.expense) {
-      await _syncToCurrentCycleIfPresent(id, cat.defaultBudget.inMinorUnits);
+      await _syncToCurrentCycleIfPresent(
+        id,
+        cat.defaultBudget.inMinorUnits,
+        rebalanceSavings: !_isSavingsCategoryName(cat.name),
+      );
     }
   }
 
@@ -290,7 +388,11 @@ class CategoryRepository {
         ),
       );
 
-      // 3. Delete associated category budgets
+      // 3. Delete associated notification events and category budgets
+      await (db.delete(
+        db.notificationEventsTable,
+      )..where((tbl) => tbl.categoryId.equals(id))).go();
+
       await (db.delete(
         db.categoryBudgetsTable,
       )..where((tbl) => tbl.categoryId.equals(id))).go();
@@ -300,6 +402,14 @@ class CategoryRepository {
         db.categoriesTable,
       )..where((tbl) => tbl.id.equals(id))).go();
     });
+
+    if (existing.type == CategoryType.expense &&
+        !_isSavingsCategoryName(existing.name)) {
+      final currentCycle = await _getCurrentCycleEntry();
+      if (currentCycle != null) {
+        await _rebalanceSavingsForCycleIfPresent(currentCycle);
+      }
+    }
   }
 
   /// Seeds default categories if no categories exist yet.

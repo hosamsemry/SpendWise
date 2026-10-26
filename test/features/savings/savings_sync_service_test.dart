@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
+import 'package:money_tracker/features/budgets/domain/budget_calculation_service.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/savings/domain/savings_sync_service.dart';
@@ -172,6 +173,58 @@ void main() {
         cycleId: cycle.id,
       );
       expect(savingsBudget.inMajorUnits, 0.0);
+    });
+
+    test('Adding or deleting an expense category with initial budget rebalances Savings so total budget does not increase', () async {
+      final now = DateTime.now();
+      await categoryRepo.seedDefaultCategories();
+      final cycle = await cycleRepo.getOrCreateCycleForDate(now);
+
+      // Record 1,000 EGP income and sync Savings
+      await txRepo.addTransaction(
+        type: TransactionType.income,
+        amount: Money.fromMajorUnits(1000),
+        date: now,
+        note: 'Salary',
+      );
+      await syncService.syncSavingsBudgetForCycle(cycleId: cycle.id);
+
+      const calcService = BudgetCalculationService();
+      final summaryBefore = calcService.calculateCycleSummary(
+        cycle: cycle,
+        categories: await categoryRepo.getAllCategories(includeInactive: true),
+        budgetMap: await cycleRepo.getCycleBudgets(cycle.id),
+        transactions: await txRepo.getTransactionsForCycle(cycle),
+      );
+      expect(summaryBefore.totalBudgeted, Money.fromMajorUnits(1000));
+      expect(summaryBefore.netRemainingTotal, Money.fromMajorUnits(1000));
+
+      // Add a new expense category with initial budget 200 EGP
+      final gymCat = await categoryRepo.createCategory(
+        name: 'Gym',
+        type: CategoryType.expense,
+        defaultBudget: Money.fromMajorUnits(200),
+      );
+
+      final budgetsAfterAdd = await cycleRepo.getCycleBudgets(cycle.id);
+      final savingsCat = await syncService.ensureSavingsCategory();
+      expect(budgetsAfterAdd[gymCat.id], Money.fromMajorUnits(200));
+      expect(budgetsAfterAdd[savingsCat.id], Money.fromMajorUnits(800));
+
+      final summaryAfterAdd = calcService.calculateCycleSummary(
+        cycle: cycle,
+        categories: await categoryRepo.getAllCategories(includeInactive: true),
+        budgetMap: budgetsAfterAdd,
+        transactions: await txRepo.getTransactionsForCycle(cycle),
+      );
+      // Total budget and net remaining budget must stay 1,000 EGP (not 1,200 EGP)
+      expect(summaryAfterAdd.totalBudgeted, Money.fromMajorUnits(1000));
+      expect(summaryAfterAdd.netRemainingTotal, Money.fromMajorUnits(1000));
+
+      // Delete the new expense category -> Savings rebalances back to 1,000 EGP
+      await categoryRepo.deleteCategory(gymCat.id);
+      final budgetsAfterDelete = await cycleRepo.getCycleBudgets(cycle.id);
+      expect(budgetsAfterDelete[savingsCat.id], Money.fromMajorUnits(1000));
     });
   });
 }
