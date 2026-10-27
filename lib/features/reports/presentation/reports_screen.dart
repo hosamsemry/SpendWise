@@ -292,7 +292,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     child: LinearProgressIndicator(
                       value: (sharePct / 100.0).clamp(0.0, 1.0),
                       backgroundColor: context.isDark
-                          ? const Color(0xFF334155)
+                          ? context.surfaceVariantColor
                           : Colors.grey.shade100,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         context.primaryColor,
@@ -481,7 +481,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ? (pct! / 100.0).clamp(0.0, 1.0)
                           : (b.spentAmount.inMinorUnits > 0 ? 1.0 : 0.0),
                       backgroundColor: context.isDark
-                          ? const Color(0xFF334155)
+                          ? context.surfaceVariantColor
                           : Colors.grey.shade100,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         isOver ? context.overspentColor : context.primaryColor,
@@ -614,12 +614,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: context.isDark
-                    ? const Color(0xFF1E293B)
+                    ? context.surfaceVariantColor
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: context.isDark
-                      ? const Color(0xFF334155)
+                      ? context.borderColor
                       : Colors.grey.shade300,
                 ),
               ),

@@ -384,9 +384,17 @@ class _AddEditTransactionDialogState
       decoration: BoxDecoration(
         color: context.surfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(
+          top: BorderSide(
+            color: context.isDark
+                ? context.goldColor.withValues(alpha: 0.3)
+                : context.borderColor,
+            width: 1.5,
+          ),
+        ),
       ),
       padding: EdgeInsets.only(
-        top: 20,
+        top: 12,
         left: 20,
         right: 20,
         bottom:
@@ -399,6 +407,17 @@ class _AddEditTransactionDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: context.textTertiary.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

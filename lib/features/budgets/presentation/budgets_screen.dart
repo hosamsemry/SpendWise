@@ -230,9 +230,9 @@ class BudgetsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.12),
+                    color: context.isDark ? context.warningLightColor.withValues(alpha: 0.6) : context.warningLightColor.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                    border: Border.all(color: context.warningColor.withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     updateDefaultAllocation
@@ -240,7 +240,7 @@ class BudgetsScreen extends ConsumerWidget {
                         : context.l10n.cycleAppliesCurrentOnlyNote(cycle.shortLabel),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.amber.shade800,
+                      color: context.warningColor,
                       height: 1.3,
                     ),
                   ),
@@ -462,7 +462,7 @@ class BudgetsScreen extends ConsumerWidget {
                             if (isOverspent) {
                               statusColor = context.overspentColor;
                             } else if (b.isNearLimit) {
-                              statusColor = Colors.amber;
+                              statusColor = context.warningColor;
                             } else {
                               statusColor = context.primaryColor;
                             }
@@ -547,7 +547,7 @@ class BudgetsScreen extends ConsumerWidget {
                                                   ? 1.0
                                                   : 0.0),
                                         backgroundColor: context.isDark
-                                            ? const Color(0xFF334155)
+                                            ? context.surfaceVariantColor
                                             : Colors.grey.shade200,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(

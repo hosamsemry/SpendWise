@@ -219,9 +219,16 @@ class _CashFlowBarChartState extends State<CashFlowBarChart> {
                     borderRadius: BorderRadius.circular(8),
                     color: isSelected
                         ? (isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.04))
+                              ? AppColorsDark.primary.withValues(alpha: 0.12)
+                              : AppColors.primary.withValues(alpha: 0.08))
                         : Colors.transparent,
+                    border: isSelected
+                        ? Border.all(
+                            color: isDark
+                                ? AppColorsDark.primary.withValues(alpha: 0.35)
+                                : AppColors.primary.withValues(alpha: 0.25),
+                          )
+                        : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,

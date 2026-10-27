@@ -185,13 +185,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: context.isDark
-                          ? const Color(0xFF1E3A5F)
-                          : Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                          ? context.primaryLightColor.withValues(alpha: 0.5)
+                          : context.primaryLightColor,
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: context.isDark
-                            ? const Color(0xFF2563EB)
-                            : const Color(0xFFBFDBFE),
+                            ? context.primaryColor.withValues(alpha: 0.35)
+                            : context.borderColor,
                       ),
                     ),
                     child: Row(
@@ -199,9 +199,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         Icon(
                           Icons.info_outline,
                           size: 20,
-                          color: context.isDark
-                              ? const Color(0xFF60A5FA)
-                              : Colors.blue.shade700,
+                          color: context.primaryColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -210,8 +208,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               color: context.isDark
-                                  ? const Color(0xFF93C5FD)
-                                  : Colors.blue.shade900,
+                                  ? context.textPrimary
+                                  : context.primaryColor,
                             ),
                           ),
                         ),

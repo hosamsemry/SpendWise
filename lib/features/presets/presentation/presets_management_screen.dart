@@ -209,7 +209,7 @@ class _PresetsManagementScreenState
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: context.l10n.undo,
-          textColor: Colors.amber,
+          textColor: context.primaryColor,
           onPressed: () async {
             HapticFeedback.lightImpact();
             await repo.createPreset(

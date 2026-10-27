@@ -186,7 +186,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         ? AppColorsDark.textPrimary
         : AppColors.textPrimary;
     final dotEmptyColor = isDark
-        ? const Color(0xFF334155)
+        ? AppColorsDark.surfaceVariant
         : const Color(0xFFE2E8F0);
 
     final title = widget.mode == PinMode.unlock
@@ -387,7 +387,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
 
   Widget _buildKeypadButton(String digit) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final btnBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+    final btnBg = isDark ? AppColorsDark.surfaceVariant : const Color(0xFFF1F5F9);
+    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     final textColor = isDark
         ? AppColorsDark.textPrimary
         : AppColors.textPrimary;
@@ -395,7 +396,11 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     return Container(
       width: 72,
       height: 72,
-      decoration: BoxDecoration(color: btnBg, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: btnBg,
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 1),
+      ),
       child: InkWell(
         onTap: () => _onDigitPressed(digit),
         borderRadius: BorderRadius.circular(36),

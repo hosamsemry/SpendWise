@@ -58,7 +58,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: context.l10n.undo,
-          textColor: Colors.amber,
+          textColor: context.goldColor,
           onPressed: () async {
             HapticFeedback.lightImpact();
             await txRepo.restoreTransaction(tx);
@@ -380,7 +380,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               duration: const Duration(seconds: 4),
                               action: SnackBarAction(
                                 label: context.l10n.undo,
-                                textColor: Colors.amber,
+                                textColor: context.goldColor,
                                 onPressed: () {
                                   HapticFeedback.lightImpact();
                                   ref
@@ -519,7 +519,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: context.isDark
-                                                  ? const Color(0xFF334155)
+                                                  ? context.surfaceVariantColor
                                                   : Colors.grey.shade100,
                                               borderRadius:
                                                   BorderRadius.circular(6),
