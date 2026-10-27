@@ -239,6 +239,8 @@ void main() {
       expect(find.text('Morning Espresso • 45.00 EGP'), findsOneWidget);
 
       // Tap preset chip directly
+      await tester.ensureVisible(find.byType(ActionChip).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Morning Espresso • 45.00 EGP'));
       await tester.pumpAndSettle();
 

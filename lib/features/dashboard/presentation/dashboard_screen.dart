@@ -19,6 +19,7 @@ import 'package:money_tracker/features/savings/presentation/cycle_closeout_card.
 import 'package:money_tracker/features/savings/presentation/savings_vault_card.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
+import 'widgets/velvet_titanium_hero_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final VoidCallback onNavigateToTransactions;
@@ -81,8 +82,6 @@ class DashboardScreen extends ConsumerWidget {
                   loading: () => const Center(child: LinearProgressIndicator()),
                   error: (err, _) => Text('${context.l10n.error}: $err'),
                   data: (summary) {
-                    final isNetPositive =
-                        summary.netRemainingTotal.inMinorUnits >= 0;
                     final overspentCount = summary.overspentCategoriesCount;
                     final nearLimitCount = summary.categoryBudgets
                         .where((b) => b.isNearLimit)
@@ -111,278 +110,10 @@ class DashboardScreen extends ConsumerWidget {
                               loading: () => const SizedBox.shrink(),
                               error: (err, stack) => const SizedBox.shrink(),
                               data: (daily) {
-                                return Card(
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    side: BorderSide(
-                                      color: context.isDark
-                                          ? const Color(0xFF334155)
-                                          : Colors.grey.shade200,
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Header Row: Current Budget Cycle Range & Status Badge
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  context.l10n.currentBudgetCycle,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 0.5,
-                                                    color: context.primaryColor,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  cycle.formattedRange,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: context.textPrimary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (daily.dailyPace != null)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: !isNetPositive
-                                                      ? context.overspentColor.withValues(alpha: 0.12)
-                                                      : daily.isOverDailyPace
-                                                          ? Colors.amber.withValues(alpha: 0.15)
-                                                          : context.incomeColor.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  !isNetPositive
-                                                      ? context.l10n.overBudget
-                                                      : daily.isOverDailyPace
-                                                          ? context.l10n.overDailyPaceBadge(daily.overDailyPaceAmount.toFormattedString())
-                                                          : context.l10n.safeDailyPaceBadge(daily.dailyPace!.toFormattedString()),
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: !isNetPositive
-                                                        ? context.overspentColor
-                                                        : daily.isOverDailyPace
-                                                            ? Colors.amber.shade800
-                                                            : context.incomeColor,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 14),
-
-                                        // Remaining Budget Hero Metric
-                                        Text(
-                                          context.l10n.remainingBudget,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.6,
-                                            color: context.textSecondary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                                          textBaseline: TextBaseline.alphabetic,
-                                          children: [
-                                            Text(
-                                              summary.netRemainingTotal.toFormattedString(showSign: true),
-                                              style: TextStyle(
-                                                fontSize: 26,
-                                                fontWeight: FontWeight.bold,
-                                                color: isNetPositive
-                                                    ? context.textPrimary
-                                                    : context.overspentColor,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              context.l10n.ofTotal(summary.totalBudgeted.toFormattedString()),
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: context.textSecondary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-
-                                        // Progress Bar
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(6),
-                                          child: LinearProgressIndicator(
-                                            value: summary.totalBudgeted.inMinorUnits > 0
-                                                ? (summary.totalSpent.inMinorUnits / summary.totalBudgeted.inMinorUnits).clamp(0.0, 1.0)
-                                                : (summary.totalSpent.inMinorUnits > 0 ? 1.0 : 0.0),
-                                            minHeight: 8,
-                                            backgroundColor: context.isDark
-                                                ? const Color(0xFF334155)
-                                                : Colors.grey.shade100,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              isNetPositive ? context.primaryColor : context.overspentColor,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        const Divider(height: 1),
-                                        const SizedBox(height: 12),
-
-                                        // 3 Key Metrics: Today's Spent, Cycle Spent, Income
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    context.l10n.todaysSpending,
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                      letterSpacing: 0.5,
-                                                      color: context.textSecondary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    daily.totalSpentToday.toFormattedString(),
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: daily.isOverDailyPace
-                                                          ? Colors.amber.shade800
-                                                          : context.textPrimary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 1),
-                                                  Text(
-                                                    daily.isOverDailyPace
-                                                        ? context.l10n.overDailyPace
-                                                        : (daily.dailyPace != null && daily.dailyPace!.inMinorUnits > 0
-                                                            ? context.l10n.safeLeft(daily.remainingToday.toFormattedString())
-                                                            : (daily.transactionCountToday == 0
-                                                                ? context.l10n.expensesCount(0)
-                                                                : context.l10n.expensesCount(daily.transactionCountToday))),
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: daily.isOverDailyPace ? FontWeight.w600 : FontWeight.normal,
-                                                      color: daily.isOverDailyPace
-                                                          ? Colors.amber.shade800
-                                                          : context.textSecondary,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 1,
-                                              height: 36,
-                                              color: context.isDark
-                                                  ? const Color(0xFF334155)
-                                                  : Colors.grey.shade200,
-                                            ),
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 12),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      context.l10n.cycleSpent,
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.bold,
-                                                        letterSpacing: 0.5,
-                                                        color: context.textSecondary,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      summary.totalSpent.toFormattedString(),
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: context.expenseColor,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 1),
-                                                    Text(
-                                                      context.l10n.categoriesCount(summary.categoryBudgets.length),
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: context.textSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 1,
-                                              height: 36,
-                                              color: context.isDark
-                                                  ? const Color(0xFF334155)
-                                                  : Colors.grey.shade200,
-                                            ),
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 12),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      context.l10n.incomeUpper,
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.bold,
-                                                        letterSpacing: 0.5,
-                                                        color: context.textSecondary,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      summary.totalIncome.toFormattedString(),
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: context.incomeColor,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 1),
-                                                    Text(
-                                                      context.l10n.recorded,
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: context.textSecondary,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                return VelvetTitaniumHeroCard(
+                                  cycle: cycle,
+                                  summary: summary,
+                                  daily: daily,
                                 );
                               },
                             );
@@ -499,11 +230,13 @@ class DashboardScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
-                              color: context.overspentLightColor,
-                              borderRadius: BorderRadius.circular(12),
+                              color: context.isDark
+                                  ? context.crimsonLightColor.withValues(alpha: 0.6)
+                                  : context.overspentLightColor,
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: context.isDark
-                                    ? const Color(0xFF7F1D1D)
+                                    ? context.crimsonColor
                                     : Colors.red.shade200,
                               ),
                             ),
@@ -533,22 +266,28 @@ class DashboardScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
-                              color: Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.amber.shade200),
+                              color: context.isDark
+                                  ? context.warningLightColor.withValues(alpha: 0.6)
+                                  : Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: context.isDark
+                                    ? context.warningColor.withValues(alpha: 0.5)
+                                    : Colors.amber.shade200,
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.warning_amber_rounded,
-                                  color: Colors.amber.shade800,
+                                  color: context.warningColor,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                       context.l10n.nearLimitAlert(nearLimitCount),
                                     style: TextStyle(
-                                      color: Colors.amber.shade900,
+                                      color: context.warningColor,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -667,7 +406,7 @@ class DashboardScreen extends ConsumerWidget {
                                                             ? 1.0
                                                             : 0.0),
                                                   backgroundColor: context.isDark
-                                                      ? const Color(0xFF334155)
+                                                      ? context.surfaceVariantColor
                                                       : Colors.grey.shade100,
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
@@ -675,7 +414,9 @@ class DashboardScreen extends ConsumerWidget {
                                                       >(
                                                         isOver
                                                             ? context.overspentColor
-                                                            : context.primaryColor,
+                                                            : (b.isNearLimit
+                                                                ? context.warningColor
+                                                                : context.goldColor),
                                                       ),
                                                   minHeight: 6,
                                                 ),

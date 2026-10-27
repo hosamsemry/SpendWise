@@ -22,16 +22,16 @@ class SavingsVaultCard extends ConsumerWidget {
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             side: BorderSide(
               color: context.isDark
-                  ? const Color(0xFF065F46).withValues(alpha: 0.3)
-                  : const Color(0xFFA7F3D0),
+                  ? context.goldColor.withValues(alpha: 0.3)
+                  : context.goldColor.withValues(alpha: 0.45),
             ),
           ),
           color: context.isDark
-              ? const Color(0xFF064E3B).withValues(alpha: 0.2)
-              : const Color(0xFFF0FDF4),
+              ? const Color(0xFF14141B)
+              : const Color(0xFFFFFDF5),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
@@ -45,12 +45,12 @@ class SavingsVaultCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      color: context.goldColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.savings_rounded,
-                      color: Color(0xFF10B981),
+                      color: context.goldColor,
                       size: 24,
                     ),
                   ),
@@ -61,11 +61,11 @@ class SavingsVaultCard extends ConsumerWidget {
                       children: [
                         Text(
                           context.l10n.lifetimeSavingsVault.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.6,
-                            color: Color(0xFF10B981),
+                            color: context.goldColor,
                           ),
                         ),
                         const SizedBox(height: 2),

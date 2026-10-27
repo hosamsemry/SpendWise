@@ -63,21 +63,21 @@ class CycleCloseoutCard extends ConsumerWidget {
         gradient: LinearGradient(
           colors: context.isDark
               ? [
-                  const Color(0xFF064E3B).withValues(alpha: 0.6),
-                  const Color(0xFF0F172A),
+                  const Color(0xFF161622),
+                  const Color(0xFF0B1411),
                 ]
               : [
-                  const Color(0xFFD1FAE5),
-                  const Color(0xFFECFDF5),
+                  const Color(0xFFFFFDF5),
+                  const Color(0xFFF0FDF4),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: context.isDark
-              ? const Color(0xFF059669).withValues(alpha: 0.4)
-              : const Color(0xFF34D399),
+              ? context.goldColor.withValues(alpha: 0.35)
+              : context.goldColor.withValues(alpha: 0.5),
           width: 1.2,
         ),
       ),
@@ -162,13 +162,13 @@ class CycleCloseoutCard extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.goldColor,
+                      foregroundColor: Colors.black,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
