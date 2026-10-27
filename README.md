@@ -8,7 +8,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-162%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-164%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-SHA--256%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -171,11 +171,11 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 
 ## 🎨 Brand Identity
 
-The official **SpendWise "Growth Cycle"** brand identity unites the letter **'S'** with a circular budget cycle loop and an upward wealth growth arrow.
+The official **SpendWise "Luxury Vault & Velvet Titanium"** brand identity features **The Luxury Vault Wheel** in a symmetrical `'X'` spoke configuration crafted in brushed Champagne Gold with a minimal Velvet Crimson ruby center core—symbolizing private offline wealth protection and precision cyclic budgeting.
 
-- **Primary Emerald**: `#0F5132` (Security & Balance)
-- **Vibrant Growth Mint**: `#16A34A` (Positive Cash Flow & Surplus)
-- **Scaffold Background**: `#F8FAFC` (Clarity & Readability)
+- **Obsidian Matte Black**: `#0B0B0E` (Vault Foundation & Elevated Titanium Surfaces `#14141B`)
+- **Champagne Gold**: `#E5C158` / `#B38A24` (Primary Brand Accent & Pace Ring Gauge)
+- **Velvet Crimson & Porcelain White**: `#7B1123` (Ruby Core & Ambient Hero Mesh) / `#F8FAFC` (Clarity & Readability)
 
 The logo is optically aligned across all standard and adaptive Android icon densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) and provides instant native launch branding with zero white splash flicker.
 
