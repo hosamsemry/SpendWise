@@ -8,7 +8,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-164%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-165%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-SHA--256%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 

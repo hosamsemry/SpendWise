@@ -90,7 +90,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _exportAllTransactions() async {
     try {
       final exportService = ref.read(csvExportServiceProvider);
-      final csv = await exportService.buildTransactionsCsv();
+      final csv = await exportService.buildTransactionsCsv(
+        categoryLocalizer: context.l10n.localizedCategoryName,
+      );
       final nowStr = DateFormat('yyyyMMdd_HHmm', 'en_US').format(DateTime.now());
       await exportService.shareCsv(
         fileName: 'spendwise_transactions_$nowStr.csv',
@@ -115,7 +117,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (summary == null) return;
 
       final exportService = ref.read(csvExportServiceProvider);
-      final csv = exportService.buildCycleSummaryCsv(summary);
+      final csv = exportService.buildCycleSummaryCsv(
+        summary,
+        categoryLocalizer: context.l10n.localizedCategoryName,
+      );
       final startStr = DateFormat('yyyyMMdd', 'en_US').format(cycle.startDate);
       await exportService.shareCsv(
         fileName: 'spendwise_cycle_$startStr.csv',

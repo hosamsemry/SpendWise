@@ -59,6 +59,8 @@ void main() {
 
         final csv = await csvService.buildTransactionsCsv();
 
+        // Verify UTF-8 BOM is present for Excel compatibility
+        expect(csv.startsWith('\uFEFF'), isTrue);
         expect(
           csv.contains('ID,Date,Type,Category,Amount (EGP),Note,Created At'),
           isTrue,
@@ -105,5 +107,27 @@ void main() {
       expect(csv.contains('Total Income:'), isTrue);
       expect(csv.contains('Dining,3000.00,1500.00,1500.00,50.0%'), isTrue);
     });
+    test('buildTransactionsCsv localizes category names when categoryLocalizer is provided', () async {
+      final cat = await categoryRepo.createCategory(
+        name: 'راتب',
+        type: CategoryType.income,
+      );
+
+      await txRepo.addTransaction(
+        type: TransactionType.income,
+        amount: Money.fromMajorUnits(8000),
+        date: DateTime(2026, 10, 25),
+        categoryId: cat.id,
+      );
+
+      final csvEnglish = await csvService.buildTransactionsCsv(
+        categoryLocalizer: (name) => name == 'راتب' ? 'Salary' : (name ?? ''),
+      );
+
+      expect(csvEnglish.startsWith('\uFEFF'), isTrue);
+      expect(csvEnglish.contains('Salary'), isTrue);
+      expect(csvEnglish.contains('راتب'), isFalse);
+    });
+
   });
 }

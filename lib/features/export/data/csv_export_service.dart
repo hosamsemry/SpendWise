@@ -24,9 +24,14 @@ class CsvExportService {
   }
 
   /// Generates CSV text for all recorded transactions.
-  Future<String> buildTransactionsCsv() async {
+  Future<String> buildTransactionsCsv({
+    String Function(String?)? categoryLocalizer,
+  }) async {
     final transactions = await transactionRepo.getAllTransactions();
     final buffer = StringBuffer();
+
+    // Prepend UTF-8 BOM for Excel
+    buffer.write('\uFEFF');
 
     // CSV Header
     buffer.writeln('ID,Date,Type,Category,Amount (EGP),Note,Created At');
@@ -34,10 +39,9 @@ class CsvExportService {
     for (final tx in transactions) {
       final dateStr = BudgetCycleCalculator.formatDate(tx.date);
       final typeStr = tx.type.name.toUpperCase();
-      final catStr = _escapeCsv(
-        tx.categoryName ??
-            (tx.isIncome ? 'Uncategorized Income' : 'Uncategorized'),
-      );
+      final rawCat = tx.categoryName ?? (tx.isIncome ? 'Uncategorized Income' : 'Uncategorized');
+      final localizedCat = categoryLocalizer != null ? categoryLocalizer(rawCat) : rawCat;
+      final catStr = _escapeCsv(localizedCat);
       final amountStr = (tx.amount.inMinorUnits / 100.0).toStringAsFixed(2);
       final noteStr = _escapeCsv(tx.note);
       final createdStr = tx.createdAt.toIso8601String();
@@ -51,8 +55,12 @@ class CsvExportService {
   }
 
   /// Generates CSV text for a specific cycle's budget summary.
-  String buildCycleSummaryCsv(CycleSummary summary) {
+  String buildCycleSummaryCsv(
+    CycleSummary summary, {
+    String Function(String?)? categoryLocalizer,
+  }) {
     final buffer = StringBuffer();
+    buffer.write('\uFEFF');
 
     buffer.writeln('Budget Cycle: ${summary.cycle.formattedRange}');
     buffer.writeln('Total Income: ${(summary.totalIncome.inMinorUnits / 100.0).toStringAsFixed(2)}');
@@ -69,7 +77,8 @@ class CsvExportService {
       'Category,Budgeted (EGP),Spent (EGP),Remaining (EGP),Usage %',
     );
     for (final b in summary.categoryBudgets) {
-      final catName = _escapeCsv(b.categoryName);
+      final localizedCat = categoryLocalizer != null ? categoryLocalizer(b.categoryName) : b.categoryName;
+      final catName = _escapeCsv(localizedCat);
       final budgeted = (b.budgetedAmount.inMinorUnits / 100.0).toStringAsFixed(2);
       final spent = (b.spentAmount.inMinorUnits / 100.0).toStringAsFixed(2);
       final remaining = (b.remainingAmount.inMinorUnits / 100.0).toStringAsFixed(2);
@@ -91,7 +100,8 @@ class CsvExportService {
   }) async {
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/$fileName');
-    await file.writeAsString(csvContent);
+    final contentWithBom = csvContent.startsWith('\uFEFF') ? csvContent : '\uFEFF$csvContent';
+    await file.writeAsString(contentWithBom);
 
     await SharePlus.instance.share(
       ShareParams(
