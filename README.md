@@ -171,7 +171,7 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 
 ## 🎨 Brand Identity
 
-The official **SpendWise "Luxury Vault & Velvet Titanium"** brand identity features **The Luxury Vault Wheel** in a symmetrical `'X'` spoke configuration crafted in brushed Champagne Gold with a minimal Velvet Crimson ruby center core—symbolizing private offline wealth protection and precision cyclic budgeting.
+The official **SpendWise "Vault Monogram & Velvet Titanium"** brand identity features an authentic circular bank safe tumbler lock seamlessly integrating the **'S'** monogram in brushed Champagne Gold and dark titanium with a subtle Velvet Crimson ruby center core—symbolizing private offline wealth protection and precision cyclic budgeting.
 
 - **Obsidian Matte Black**: `#0B0B0E` (Vault Foundation & Elevated Titanium Surfaces `#14141B`)
 - **Champagne Gold**: `#E5C158` / `#B38A24` (Primary Brand Accent & Pace Ring Gauge)
