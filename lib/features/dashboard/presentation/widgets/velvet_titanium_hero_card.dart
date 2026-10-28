@@ -417,8 +417,10 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                             const SizedBox(height: 1),
                             Text(
                               summary.totalBudgeted.inMinorUnits > 0
-                                  ? '${((summary.totalSpent.inMinorUnits / summary.totalBudgeted.inMinorUnits) * 100).toStringAsFixed(0)}% ${context.l10n.isArabic ? "?? ?????????" : "of budget"}'
-                                  : (context.l10n.isArabic ? '?? ???? ???????' : 'No budget set'),
+                                  ? context.l10n.percentOfBudget(
+                                      ((summary.totalSpent.inMinorUnits / summary.totalBudgeted.inMinorUnits) * 100).toStringAsFixed(0),
+                                    )
+                                  : context.l10n.noBudgetSetShort,
                               style: TextStyle(
                                 fontSize: 10,
                                 color: context.textTertiary,
@@ -532,7 +534,7 @@ class _PaceRingGauge extends StatelessWidget {
               ),
               const SizedBox(height: 1),
               Text(
-                'days left',
+                context.l10n.daysLeftLabel(daysRemaining),
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w600,

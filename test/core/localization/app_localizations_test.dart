@@ -20,6 +20,10 @@ void main() {
       expect(l10n.searchNotesHint, 'Search notes...');
       expect(l10n.ofTotal('1,000 EGP'), 'of 1,000 EGP');
       expect(l10n.lockoutNotice(30), 'Too many failed attempts. Try again in 30s');
+      expect(l10n.percentOfBudget('5'), '5% of budget');
+      expect(l10n.daysLeftLabel(1), 'day left');
+      expect(l10n.daysLeftLabel(5), 'days left');
+      expect(l10n.noBudgetSetShort, 'No budget set');
     });
 
     test('Arabic dictionary contains correct Arabic translations and Egyptian pound symbol', () {
@@ -39,6 +43,10 @@ void main() {
       expect(l10n.searchNotesHint, 'بحث في الملاحظات...');
       expect(l10n.ofTotal('1,000 ج.م'), 'من 1,000 ج.م');
       expect(l10n.lockoutNotice(30), 'محاولات خاطئة كثيرة. حاول ثانية بعد 30ث');
+      expect(l10n.percentOfBudget('5'), '5% من الميزانية');
+      expect(l10n.daysLeftLabel(1), 'يوم متبقٍ');
+      expect(l10n.daysLeftLabel(5), 'أيام متبقية');
+      expect(l10n.noBudgetSetShort, 'لا توجد ميزانية');
     });
 
     test('Delegate supports en and ar locales', () {

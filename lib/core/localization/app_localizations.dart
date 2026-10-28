@@ -137,6 +137,15 @@ class AppLocalizations {
   String daysRemaining(int days) => isArabic
       ? (days == 1 ? 'يوم واحد متبقٍ' : '$days أيام متبقية')
       : (days == 1 ? '1 day left' : '$days days left');
+  String daysLeftLabel(int days) => isArabic
+      ? (days == 1 ? 'يوم متبقٍ' : 'أيام متبقية')
+      : (days == 1 ? 'day left' : 'days left');
+  String percentOfBudget(String pct) => isArabic
+      ? '$pct% من الميزانية'
+      : '$pct% of budget';
+  String get noBudgetSetShort => isArabic
+      ? 'لا توجد ميزانية'
+      : 'No budget set';
 
   // --- Savings & Lifetime Vault ---
   String get lifetimeSavingsVault => isArabic ? 'خزينة المدخرات الدائمة' : 'Lifetime Savings Vault';
