@@ -39,20 +39,22 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
-              ? const Color(0xFFE5C158).withValues(alpha: 0.35)
-              : const Color(0xFFB38A24).withValues(alpha: 0.30),
+              ? AppColorsDark.gold.withValues(alpha: 0.35)
+              : AppColors.gold.withValues(alpha: 0.38),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
                 ? const Color(0xFF7B1123).withValues(alpha: 0.25)
-                : const Color(0xFFB38A24).withValues(alpha: 0.08),
+                : AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 28,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.03),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.5)
+                : const Color(0xFF0B0F19).withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

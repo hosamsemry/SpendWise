@@ -192,13 +192,17 @@ class _SavingsVaultDialogState extends ConsumerState<SavingsVaultDialog> {
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 labelText: _isDepositMode
                     ? (context.l10n.isArabic ? 'مبلغ الإيداع' : 'Deposit Amount')
                     : (context.l10n.isArabic ? 'مبلغ السحب' : 'Withdraw Amount'),
                 prefixText: '${context.l10n.currencySymbol} ',
                 errorText: _errorMessage,
-                border: const OutlineInputBorder(),
               ),
               onChanged: (_) {
                 if (_errorMessage != null) {

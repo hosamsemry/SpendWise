@@ -158,6 +158,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
               children: [
                 TextField(
                   controller: nameController,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: context.l10n.categoryNameLabel,
                     errorText: errorMessage,
@@ -169,11 +174,17 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: isExpense
                         ? context.l10n.defaultAllocationLabel
                         : context.l10n.expectedIncomeLabel,
                     hintText: '0.00',
+                    suffixText: context.l10n.currencySymbol,
                     helperText: isExpense
                         ? context.l10n.defaultBudgetDesc
                         : context.l10n.defaultIncomeDesc,

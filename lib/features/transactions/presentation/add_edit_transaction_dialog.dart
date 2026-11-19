@@ -473,13 +473,18 @@ class _AddEditTransactionDialogState
                 decimal: true,
               ),
               autofocus: widget.initialTransaction == null,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 labelText: context.l10n.amountLabelWithCurrency,
                 prefixText: '${context.l10n.currencySymbol} ',
-                prefixStyle: const TextStyle(
+                prefixStyle: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: context.primaryColor,
                 ),
                 errorText: _amountError,
               ),
@@ -635,7 +640,9 @@ class _AddEditTransactionDialogState
                 backgroundColor: _type == TransactionType.expense
                     ? context.primaryColor
                     : context.incomeColor,
-                foregroundColor: Colors.white,
+                foregroundColor: _type == TransactionType.expense && context.isDark
+                    ? Colors.black
+                    : Colors.white,
               ),
               child: _isSaving
                   ? const SizedBox(

@@ -180,20 +180,21 @@ class BudgetsScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: context.incomeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                        color: context.incomeColor.withValues(alpha: 0.35),
                       ),
                     ),
                     child: Text(
                       context.l10n.isArabic
                           ? 'تستوعب المدخرات تلقائياً الدخل غير المخصص للدورة (إجمالي الدخل ناقص ميزانيات الفئات الأخرى).'
                           : 'Savings automatically absorbs unallocated cycle income (Total Income minus other category budgets).',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF047857),
-                        height: 1.3,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: context.incomeColor,
+                        height: 1.35,
                       ),
                     ),
                   ),
@@ -203,9 +204,15 @@ class BudgetsScreen extends ConsumerWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: context.isDark ? Colors.white : AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: context.l10n.budgetAmountForCycle,
                     hintText: '0.00',
+                    suffixText: context.l10n.currencySymbol,
                     errorText: errorMessage,
                   ),
                   autofocus: true,
@@ -216,7 +223,11 @@ class BudgetsScreen extends ConsumerWidget {
                   value: updateDefaultAllocation,
                   title: Text(
                     context.l10n.updateDefaultAllocationForFuture,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: context.textPrimary,
+                    ),
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
                   activeColor: context.primaryColor,
@@ -230,18 +241,25 @@ class BudgetsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: context.isDark ? context.warningLightColor.withValues(alpha: 0.6) : context.warningLightColor.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: context.warningColor.withValues(alpha: 0.4)),
+                    color: context.isDark
+                        ? context.warningLightColor.withValues(alpha: 0.65)
+                        : context.warningLightColor,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: context.warningColor.withValues(alpha: 0.45),
+                    ),
                   ),
                   child: Text(
                     updateDefaultAllocation
                         ? context.l10n.cycleAppliesUpcomingNote
                         : context.l10n.cycleAppliesCurrentOnlyNote(cycle.shortLabel),
                     style: TextStyle(
-                      fontSize: 12,
-                      color: context.warningColor,
-                      height: 1.3,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: context.isDark
+                          ? context.warningColor
+                          : const Color(0xFF92400E),
+                      height: 1.35,
                     ),
                   ),
                 ),
