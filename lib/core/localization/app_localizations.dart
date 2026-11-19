@@ -551,6 +551,18 @@ class AppLocalizations {
   String get categoryName => categoryNameLabel;
   String get add => isArabic ? 'إضافة' : 'Add';
   String get budget => isArabic ? 'الميزانية' : 'Budget';
+
+  // Interactive Near-Limit Alert
+  String get nearLimitSheetTitle => isArabic
+      ? 'فئات قريبة من حد الميزانية (≥ 80%)'
+      : 'Near Budget Limit (≥ 80%)';
+  String get tapToViewDetails => isArabic
+      ? 'انقر للتفاصيل • اسحب للإخفاء'
+      : 'Tap for details • Swipe to dismiss';
+  String get viewTransactions =>
+      isArabic ? 'عرض المعاملات' : 'View Transactions';
+  String get dismissAlert => isArabic ? 'إخفاء التنبيه' : 'Dismiss Alert';
+  String andMoreCount(int count) => isArabic ? '+$count أخرى' : '+$count more';
 }
 
 class _AppLocalizationsDelegate

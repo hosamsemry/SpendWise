@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/alert_dismissal_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
@@ -19,6 +20,7 @@ import 'package:money_tracker/features/savings/presentation/cycle_closeout_card.
 import 'package:money_tracker/features/savings/presentation/savings_vault_card.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
+import 'widgets/near_limit_alert_card.dart';
 import 'widgets/velvet_titanium_hero_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -83,9 +85,13 @@ class DashboardScreen extends ConsumerWidget {
                   error: (err, _) => Text('${context.l10n.error}: $err'),
                   data: (summary) {
                     final overspentCount = summary.overspentCategoriesCount;
-                    final nearLimitCount = summary.categoryBudgets
+                    final nearLimitBudgets = summary.categoryBudgets
                         .where((b) => b.isNearLimit)
-                        .length;
+                        .toList()
+                      ..sort(
+                        (a, b) => (b.usagePercentage ?? 0)
+                            .compareTo(a.usagePercentage ?? 0),
+                      );
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,40 +267,67 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ),
 
-                        if (nearLimitCount > 0)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: context.isDark
-                                  ? context.warningLightColor.withValues(alpha: 0.6)
-                                  : Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: context.isDark
-                                    ? context.warningColor.withValues(alpha: 0.5)
-                                    : Colors.amber.shade200,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: context.warningColor,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                      context.l10n.nearLimitAlert(nearLimitCount),
-                                    style: TextStyle(
-                                      color: context.warningColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                        if (nearLimitBudgets.isNotEmpty)
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final dismissedAsync = ref.watch(
+                                dismissedNearLimitCategoriesProvider(cycle.id),
+                              );
+                              final optimisticMap = ref.watch(
+                                optimisticDismissedNearLimitProvider,
+                              );
+                              final dismissedIds = <String>{
+                                ...(dismissedAsync.value ?? const <String>{}),
+                                ...(optimisticMap[cycle.id] ?? const <String>{}),
+                              };
+                              final visibleNearLimit = nearLimitBudgets
+                                  .where(
+                                    (b) => !dismissedIds.contains(b.categoryId),
+                                  )
+                                  .toList();
+
+                              if (visibleNearLimit.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return NearLimitAlertCard(
+                                cycle: cycle,
+                                nearLimitBudgets: visibleNearLimit,
+                                onDismiss: (categoryIds) {
+                                  // Remove synchronously for Dismissible, then persist to SQLite
+                                  ref
+                                      .read(
+                                        optimisticDismissedNearLimitProvider
+                                            .notifier,
+                                      )
+                                      .dismiss(cycle.id, categoryIds);
+                                  ref
+                                      .read(alertDismissalRepositoryProvider)
+                                      .dismissNearLimitCategories(
+                                        cycle.id,
+                                        categoryIds,
+                                      )
+                                      .then((_) {
+                                        ref
+                                            .read(
+                                              alertDismissalTriggerProvider
+                                                  .notifier,
+                                            )
+                                            .trigger();
+                                      });
+                                },
+                                onViewTransactions: (budget) {
+                                  ref
+                                      .read(selectedCycleProvider.notifier)
+                                      .select(cycle);
+                                  ref
+                                      .read(categoryFilterProvider.notifier)
+                                      .set(budget.categoryId);
+                                  onNavigateToTransactions();
+                                },
+                                onEditBudgets: onNavigateToBudgets,
+                              );
+                            },
                           ),
 
                         // 3. Category Budget Progress Section
