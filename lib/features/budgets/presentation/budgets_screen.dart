@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
@@ -10,16 +11,23 @@ import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/budgets/domain/category_budget.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
-import 'package:money_tracker/features/categories/presentation/categories_screen.dart';
-import 'package:money_tracker/features/reports/presentation/reports_screen.dart';
 
-class BudgetsScreen extends ConsumerWidget {
+/// Unified Category & Budget Envelope Management Screen.
+/// Combines category definition with budget cycle allocation and default monthly targets.
+class BudgetsScreen extends ConsumerStatefulWidget {
   const BudgetsScreen({super.key});
 
-  void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
+  @override
+  ConsumerState<BudgetsScreen> createState() => _BudgetsScreenState();
+}
+
+class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
+  CategoryType _selectedType = CategoryType.expense;
+
+  void _showAddCategoryDialog() {
     final nameController = TextEditingController();
     final budgetController = TextEditingController();
-    CategoryType selectedType = CategoryType.expense;
+    CategoryType type = _selectedType;
     String? errorMessage;
 
     showDialog(
@@ -27,7 +35,7 @@ class BudgetsScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text(
-            selectedType == CategoryType.expense
+            type == CategoryType.expense
                 ? context.l10n.addExpenseCategory
                 : context.l10n.addIncomeCategory,
           ),
@@ -41,17 +49,17 @@ class BudgetsScreen extends ConsumerWidget {
                     ButtonSegment(
                       value: CategoryType.expense,
                       label: Text(context.l10n.expense),
-                      icon: Icon(Icons.shopping_bag_outlined, size: 16),
+                      icon: const Icon(Icons.shopping_bag_outlined, size: 16),
                     ),
                     ButtonSegment(
                       value: CategoryType.income,
                       label: Text(context.l10n.income),
-                      icon: Icon(Icons.account_balance_wallet_outlined, size: 16),
+                      icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
                     ),
                   ],
-                  selected: {selectedType},
+                  selected: {type},
                   onSelectionChanged: (set) {
-                    setDialogState(() => selectedType = set.first);
+                    setDialogState(() => type = set.first);
                   },
                 ),
                 const SizedBox(height: 16),
@@ -59,7 +67,9 @@ class BudgetsScreen extends ConsumerWidget {
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: context.l10n.categoryNameLabel,
-                    hintText: selectedType == CategoryType.expense ? context.l10n.groceriesGymHint : context.l10n.salaryFreelanceHint,
+                    hintText: type == CategoryType.expense
+                        ? context.l10n.groceriesGymHint
+                        : context.l10n.salaryFreelanceHint,
                     errorText: errorMessage,
                   ),
                   autofocus: true,
@@ -71,7 +81,7 @@ class BudgetsScreen extends ConsumerWidget {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: selectedType == CategoryType.expense
+                    labelText: type == CategoryType.expense
                         ? context.l10n.defaultAllocationLabel
                         : context.l10n.expectedIncomeLabel,
                     hintText: '0.00',
@@ -111,10 +121,10 @@ class BudgetsScreen extends ConsumerWidget {
                   final catRepo = ref.read(categoryRepositoryProvider);
                   await catRepo.createCategory(
                     name: name,
-                    type: selectedType,
+                    type: type,
                     defaultBudget: budget,
                   );
-                  if (selectedType == CategoryType.expense &&
+                  if (type == CategoryType.expense &&
                       name.toLowerCase() != 'savings' &&
                       name != 'مدخرات') {
                     final cycle = await ref
@@ -134,7 +144,7 @@ class BudgetsScreen extends ConsumerWidget {
                   setDialogState(() => errorMessage = context.l10n.failedToCreate(e.toString()));
                 }
               },
-              child: Text(context.l10n.create),
+              child: Text(context.l10n.save),
             ),
           ],
         ),
@@ -142,25 +152,27 @@ class BudgetsScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditBudgetDialog(
-    BuildContext context,
-    WidgetRef ref,
-    BudgetCycle cycle,
-    CategoryBudget budget,
-  ) {
-    final controller = TextEditingController(
+  void _showEditCategoryEnvelopeDialog({
+    required BudgetCycle cycle,
+    required CategoryBudget budget,
+    required Category category,
+  }) {
+    final nameController = TextEditingController(text: category.name);
+    final cycleBudgetController = TextEditingController(
       text: budget.budgetedAmount.inMinorUnits == 0
           ? ''
           : budget.budgetedAmount.toFormattedString(includeCurrency: false),
     );
     bool updateDefaultAllocation = false;
     String? errorMessage;
+    final isSavings = category.name.trim().toLowerCase() == 'savings' ||
+        category.name.trim() == 'مدخرات';
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(context.l10n.editBudgetForCategory(context.l10n.localizedCategoryName(budget.categoryName))),
+          title: Text(context.l10n.editBudgetForCategory(context.l10n.localizedCategoryName(category.name))),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -174,8 +186,8 @@ class BudgetsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (budget.categoryName.trim().toLowerCase() == 'savings' ||
-                    budget.categoryName.trim() == 'مدخرات') ...[
+
+                if (isSavings) ...[
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(10),
@@ -199,8 +211,10 @@ class BudgetsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+
+                // Budget for cycle
                 TextField(
-                  controller: controller,
+                  controller: cycleBudgetController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -213,11 +227,45 @@ class BudgetsScreen extends ConsumerWidget {
                     labelText: context.l10n.budgetAmountForCycle,
                     hintText: '0.00',
                     suffixText: context.l10n.currencySymbol,
-                    errorText: errorMessage,
                   ),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
+
+                // Category Name field
+                TextField(
+                  controller: nameController,
+                  enabled: !isSavings,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.categoryNameLabel,
+                    errorText: errorMessage,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Default allocation indicator
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 14, color: context.textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      context.l10n.defaultAllocationText(category.defaultBudget.toFormattedString()),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Checkbox to update default allocation
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: updateDefaultAllocation,
@@ -238,6 +286,7 @@ class BudgetsScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 8),
+
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -267,13 +316,19 @@ class BudgetsScreen extends ConsumerWidget {
             ),
           ),
           actions: [
+            if (!isSavings)
+              TextButton(
+                onPressed: () => _confirmDeleteCategory(category),
+                style: TextButton.styleFrom(foregroundColor: context.overspentColor),
+                child: Text(context.l10n.delete),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(context.l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
-                final text = controller.text.trim();
+                final text = cycleBudgetController.text.trim();
                 final Money parsed;
                 if (text.isEmpty) {
                   parsed = const Money.zero();
@@ -292,9 +347,22 @@ class BudgetsScreen extends ConsumerWidget {
                   parsed = p;
                 }
 
+                final newName = nameController.text.trim();
+                if (newName.isEmpty) {
+                  setDialogState(() => errorMessage = context.l10n.nameRequired);
+                  return;
+                }
+
                 try {
                   final cycleRepo = ref.read(budgetCycleRepositoryProvider);
+                  final catRepo = ref.read(categoryRepositoryProvider);
 
+                  // Update name if changed
+                  if (newName != category.name && !isSavings) {
+                    await catRepo.updateCategory(id: category.id, name: newName);
+                  }
+
+                  // Update cycle budget
                   await cycleRepo.updateCategoryBudget(
                     cycleId: cycle.id,
                     categoryId: budget.categoryId,
@@ -303,8 +371,7 @@ class BudgetsScreen extends ConsumerWidget {
                   );
 
                   // If category updated was not Savings, rebalance Savings allocation
-                  final nameLower = budget.categoryName.trim().toLowerCase();
-                  if (nameLower != 'savings' && nameLower != 'مدخرات') {
+                  if (!isSavings) {
                     await ref
                         .read(savingsSyncServiceProvider)
                         .syncSavingsBudgetForCycle(cycleId: cycle.id);
@@ -324,426 +391,661 @@ class BudgetsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBudgetsTab(
-    BuildContext context,
-    WidgetRef ref,
-    BudgetCycle? activeCycle,
-    AsyncValue<List<BudgetCycle>> allCyclesAsync,
-  ) {
-    return Column(
-      children: [
-        // Cycle Switcher Dropdown
-        allCyclesAsync.when(
-          skipLoadingOnReload: true,
-          loading: () => const SizedBox.shrink(),
-          error: (e, s) => const SizedBox.shrink(),
-          data: (cycles) {
-            if (cycles.isEmpty) return const SizedBox.shrink();
-            final current = (activeCycle != null &&
-                    cycles.any((c) => c.id == activeCycle.id))
-                ? activeCycle
-                : cycles.first;
+  void _showEditIncomeCategoryDialog(Category category) {
+    final nameController = TextEditingController(text: category.name);
+    final expectedIncomeController = TextEditingController(
+      text: category.defaultBudget.inMinorUnits == 0
+          ? ''
+          : category.defaultBudget.toFormattedString(includeCurrency: false),
+    );
+    String? errorMessage;
 
-            return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              color: context.surfaceColor,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    context.l10n.budgetCycleLabel,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: context.textSecondary,
-                    ),
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(context.l10n.editCategoryName(category.name)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.categoryNameLabel,
+                    errorText: errorMessage,
                   ),
-                  DropdownButton<String>(
-                    value: current.id,
-                    underline: const SizedBox.shrink(),
-                    icon: const Icon(Icons.keyboard_arrow_down),
-                    items: cycles.map((c) {
-                      return DropdownMenuItem(
-                        value: c.id,
-                        child: Text(
-                          c.formattedRange,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (id) {
-                      if (id == null) return;
-                      final found = cycles.firstWhere((c) => c.id == id);
-                      ref.read(selectedCycleProvider.notifier).select(found);
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        const Divider(height: 1),
-
-        Expanded(
-          child: activeCycle == null
-              ? const Center(child: CircularProgressIndicator())
-              : Consumer(
-                  builder: (context, ref, child) {
-                    final summaryAsync = ref.watch(
-                      cycleSummaryProvider(activeCycle),
-                    );
-
-                    return summaryAsync.when(
-                      skipLoadingOnReload: true,
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (err, stack) =>
-                          Center(child: Text('${context.l10n.error}: $err')),
-                      data: (summary) {
-                        if (summary.categoryBudgets.isEmpty) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.category_outlined,
-                                    size: 48,
-                                    color: context.textSecondary,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    context.l10n.noExpenseCategoriesFound,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    context.l10n.createCategoriesToTrackDesc,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: context.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    icon: const Icon(Icons.add_rounded),
-                                    label: Text(context.l10n.addCategory),
-                                    onPressed: () =>
-                                        _showAddCategoryDialog(context, ref),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-
-                        return ListView.builder(
-                          key: PageStorageKey('cycle_budgets_list_${activeCycle.id}'),
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            16,
-                            16,
-                            24 + MediaQuery.of(context).padding.bottom,
-                          ),
-                          itemCount: summary.categoryBudgets.length + 1,
-                          itemBuilder: (context, index) {
-                            if (index == summary.categoryBudgets.length) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.add_rounded),
-                                  label: Text(context.l10n.addAnotherCategory),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                  onPressed: () =>
-                                      _showAddCategoryDialog(context, ref),
-                                ),
-                              );
-                            }
-
-                            final b = summary.categoryBudgets[index];
-                            final isOverspent = b.isOverspent;
-                            final pct = b.usagePercentage;
-                            final hasBudget =
-                                b.budgetedAmount.inMinorUnits > 0;
-
-                            Color statusColor;
-                            if (isOverspent) {
-                              statusColor = context.overspentColor;
-                            } else if (b.isNearLimit) {
-                              statusColor = context.warningColor;
-                            } else {
-                              statusColor = context.primaryColor;
-                            }
-
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    // Category Title and Edit Icon
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              context.l10n.localizedCategoryName(b.categoryName),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: context.textPrimary,
-                                              ),
-                                            ),
-                                            if (b.categoryName.trim().toLowerCase() ==
-                                                    'savings' ||
-                                                b.categoryName.trim() ==
-                                                    'مدخرات') ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFF10B981)
-                                                      .withValues(alpha: 0.12),
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  context.l10n.autoBalancedBadge,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Color(0xFF10B981),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.edit_outlined,
-                                            size: 20,
-                                          ),
-                                          tooltip: context.l10n.editBudget,
-                                          onPressed: () =>
-                                              _showEditBudgetDialog(
-                                                context,
-                                                ref,
-                                                activeCycle,
-                                                b,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-
-                                    // Progress Bar
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: LinearProgressIndicator(
-                                        value: hasBudget
-                                            ? (pct! / 100.0).clamp(0.0, 1.0)
-                                            : (b.spentAmount.inMinorUnits > 0
-                                                  ? 1.0
-                                                  : 0.0),
-                                        backgroundColor: context.isDark
-                                            ? context.surfaceVariantColor
-                                            : Colors.grey.shade200,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              statusColor,
-                                            ),
-                                        minHeight: 8,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-
-                                    // Budget Metrics Row
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              context.l10n.budgetedAmount,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color:
-                                                    context.textSecondary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              b.budgetedAmount
-                                                  .toFormattedString(),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              context.l10n.spent,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color:
-                                                    context.textSecondary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              b.spentAmount
-                                                  .toFormattedString(),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              isOverspent
-                                                  ? context.l10n.overspent
-                                                  : context.l10n.remaining,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: statusColor,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              b.remainingAmount
-                                                  .toFormattedString(
-                                                    showSign: true,
-                                                  ),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                                color: statusColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-
-                                    // Percentage indicator tag
-                                    if (hasBudget) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        context.l10n.percentUsed(pct!.toStringAsFixed(1)),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: statusColor,
-                                        ),
-                                      ),
-                                    ] else if (b.spentAmount.inMinorUnits >
-                                        0) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        context.l10n.noBudgetSet,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: context.overspentColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: expectedIncomeController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.expectedIncomeLabel,
+                    hintText: '0.00',
+                    suffixText: context.l10n.currencySymbol,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => _confirmDeleteCategory(category),
+              style: TextButton.styleFrom(foregroundColor: context.overspentColor),
+              child: Text(context.l10n.delete),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(context.l10n.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isEmpty) {
+                  setDialogState(() => errorMessage = context.l10n.nameRequired);
+                  return;
+                }
+                Money budget = const Money.zero();
+                final text = expectedIncomeController.text.trim();
+                if (text.isNotEmpty) {
+                  final p = Money.tryParse(text);
+                  if (p == null) {
+                    setDialogState(() => errorMessage = context.l10n.enterValidAmount);
+                    return;
+                  }
+                  budget = p;
+                }
+
+                try {
+                  await ref.read(categoryRepositoryProvider).updateCategory(
+                    id: category.id,
+                    name: name,
+                    defaultBudget: budget,
+                  );
+                  ref.read(refreshTriggerProvider.notifier).trigger();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                } catch (e) {
+                  setDialogState(() => errorMessage = context.l10n.failedToSave(e.toString()));
+                }
+              },
+              child: Text(context.l10n.save),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  void _confirmDeleteCategory(Category category) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.deleteCategoryName(category.name)),
+        content: Text(context.l10n.deleteCategoryConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.l10n.cancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.overspentColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final nav = Navigator.of(context);
+              final ctxNav = Navigator.of(ctx);
+              final failedToDeleteFn = context.l10n.failedToDelete;
+              final overspentColor = context.overspentColor;
+
+              try {
+                await ref.read(categoryRepositoryProvider).deleteCategory(category.id);
+                if (category.type == CategoryType.expense &&
+                    category.name.trim().toLowerCase() != 'savings' &&
+                    category.name.trim() != 'مدخرات') {
+                  final cycle = await ref
+                      .read(budgetCycleRepositoryProvider)
+                      .getCycleForDateOrNull(DateTime.now());
+                  if (cycle != null) {
+                    await ref
+                        .read(savingsSyncServiceProvider)
+                        .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                  }
+                }
+                ref.read(refreshTriggerProvider.notifier).trigger();
+                ctxNav.pop(); // Close confirmation
+                nav.pop(); // Close edit dialog
+              } catch (e) {
+                ctxNav.pop();
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(failedToDeleteFn(e.toString())),
+                    backgroundColor: overspentColor,
+                  ),
+                );
+              }
+            },
+            child: Text(context.l10n.delete),
+          ),
+        ],
+      ),
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentCycleAsync = ref.watch(currentCycleProvider);
     final selectedCycle = ref.watch(selectedCycleProvider);
     final allCyclesAsync = ref.watch(allCyclesProvider);
+    final allCategoriesAsync = ref.watch(allCategoriesProvider);
 
     final activeCycle = selectedCycle ?? currentCycleAsync.value;
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(context.l10n.budgetsAndInsights),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add_rounded),
-              tooltip: context.l10n.addCategory,
-              onPressed: () => _showAddCategoryDialog(context, ref),
-            ),
-          ],
-          bottom: TabBar(
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.pie_chart_rounded, size: 18),
-                text: context.l10n.tabCycleBudgets,
-              ),
-              Tab(
-                icon: const Icon(Icons.category_rounded, size: 18),
-                text: context.l10n.tabCategories,
-              ),
-              Tab(
-                icon: const Icon(Icons.bar_chart_rounded, size: 18),
-                text: context.l10n.tabInsights,
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.l10n.navBudgets),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            tooltip: context.l10n.addCategory,
+            onPressed: _showAddCategoryDialog,
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildBudgetsTab(context, ref, activeCycle, allCyclesAsync),
-            const CategoriesScreen(showAppBar: false),
-            const ReportsScreen(showAppBar: false),
-          ],
-        ),
+        ],
       ),
+      body: Column(
+        children: [
+          // 1. Cycle Switcher Dropdown
+          allCyclesAsync.when(
+            skipLoadingOnReload: true,
+            loading: () => const SizedBox.shrink(),
+            error: (e, s) => const SizedBox.shrink(),
+            data: (cycles) {
+              if (cycles.isEmpty) return const SizedBox.shrink();
+              final current = (activeCycle != null &&
+                      cycles.any((c) => c.id == activeCycle.id))
+                  ? activeCycle
+                  : cycles.first;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                color: context.surfaceColor,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      context.l10n.budgetCycleLabel,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                    DropdownButton<String>(
+                      value: current.id,
+                      underline: const SizedBox.shrink(),
+                      icon: const Icon(Icons.keyboard_arrow_down),
+                      items: cycles.map((c) {
+                        return DropdownMenuItem(
+                          value: c.id,
+                          child: Text(
+                            c.formattedRange,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (id) {
+                        if (id == null) return;
+                        final found = cycles.firstWhere((c) => c.id == id);
+                        ref.read(selectedCycleProvider.notifier).select(found);
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+
+          // 2. Envelopes Type Segmented Switcher (Expenses vs Income)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<CategoryType>(
+                segments: [
+                  ButtonSegment(
+                    value: CategoryType.expense,
+                    label: Text(context.l10n.expenseEnvelopes),
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 16),
+                  ),
+                  ButtonSegment(
+                    value: CategoryType.income,
+                    label: Text(context.l10n.incomeSources),
+                    icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
+                  ),
+                ],
+                selected: {_selectedType},
+                onSelectionChanged: (set) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedType = set.first);
+                },
+              ),
+            ),
+          ),
+
+          // 3. Envelope List
+          Expanded(
+            child: activeCycle == null
+                ? const Center(child: CircularProgressIndicator())
+                : _selectedType == CategoryType.expense
+                    ? _buildExpenseEnvelopesList(activeCycle, allCategoriesAsync)
+                    : _buildIncomeSourcesList(activeCycle, allCategoriesAsync),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseEnvelopesList(
+    BudgetCycle activeCycle,
+    AsyncValue<List<Category>> allCategoriesAsync,
+  ) {
+    final summaryAsync = ref.watch(cycleSummaryProvider(activeCycle));
+
+    return summaryAsync.when(
+      skipLoadingOnReload: true,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('${context.l10n.error}: $err')),
+      data: (summary) {
+        if (summary.categoryBudgets.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.category_outlined,
+                    size: 48,
+                    color: context.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.noExpenseCategoriesFound,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    context.l10n.createCategoriesToTrackDesc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(context.l10n.addCategory),
+                    onPressed: _showAddCategoryDialog,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final categoriesMap = <String, Category>{};
+        if (allCategoriesAsync.hasValue && allCategoriesAsync.value != null) {
+          for (final c in allCategoriesAsync.value!) {
+            categoriesMap[c.id] = c;
+          }
+        }
+
+        return ListView.builder(
+          key: PageStorageKey('cycle_budgets_list_${activeCycle.id}'),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            6,
+            16,
+            24 + MediaQuery.of(context).padding.bottom,
+          ),
+          itemCount: summary.categoryBudgets.length + 1,
+          itemBuilder: (context, index) {
+            if (index == summary.categoryBudgets.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(context.l10n.addAnotherCategory),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: _showAddCategoryDialog,
+                ),
+              );
+            }
+
+            final b = summary.categoryBudgets[index];
+            final category = categoriesMap[b.categoryId] ??
+                Category(
+                  id: b.categoryId,
+                  name: b.categoryName,
+                  type: CategoryType.expense,
+                  defaultBudget: b.budgetedAmount,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+
+            final isOverspent = b.isOverspent;
+            final pct = b.usagePercentage;
+            final hasBudget = b.budgetedAmount.inMinorUnits > 0;
+
+            Color statusColor;
+            if (isOverspent) {
+              statusColor = context.overspentColor;
+            } else if (b.isNearLimit) {
+              statusColor = context.warningColor;
+            } else {
+              statusColor = context.primaryColor;
+            }
+
+            final isCustomForCycle = hasBudget &&
+                category.defaultBudget.inMinorUnits > 0 &&
+                b.budgetedAmount != category.defaultBudget;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _showEditCategoryEnvelopeDialog(
+                  cycle: activeCycle,
+                  budget: b,
+                  category: category,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header: Title, status chip, and edit button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Text(
+                                  context.l10n.localizedCategoryName(b.categoryName),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                if (isCustomForCycle) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: context.primaryLightColor,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Cycle',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            tooltip: context.l10n.editBudget,
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => _showEditCategoryEnvelopeDialog(
+                              cycle: activeCycle,
+                              budget: b,
+                              category: category,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Spent vs Budgeted Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.l10n.spentPrefix(b.spentAmount.toFormattedString()),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            hasBudget
+                                ? b.budgetedAmount.toFormattedString()
+                                : context.l10n.noBudgetSetShort,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: hasBudget
+                                  ? context.textSecondary
+                                  : context.overspentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Linear Progress Indicator
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: hasBudget
+                              ? (pct! / 100.0).clamp(0.0, 1.0)
+                              : (b.spentAmount.inMinorUnits > 0 ? 1.0 : 0.0),
+                          backgroundColor: context.isDark
+                              ? context.surfaceVariantColor
+                              : Colors.grey.shade100,
+                          valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Bottom Info: Remaining & Default allocation
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.l10n.defaultAllocationText(category.defaultBudget.toFormattedString()),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            isOverspent
+                                ? context.l10n.overAmount((-b.remainingAmount).toFormattedString())
+                                : (hasBudget
+                                    ? b.remainingAmount.toFormattedString(showSign: true)
+                                    : (b.spentAmount.inMinorUnits > 0
+                                        ? context.l10n.noBudgetSet
+                                        : '')),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildIncomeSourcesList(
+    BudgetCycle activeCycle,
+    AsyncValue<List<Category>> allCategoriesAsync,
+  ) {
+    final incomeCategoriesAsync = ref.watch(incomeCategoriesProvider);
+
+    return incomeCategoriesAsync.when(
+      skipLoadingOnReload: true,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('${context.l10n.error}: $e')),
+      data: (incomeCategories) {
+        if (incomeCategories.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 48,
+                    color: context.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.incomeSources,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(context.l10n.addIncomeCategory),
+                    onPressed: _showAddCategoryDialog,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          key: const PageStorageKey('income_sources_list'),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            6,
+            16,
+            24 + MediaQuery.of(context).padding.bottom,
+          ),
+          itemCount: incomeCategories.length + 1,
+          itemBuilder: (context, index) {
+            if (index == incomeCategories.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(context.l10n.addIncomeCategory),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: _showAddCategoryDialog,
+                ),
+              );
+            }
+
+            final cat = incomeCategories[index];
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _showEditIncomeCategoryDialog(cat),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: context.incomeColor.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.arrow_downward_rounded,
+                          color: context.incomeColor,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.localizedCategoryName(cat.name),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              context.l10n.expectedIncomeText(cat.defaultBudget.toFormattedString()),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        tooltip: context.l10n.edit,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _showEditIncomeCategoryDialog(cat),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

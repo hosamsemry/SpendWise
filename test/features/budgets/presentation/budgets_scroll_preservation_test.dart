@@ -103,7 +103,7 @@ void main() {
   );
 
   testWidgets(
-    'Editing a category default budget preserves scroll position in Categories tab',
+    'Editing a category default allocation preserves scroll position in unified envelopes list',
     (tester) async {
       final db = await createSeededDatabase();
       addTearDown(db.close);
@@ -111,11 +111,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(db));
       await tester.pumpAndSettle();
 
-      // Switch to Categories tab
-      await tester.tap(find.text('Categories'));
-      await tester.pumpAndSettle();
-
-      // Scroll down near the bottom of the categories list
+      // Scroll down near the bottom of the envelopes list
       final listFinder = find.byType(ListView).first;
       await tester.drag(listFinder, const Offset(0, -800));
       await tester.pumpAndSettle();
@@ -132,10 +128,13 @@ void main() {
       await tester.tap(editIcons.last);
       await tester.pumpAndSettle();
 
-      // Update default budget (second TextField in Edit Category dialog)
+      // Update budget and check "update default allocation for future cycles"
       final textFields = find.byType(TextField);
       expect(textFields, findsNWidgets(2));
-      await tester.enterText(textFields.at(1), '3450');
+      await tester.enterText(textFields.first, '3450');
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
       await tester.pumpAndSettle();
 

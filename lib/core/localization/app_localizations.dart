@@ -60,6 +60,7 @@ class AppLocalizations {
   String get navDashboard => isArabic ? 'الرئيسية' : 'Dashboard';
   String get navTransactions => isArabic ? 'المعاملات' : 'Transactions';
   String get navBudgets => isArabic ? 'الميزانيات' : 'Budgets';
+  String get navInsights => isArabic ? 'التحليلات' : 'Insights';
   String get navSettings => isArabic ? 'الإعدادات' : 'Settings';
 
   // --- Language Selection Onboarding ---
@@ -211,6 +212,16 @@ class AppLocalizations {
   String get tabCycleBudgets => isArabic ? 'ميزانية الدورة' : 'Cycle Budgets';
   String get tabCategories => isArabic ? 'إدارة الفئات' : 'Categories';
   String get tabInsights => isArabic ? 'التحليلات' : 'Insights';
+  String get expenseEnvelopes => isArabic ? 'أظرف المصروفات' : 'Expense Envelopes';
+  String get incomeSources => isArabic ? 'مصادر الدخل' : 'Income Sources';
+  String defaultAllocationText(String amt) => isArabic ? 'الافتراضي: $amt' : 'Default: $amt';
+  String expectedIncomeText(String amt) => isArabic ? 'المتوقع: $amt' : 'Expected: $amt';
+  String get editEnvelope => isArabic ? 'تعديل الظرف' : 'Edit Envelope';
+  String get allSections => isArabic ? 'الكل' : 'All';
+  String get cashFlowTrendSection => isArabic ? 'حركة التدفق النقدي' : 'Cash Flow';
+  String get categoryDistributionSection => isArabic ? 'توزيع المصروفات' : 'Categories';
+  String get cycleOverCycleSection => isArabic ? 'مقارنة الدورات' : 'MoM Comparison';
+  String get budgetVsActualSection => isArabic ? 'الميزانية مقابل الفعلي' : 'Budget vs Actual';
   String get budgetCycleLabel => isArabic ? 'دورة الميزانية:' : 'Budget Cycle:';
   String get editBudget => isArabic ? 'تعديل الميزانية' : 'Edit Budget';
   String editBudgetForCategory(String name) => isArabic ? 'تعديل الميزانية: $name' : 'Edit Budget: $name';
