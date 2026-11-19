@@ -10,6 +10,7 @@ import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/preset_providers.dart';
+import 'package:money_tracker/core/providers/privacy_provider.dart';
 import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/features/budgets/domain/category_budget.dart';
 import 'package:money_tracker/features/budgets/presentation/cycle_summary_screen.dart';
@@ -112,7 +113,11 @@ class DashboardScreen extends ConsumerWidget {
                         Consumer(
                           builder: (context, ref, _) {
                             final dailyAsync = ref.watch(todaySpendingSummaryProvider);
+                            final isAmountsHidden = ref.watch(
+                              dashboardAmountsHiddenProvider,
+                            );
                             return dailyAsync.when(
+                              skipLoadingOnReload: true,
                               loading: () => const SizedBox.shrink(),
                               error: (err, stack) => const SizedBox.shrink(),
                               data: (daily) {
@@ -120,6 +125,15 @@ class DashboardScreen extends ConsumerWidget {
                                   cycle: cycle,
                                   summary: summary,
                                   daily: daily,
+                                  isAmountsHidden: isAmountsHidden,
+                                  onToggleAmountsVisibility: () {
+                                    ref
+                                        .read(
+                                          dashboardAmountsHiddenProvider
+                                              .notifier,
+                                        )
+                                        .toggle();
+                                  },
                                 );
                               },
                             );
