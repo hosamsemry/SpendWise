@@ -97,26 +97,28 @@ void main() {
       await tester.tap(find.text('Budgets'));
       await tester.pumpAndSettle();
 
-      // Verify dual tabs: Cycle Budgets and Categories
-      expect(find.text('Cycle Budgets'), findsOneWidget);
-      expect(find.text('Categories'), findsOneWidget);
-
-      // Switch to Categories tab alongside Budgets
-      await tester.tap(find.text('Categories'));
-      await tester.pumpAndSettle();
+      // Verify unified envelopes management
+      expect(find.text('Expense Envelopes'), findsOneWidget);
+      expect(find.text('Income Sources'), findsOneWidget);
 
       // Verify default categories are displayed
       expect(find.text('Food'), findsWidgets);
       expect(find.text('AI Subscription'), findsWidgets);
+      await tester.scrollUntilVisible(find.text('Transportation'), 100);
       expect(find.text('Social Life'), findsWidgets);
       expect(find.text('Savings'), findsWidgets);
-      await tester.drag(find.byType(ListView).last, const Offset(0, -200));
-      await tester.pumpAndSettle();
       expect(find.text('Transportation'), findsWidgets);
       expect(find.byTooltip('Add Category'), findsOneWidget);
 
-      // Navigate to Settings tab
-      await tester.tap(find.text('Settings'));
+      // Verify Insights tab is elevated to primary navigation dock
+      await tester.tap(find.text('Insights'));
+      await tester.pumpAndSettle();
+      expect(find.text('Insights'), findsWidgets);
+
+      // Navigate back to Dashboard and open Settings via AppBar gear icon
+      await tester.tap(find.text('Dashboard'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
 
       // Category Management is NO LONGER in Settings screen
@@ -432,13 +434,8 @@ void main() {
         Money.fromMajorUnits(8000),
       );
 
-      // 4. Switch to Categories tab, edit Transportation default budget to 1,000 EGP via UI dialog,
-      //    and add a new expense category "Gym" with initial budget 200 EGP via UI dialog
-      await tester.tap(find.text('Categories'));
-      await tester.pumpAndSettle();
-
-      // Add new Expense category "Gym" with 200 EGP initial budget
-      await tester.tap(find.byTooltip('Add Expense Category'));
+      // 4. In unified Budgets screen, add a new expense category "Gym" with initial budget 200 EGP via UI dialog
+      await tester.tap(find.byTooltip('Add Category'));
       await tester.pumpAndSettle();
       final addDialogFields = find.descendant(
         of: find.byType(AlertDialog),

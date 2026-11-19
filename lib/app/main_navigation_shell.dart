@@ -6,7 +6,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/features/budgets/presentation/budgets_screen.dart';
 import 'package:money_tracker/features/dashboard/presentation/dashboard_screen.dart';
-import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
+import 'package:money_tracker/features/reports/presentation/reports_screen.dart';
 import 'package:money_tracker/features/transactions/presentation/transactions_screen.dart';
 
 class MainNavigationShell extends ConsumerWidget {
@@ -28,7 +28,7 @@ class MainNavigationShell extends ConsumerWidget {
       ),
       const TransactionsScreen(),
       const BudgetsScreen(),
-      const SettingsScreen(),
+      const ReportsScreen(),
     ];
 
     final clampedIndex = currentIndex.clamp(0, screens.length - 1);
@@ -58,9 +58,9 @@ class MainNavigationShell extends ConsumerWidget {
             label: context.l10n.navBudgets,
           ),
           FloatingDockItem(
-            icon: Icons.tune_outlined,
-            selectedIcon: Icons.tune_rounded,
-            label: context.l10n.navSettings,
+            icon: Icons.insights_outlined,
+            selectedIcon: Icons.insights_rounded,
+            label: context.l10n.navInsights,
           ),
         ],
       ),

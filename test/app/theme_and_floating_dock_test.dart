@@ -90,9 +90,9 @@ void main() {
         label: 'Budgets',
       ),
       FloatingDockItem(
-        icon: Icons.tune_outlined,
-        selectedIcon: Icons.tune_rounded,
-        label: 'Settings',
+        icon: Icons.insights_outlined,
+        selectedIcon: Icons.insights_rounded,
+        label: 'Insights',
       ),
     ];
 
@@ -119,7 +119,7 @@ void main() {
         expect(find.text('Dashboard'), findsOneWidget);
         expect(find.text('Transactions'), findsOneWidget);
         expect(find.text('Budgets'), findsOneWidget);
-        expect(find.text('Settings'), findsOneWidget);
+        expect(find.text('Insights'), findsOneWidget);
 
         // Selected icon is shown for index 0
         expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);

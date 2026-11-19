@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
-import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
@@ -18,8 +18,8 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  int _selectedReportIndex =
-      0; // 0 = Category, 1 = Budget vs Actual, 2 = Cycle vs Prev, 3 = Cash Flow Trend
+  // 0 = All Sections (Fluid Page), 1 = Cash Flow, 2 = Categories, 3 = MoM Comparison, 4 = Budget vs Actual
+  int _selectedFilterIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -30,228 +30,333 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final activeCycle = selectedCycle ?? currentCycleAsync.value;
 
     final content = Column(
-        children: [
-          // Cycle Switcher (relevant for single-cycle reports: 0, 1, and 2)
-          if (_selectedReportIndex != 3)
-            allCyclesAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (e, s) => const SizedBox.shrink(),
-              data: (cycles) {
-                if (cycles.isEmpty) return const SizedBox.shrink();
-                final current = (activeCycle != null &&
-                        cycles.any((c) => c.id == activeCycle.id))
-                    ? activeCycle
-                    : cycles.first;
+      children: [
+        // 1. Cycle Selector
+        allCyclesAsync.when(
+          skipLoadingOnReload: true,
+          loading: () => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
+          data: (cycles) {
+            if (cycles.isEmpty) return const SizedBox.shrink();
+            final current = (activeCycle != null &&
+                    cycles.any((c) => c.id == activeCycle.id))
+                ? activeCycle
+                : cycles.first;
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  color: Theme.of(context).cardColor,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        context.l10n.reportCycleLabel,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      DropdownButton<String>(
-                        value: current.id,
-                        underline: const SizedBox.shrink(),
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        items: cycles.map((c) {
-                          return DropdownMenuItem(
-                            value: c.id,
-                            child: Text(
-                              c.formattedRange,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (id) {
-                          if (id == null) return;
-                          final found = cycles.firstWhere((c) => c.id == id);
-                          ref
-                              .read(selectedCycleProvider.notifier)
-                              .select(found);
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          if (_selectedReportIndex != 3) const Divider(height: 1),
-
-          // Report Type Selector
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<int>(
-                segments: [
-                  ButtonSegment(
-                    value: 0,
-                    label: Text(context.l10n.tabCategoryReport),
-                    icon: Icon(Icons.pie_chart_outline, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: 1,
-                    label: Text(context.l10n.tabBudgetVsActualReport),
-                    icon: Icon(Icons.bar_chart_outlined, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: 2,
-                    label: Text(context.l10n.tabCycleVsPrevReport),
-                    icon: Icon(Icons.compare_arrows_rounded, size: 16),
-                  ),
-                  ButtonSegment(
-                    value: 3,
-                    label: Text(context.l10n.tabCashFlowTrend),
-                    icon: Icon(Icons.show_chart, size: 16),
-                  ),
-                ],
-                selected: {_selectedReportIndex},
-                onSelectionChanged: (set) {
-                  setState(() => _selectedReportIndex = set.first);
-                },
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
               ),
-            ),
-          ),
-
-          // Report Content
-          Expanded(
-            child: _selectedReportIndex == 3
-                ? allCyclesAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('${context.l10n.error}: $e')),
-                    data: (cycles) => CashFlowTrendReportView(cycles: cycles),
-                  )
-                : activeCycle == null
-                ? const Center(child: CircularProgressIndicator())
-                : Consumer(
-                    builder: (context, ref, child) {
-                      final summaryAsync = ref.watch(
-                        cycleSummaryProvider(activeCycle),
+              color: context.surfaceColor,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    context.l10n.reportCycleLabel,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                  DropdownButton<String>(
+                    value: current.id,
+                    underline: const SizedBox.shrink(),
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    items: cycles.map((c) {
+                      return DropdownMenuItem(
+                        value: c.id,
+                        child: Text(
+                          c.formattedRange,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       );
-
-                      return summaryAsync.when(
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (err, stack) =>
-                            Center(child: Text('${context.l10n.error}: $err')),
-                        data: (summary) {
-                          if (_selectedReportIndex == 0) {
-                            return _buildSpendingByCategoryReport(summary);
-                          } else if (_selectedReportIndex == 1) {
-                            return _buildBudgetVsActualReport(summary);
-                          } else {
-                            return _buildCycleOverCycleReport(activeCycle, summary);
-                          }
-                        },
-                      );
+                    }).toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      final found = cycles.firstWhere((c) => c.id == id);
+                      ref
+                          .read(selectedCycleProvider.notifier)
+                          .select(found);
                     },
                   ),
+                ],
+              ),
+            );
+          },
+        ),
+        const Divider(height: 1),
+
+        // 2. Filter Pills for quick focus / section jump
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip(0, context.l10n.allSections, Icons.dashboard_outlined),
+                const SizedBox(width: 8),
+                _buildFilterChip(1, context.l10n.cashFlowTrendSection, Icons.show_chart),
+                const SizedBox(width: 8),
+                _buildFilterChip(2, context.l10n.categoryDistributionSection, Icons.pie_chart_outline),
+                const SizedBox(width: 8),
+                _buildFilterChip(3, context.l10n.cycleOverCycleSection, Icons.compare_arrows_rounded),
+                const SizedBox(width: 8),
+                _buildFilterChip(4, context.l10n.budgetVsActualSection, Icons.bar_chart_outlined),
+              ],
+            ),
           ),
-        ],
-      );
+        ),
+
+        // 3. Fluid Page or Filtered Section View
+        Expanded(
+          child: activeCycle == null
+              ? const Center(child: CircularProgressIndicator())
+              : Consumer(
+                  builder: (context, ref, _) {
+                    final summaryAsync = ref.watch(
+                      cycleSummaryProvider(activeCycle),
+                    );
+
+                    return summaryAsync.when(
+                      skipLoadingOnReload: true,
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (err, stack) => Center(
+                        child: Text('${context.l10n.error}: $err'),
+                      ),
+                      data: (summary) {
+                        return allCyclesAsync.when(
+                          skipLoadingOnReload: true,
+                          loading: () => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          error: (e, _) => Center(
+                            child: Text('${context.l10n.error}: $e'),
+                          ),
+                          data: (cycles) {
+                            return _buildFluidInsightsPage(
+                              activeCycle: activeCycle,
+                              summary: summary,
+                              cycles: cycles,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
 
     if (!widget.showAppBar) {
       return content;
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.reportsAndAnalysis)),
+      appBar: AppBar(
+        title: Text(context.l10n.navInsights),
+      ),
       body: content,
     );
   }
 
-  Widget _buildSpendingByCategoryReport(CycleSummary summary) {
+  Widget _buildFilterChip(int index, String label, IconData icon) {
+    final isSelected = _selectedFilterIndex == index;
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      avatar: Icon(
+        icon,
+        size: 16,
+        color: isSelected
+            ? (context.isDark ? Colors.white : AppColors.primary)
+            : context.textSecondary,
+      ),
+      label: Text(label),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        color: isSelected
+            ? (context.isDark ? Colors.white : AppColors.primary)
+            : context.textPrimary,
+      ),
+      backgroundColor: context.surfaceColor,
+      selectedColor: context.isDark
+          ? AppColorsDark.gold.withValues(alpha: 0.18)
+          : AppColors.primaryLight,
+      side: BorderSide(
+        color: isSelected
+            ? (context.isDark ? AppColorsDark.gold : AppColors.primary)
+            : context.borderColor,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      onSelected: (_) {
+        setState(() => _selectedFilterIndex = index);
+      },
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: context.primaryColor),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFluidInsightsPage({
+    required BudgetCycle activeCycle,
+    required CycleSummary summary,
+    required List<BudgetCycle> cycles,
+  }) {
+    final showAll = _selectedFilterIndex == 0;
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        24 + MediaQuery.of(context).padding.bottom,
+      ),
+      children: [
+        // Section 1: Multi-Cycle Cash Flow Trend
+        if (showAll || _selectedFilterIndex == 1) ...[
+          _buildSectionHeader(
+            context.l10n.cashFlowTrendSection,
+            Icons.show_chart,
+          ),
+          _CashFlowTrendSection(cycles: cycles),
+          const SizedBox(height: 16),
+        ],
+
+        // Section 2: Category Expense Distribution
+        if (showAll || _selectedFilterIndex == 2) ...[
+          _buildSectionHeader(
+            context.l10n.categoryDistributionSection,
+            Icons.pie_chart_outline_rounded,
+          ),
+          _buildSpendingByCategorySection(summary),
+          const SizedBox(height: 16),
+        ],
+
+        // Section 3: Month-over-Month (Cycle-over-Cycle) Comparison
+        if (showAll || _selectedFilterIndex == 3) ...[
+          _buildSectionHeader(
+            context.l10n.cycleOverCycleSection,
+            Icons.compare_arrows_rounded,
+          ),
+          _buildCycleOverCycleSection(activeCycle, summary),
+          const SizedBox(height: 16),
+        ],
+
+        // Section 4: Budget vs Actual Variance
+        if (showAll || _selectedFilterIndex == 4) ...[
+          _buildSectionHeader(
+            context.l10n.budgetVsActualSection,
+            Icons.bar_chart_rounded,
+          ),
+          _buildBudgetVsActualSection(summary),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSpendingByCategorySection(CycleSummary summary) {
     final totalSpentMinor = summary.totalSpent.inMinorUnits;
 
-    // Filter categories with spending and sort descending by spent amount
-    final categoriesWithSpending =
-        summary.categoryBudgets
-            .where((b) => b.spentAmount.inMinorUnits > 0)
-            .toList()
-          ..sort((a, b) => b.spentAmount.compareTo(a.spentAmount));
+    final categoriesWithSpending = summary.categoryBudgets
+        .where((b) => b.spentAmount.inMinorUnits > 0)
+        .toList()
+      ..sort((a, b) => b.spentAmount.compareTo(a.spentAmount));
 
     if (categoriesWithSpending.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.pie_chart_outline,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              context.l10n.noExpensesRecordedInCycle,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-            ),
-          ],
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.pie_chart_outline,
+                size: 48,
+                color: context.textSecondary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.noExpensesRecordedInCycle,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        24 + MediaQuery.of(context).padding.bottom,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Total Spending Card
         Card(
           color: context.primaryLightColor,
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  context.l10n.totalCycleExpenses,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: context.primaryColor,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.totalCycleExpenses,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: context.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      summary.totalSpent.toFormattedString(),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  summary.totalSpent.toFormattedString(),
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
-                  ),
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 32,
+                  color: context.primaryColor.withValues(alpha: 0.6),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
-
-        Text(
-          context.l10n.expenseBreakdown,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: context.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         ...categoriesWithSpending.map((b) {
           final sharePct = totalSpentMinor > 0
@@ -259,9 +364,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               : 0.0;
 
           return Card(
-            margin: const EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 8),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -317,14 +422,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildBudgetVsActualReport(CycleSummary summary) {
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        24 + MediaQuery.of(context).padding.bottom,
-      ),
+  Widget _buildBudgetVsActualSection(CycleSummary summary) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Comparison Header Cards
         Row(
@@ -388,17 +488,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-
-        Text(
-          context.l10n.tabBudgetVsActualReport,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: context.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         ...summary.categoryBudgets.map((b) {
           final isOver = b.isOverspent;
@@ -406,9 +496,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           final hasBudget = b.budgetedAmount.inMinorUnits > 0;
 
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 8),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -449,9 +539,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
-                  // Side-by-side comparison
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -498,7 +587,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildCycleOverCycleReport(
+  Widget _buildCycleOverCycleSection(
     BudgetCycle activeCycle,
     CycleSummary currentSummary,
   ) {
@@ -510,8 +599,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     return prevSummaryAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) =>
-          Center(child: Text('${context.l10n.error}: $err')),
+      error: (err, stack) => Text('${context.l10n.error}: $err'),
       data: (prevSummary) {
         final currentSpentMinor = currentSummary.totalSpent.inMinorUnits;
         final prevSpentMinor = prevSummary.totalSpent.inMinorUnits;
@@ -566,17 +654,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             prevSummary.totalIncome.inMinorUnits == 0 &&
             prevSummary.totalBudgeted.inMinorUnits == 0;
 
-        return ListView(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            16,
-            20,
-            24 + MediaQuery.of(context).padding.bottom,
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (isFirstCycleBaseline)
               Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 8),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
@@ -644,7 +727,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
 
             // Hero spend variance card
             Card(
@@ -835,8 +918,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            currentSummary.netRemainingTotal
-                                .toFormattedString(),
+                            currentSummary.netRemainingTotal.toFormattedString(),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -860,134 +942,107 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-
-            // Category Variance Breakdown
-            Text(
-              context.l10n.categoryVarianceTitle,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: context.textPrimary,
-              ),
-            ),
             const SizedBox(height: 8),
 
-            if (comparedCategories.isEmpty)
-              Card(
+            ...comparedCategories.map((cat) {
+              final diffMinor =
+                  cat.currentSpent.inMinorUnits - cat.prevSpent.inMinorUnits;
+              final prevMinor = cat.prevSpent.inMinorUnits;
+              final double? catPctChange = prevMinor > 0
+                  ? (diffMinor / prevMinor) * 100.0
+                  : null;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 6),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Center(
-                    child: Text(
-                      context.l10n.noCategorySpendingEither,
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 13,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.l10n.localizedCategoryName(cat.name),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: prevMinor == 0
+                                  ? Colors.blue.withValues(alpha: 0.12)
+                                  : (diffMinor > 0
+                                      ? context.overspentColor.withValues(
+                                          alpha: 0.12,
+                                        )
+                                      : (diffMinor < 0
+                                          ? context.incomeColor.withValues(
+                                              alpha: 0.12,
+                                            )
+                                          : Colors.grey.withValues(
+                                              alpha: 0.12,
+                                            ))),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              prevMinor == 0
+                                  ? context.l10n.newBadge
+                                  : (diffMinor > 0
+                                      ? '+${(diffMinor / 100).toStringAsFixed(0)} ${context.l10n.currencySymbol} (${catPctChange != null ? "+${catPctChange.toStringAsFixed(0)}%" : ""} ↗)'
+                                      : (diffMinor < 0
+                                          ? '-${(-diffMinor / 100).toStringAsFixed(0)} ${context.l10n.currencySymbol} (${catPctChange != null ? "-${catPctChange.abs().toStringAsFixed(0)}%" : ""} ↘)'
+                                          : context.l10n.sameBadge)),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: prevMinor == 0
+                                    ? Colors.blue.shade700
+                                    : (diffMinor > 0
+                                        ? context.overspentColor
+                                        : (diffMinor < 0
+                                            ? context.incomeColor
+                                            : context.textSecondary)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.l10n.currentPrefix(cat.currentSpent.toFormattedString()),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            context.l10n.previousPrefix(cat.prevSpent.toFormattedString()),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: context.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              )
-            else
-              ...comparedCategories.map((cat) {
-                final curMinor = cat.currentSpent.inMinorUnits;
-                final prevMinor = cat.prevSpent.inMinorUnits;
-                final diffMinor = curMinor - prevMinor;
-                final double? catPctChange = prevMinor > 0
-                    ? ((curMinor - prevMinor) / prevMinor) * 100.0
-                    : null;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              context.l10n.localizedCategoryName(cat.name),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: prevMinor == 0
-                                    ? Colors.blue.withValues(alpha: 0.12)
-                                    : (diffMinor > 0
-                                        ? context.overspentColor.withValues(
-                                            alpha: 0.12,
-                                          )
-                                        : (diffMinor < 0
-                                            ? context.incomeColor.withValues(
-                                                alpha: 0.12,
-                                              )
-                                            : Colors.grey.withValues(
-                                                alpha: 0.12,
-                                              ))),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                prevMinor == 0
-                                    ? context.l10n.newBadge
-                                    : (diffMinor > 0
-                                        ? '+${(diffMinor / 100).toStringAsFixed(0)} ${context.l10n.currencySymbol} (${catPctChange != null ? "+${catPctChange.toStringAsFixed(0)}%" : ""} ↗)'
-                                        : (diffMinor < 0
-                                            ? '-${(-diffMinor / 100).toStringAsFixed(0)} ${context.l10n.currencySymbol} (${catPctChange != null ? "-${catPctChange.abs().toStringAsFixed(0)}%" : ""} ↘)'
-                                            : context.l10n.sameBadge)),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: prevMinor == 0
-                                      ? Colors.blue.shade700
-                                      : (diffMinor > 0
-                                          ? context.overspentColor
-                                          : (diffMinor < 0
-                                              ? context.incomeColor
-                                              : context.textSecondary)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              context.l10n.currentPrefix(cat.currentSpent.toFormattedString()),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              context.l10n.previousPrefix(cat.prevSpent.toFormattedString()),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: context.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+              );
+            }),
           ],
         );
       },
@@ -995,15 +1050,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 }
 
-class CashFlowTrendReportView extends ConsumerWidget {
+class _CashFlowTrendSection extends ConsumerWidget {
   final List<BudgetCycle> cycles;
 
-  const CashFlowTrendReportView({super.key, required this.cycles});
+  const _CashFlowTrendSection({required this.cycles});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (cycles.isEmpty) {
-      return Center(child: Text(context.l10n.noCyclesRecordedYet));
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(child: Text(context.l10n.noCyclesRecordedYet)),
+        ),
+      );
     }
 
     final recentCycles = cycles.take(6).toList();
@@ -1023,14 +1083,6 @@ class CashFlowTrendReportView extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        24 + MediaQuery.of(context).padding.bottom,
-      ),
-      children: [CashFlowBarChart(cycleSummaries: summaries)],
-    );
+    return CashFlowBarChart(cycleSummaries: summaries);
   }
 }

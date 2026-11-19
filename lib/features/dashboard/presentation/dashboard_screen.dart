@@ -19,6 +19,7 @@ import 'package:money_tracker/features/presets/presentation/presets_management_s
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/savings/presentation/cycle_closeout_card.dart';
 import 'package:money_tracker/features/savings/presentation/savings_vault_card.dart';
+import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 import 'widgets/near_limit_alert_card.dart';
@@ -58,6 +59,18 @@ class DashboardScreen extends ConsumerWidget {
                 );
               },
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: context.l10n.settingsTitle,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (ctx) => const SettingsScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
