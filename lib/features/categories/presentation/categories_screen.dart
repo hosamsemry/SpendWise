@@ -388,6 +388,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             // Category List
             Expanded(
               child: categoriesAsync.when(
+                skipLoadingOnReload: true,
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, s) => Center(
@@ -457,6 +458,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                   }
 
                   return ListView.separated(
+                    key: PageStorageKey('categories_list_${_selectedType.name}'),
                     padding: EdgeInsets.fromLTRB(
                       16,
                       8,

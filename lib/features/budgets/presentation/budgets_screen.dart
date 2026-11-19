@@ -316,6 +316,7 @@ class BudgetsScreen extends ConsumerWidget {
       children: [
         // Cycle Switcher Dropdown
         allCyclesAsync.when(
+          skipLoadingOnReload: true,
           loading: () => const SizedBox.shrink(),
           error: (e, s) => const SizedBox.shrink(),
           data: (cycles) {
@@ -380,6 +381,7 @@ class BudgetsScreen extends ConsumerWidget {
                     );
 
                     return summaryAsync.when(
+                      skipLoadingOnReload: true,
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
                       error: (err, stack) =>
@@ -429,6 +431,7 @@ class BudgetsScreen extends ConsumerWidget {
                         }
 
                         return ListView.builder(
+                          key: PageStorageKey('cycle_budgets_list_${activeCycle.id}'),
                           padding: EdgeInsets.fromLTRB(
                             16,
                             16,
