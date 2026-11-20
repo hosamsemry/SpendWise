@@ -525,7 +525,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              context.l10n.spentPrefix(group.totalSpent.toFormattedString()),
+                                              context.l10n.spentPrefix(
+                                                group.totalSpent.toFormattedString(includeCurrency: false),
+                                              ),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
@@ -545,7 +547,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              context.l10n.incomePrefix(group.totalIncome.toFormattedString()),
+                                              context.l10n.incomePrefix(
+                                                group.totalIncome.toFormattedString(includeCurrency: false),
+                                              ),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
@@ -637,7 +641,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  '${isIncome ? '+' : '-'}${tx.amount.toFormattedString()}',
+                                                  '${isIncome ? '+' : '-'}${tx.amount.toFormattedString(includeCurrency: false)}',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 15,

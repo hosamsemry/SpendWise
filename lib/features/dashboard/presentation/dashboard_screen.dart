@@ -6,6 +6,7 @@ import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/alert_dismissal_provider.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
@@ -37,6 +38,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(primaryCurrencyProvider);
     final currentCycleAsync = ref.watch(currentCycleProvider);
     final recentTxsAsync = ref.watch(recentTransactionsProvider);
 
@@ -240,7 +242,7 @@ class DashboardScreen extends ConsumerWidget {
                                             ),
                                             tooltip: context.l10n.tapToRecordInstantly,
                                             label: Text(
-                                              '${p.title} • ${p.amount.toFormattedString()}',
+                                              '${p.title} • ${p.amount.toFormattedString(includeCurrency: false)}',
                                               style: const TextStyle(fontSize: 12),
                                             ),
                                             onPressed: () =>
@@ -437,7 +439,7 @@ class DashboardScreen extends ConsumerWidget {
                                                     ),
                                                   ),
                                                   Text(
-                                                    '${b.spentAmount.toFormattedString()} / ${b.budgetedAmount.toFormattedString()}',
+                                                    '${b.spentAmount.toFormattedString(includeCurrency: false)} / ${b.budgetedAmount.toFormattedString(includeCurrency: false)}',
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -590,7 +592,7 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             trailing: Text(
-                              '${isIncome ? '+' : '-'}${tx.amount.toFormattedString()}',
+                              '${isIncome ? '+' : '-'}${tx.amount.toFormattedString(includeCurrency: false)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,

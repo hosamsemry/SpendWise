@@ -206,7 +206,7 @@ class NearLimitAlertCard extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${context.l10n.spent}: ${b.spentAmount.toFormattedString()}',
+                                '${context.l10n.spent}: ${b.spentAmount.toFormattedString(includeCurrency: false)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: context.textSecondary,
@@ -214,7 +214,7 @@ class NearLimitAlertCard extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '${context.l10n.budget}: ${b.budgetedAmount.toFormattedString()}',
+                                '${context.l10n.budget}: ${b.budgetedAmount.toFormattedString(includeCurrency: false)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: context.textSecondary,

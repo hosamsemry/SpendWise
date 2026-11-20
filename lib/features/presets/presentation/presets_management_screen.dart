@@ -358,7 +358,7 @@ class _PresetsManagementScreenState
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      '${(p.categoryName != null && p.categoryName!.isNotEmpty) ? context.l10n.localizedCategoryName(p.categoryName) : (isIncome ? context.l10n.income : context.l10n.expense)} • ${p.amount.toFormattedString()}',
+                      '${(p.categoryName != null && p.categoryName!.isNotEmpty) ? context.l10n.localizedCategoryName(p.categoryName) : (isIncome ? context.l10n.income : context.l10n.expense)} • ${p.amount.toFormattedString(includeCurrency: false)}',
                       style: TextStyle(
                         color: isDark
                             ? AppColorsDark.textSecondary

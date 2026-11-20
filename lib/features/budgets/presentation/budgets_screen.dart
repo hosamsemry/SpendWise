@@ -254,7 +254,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                     Icon(Icons.info_outline, size: 14, color: context.textSecondary),
                     const SizedBox(width: 6),
                     Text(
-                      context.l10n.defaultAllocationText(category.defaultBudget.toFormattedString()),
+                      context.l10n.defaultAllocationText(
+                        category.defaultBudget.toFormattedString(includeCurrency: false),
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         color: context.textSecondary,
@@ -840,7 +842,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            context.l10n.spentPrefix(b.spentAmount.toFormattedString()),
+                            context.l10n.spentPrefix(
+                              b.spentAmount.toFormattedString(includeCurrency: false),
+                            ),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -849,7 +853,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           ),
                           Text(
                             hasBudget
-                                ? b.budgetedAmount.toFormattedString()
+                                ? b.budgetedAmount.toFormattedString(includeCurrency: false)
                                 : context.l10n.noBudgetSetShort,
                             style: TextStyle(
                               fontSize: 13,
@@ -884,7 +888,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            context.l10n.defaultAllocationText(category.defaultBudget.toFormattedString()),
+                            context.l10n.defaultAllocationText(
+                              category.defaultBudget.toFormattedString(includeCurrency: false),
+                            ),
                             style: TextStyle(
                               fontSize: 11,
                               color: context.textSecondary,
@@ -892,9 +898,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           ),
                           Text(
                             isOverspent
-                                ? context.l10n.overAmount((-b.remainingAmount).toFormattedString())
+                                ? context.l10n.overAmount(
+                                    (-b.remainingAmount).toFormattedString(includeCurrency: false),
+                                  )
                                 : (hasBudget
-                                    ? b.remainingAmount.toFormattedString(showSign: true)
+                                    ? b.remainingAmount.toFormattedString(
+                                        includeCurrency: false,
+                                        showSign: true,
+                                      )
                                     : (b.spentAmount.inMinorUnits > 0
                                         ? context.l10n.noBudgetSet
                                         : '')),
@@ -1023,7 +1034,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              context.l10n.expectedIncomeText(cat.defaultBudget.toFormattedString()),
+                              context.l10n.expectedIncomeText(
+                                cat.defaultBudget.toFormattedString(includeCurrency: false),
+                              ),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: context.textSecondary,

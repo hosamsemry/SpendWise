@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'savings_vault_dialog.dart';
 
@@ -11,6 +12,7 @@ class SavingsVaultCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(primaryCurrencyProvider);
     final vaultAsync = ref.watch(savingsVaultProvider);
 
     return vaultAsync.when(

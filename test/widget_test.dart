@@ -238,12 +238,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Morning Espresso • 45.00 EGP'), findsOneWidget);
+      expect(find.text('Morning Espresso • 45.00'), findsOneWidget);
 
       // Tap preset chip directly
       await tester.ensureVisible(find.byType(ActionChip).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Morning Espresso • 45.00 EGP'));
+      await tester.tap(find.text('Morning Espresso • 45.00'));
       await tester.pumpAndSettle();
 
       // Verify transaction added to DB directly
@@ -609,7 +609,7 @@ void main() {
         Money.fromMajorUnits(7300),
       );
       expect(summary2.totalBudgeted, Money.fromMajorUnits(10000));
-      expect(find.text('2,500.00 EGP'), findsWidgets);
+      expect(find.text('2,500.00'), findsWidgets);
 
       await db2.close();
     },
