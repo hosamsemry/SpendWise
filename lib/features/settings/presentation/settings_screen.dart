@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
@@ -309,6 +311,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.read(selectedCycleProvider.notifier).select(null);
       ref.invalidate(budgetCycleStartDayProvider);
       ref.invalidate(appLanguageProvider);
+      ref.invalidate(primaryCurrencyProvider);
       ref.invalidate(currentCycleProvider);
       ref.invalidate(allCyclesProvider);
       ref.invalidate(cycleSummaryProvider);
@@ -851,6 +854,110 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .setThemeMode(set.first);
                         },
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Section: Primary Currency
+            Text(
+              context.l10n.sectionCurrency,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: context.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.payments_outlined,
+                          color: context.primaryColor,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.primaryCurrencyLabel,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                context.l10n.primaryCurrencySubtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Builder(
+                      builder: (context) {
+                        final selectedCurrency =
+                            ref.watch(primaryCurrencyProvider);
+                        final isArabic = context.l10n.isArabic;
+
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: AppCurrency.values.map((currency) {
+                            final isSelected = currency == selectedCurrency;
+                            return ChoiceChip(
+                              key: ValueKey('currency_chip_${currency.code}'),
+                              label: Text(
+                                currency.displayLabel(isArabic: isArabic),
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? context.primaryColor
+                                      : context.textPrimary,
+                                ),
+                              ),
+                              selected: isSelected,
+                              selectedColor:
+                                  context.primaryColor.withValues(alpha: 0.16),
+                              checkmarkColor: context.primaryColor,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? context.primaryColor
+                                    : context.borderColor,
+                              ),
+                              onSelected: (selected) {
+                                if (selected) {
+                                  ref
+                                      .read(primaryCurrencyProvider.notifier)
+                                      .setCurrency(currency);
+                                }
+                              },
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   ],
                 ),

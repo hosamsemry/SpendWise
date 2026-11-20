@@ -138,5 +138,45 @@ void main() {
         '250.00 EGP',
       );
     });
+
+    test('AppCurrency and applyCurrency support all currencies and None / Plain Numbers mode', () {
+      addTearDown(() => Money.applyCurrency(AppCurrency.egp, isArabic: false));
+
+      Money.applyCurrency(AppCurrency.sar, isArabic: false);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 SAR');
+
+      Money.applyCurrency(AppCurrency.sar, isArabic: true);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 ر.س');
+
+      Money.applyCurrency(AppCurrency.aed, isArabic: true);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 د.إ');
+
+      Money.applyCurrency(AppCurrency.usd, isArabic: false);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 USD');
+
+      Money.applyCurrency(AppCurrency.eur, isArabic: true);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 €');
+
+      Money.applyCurrency(AppCurrency.gbp, isArabic: true);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00 £');
+
+      // None / Plain Numbers strips symbol without trailing whitespace even when includeCurrency is true
+      Money.applyCurrency(AppCurrency.none, isArabic: false);
+      expect(const Money.fromMinorUnits(125000).toFormattedString(), '1,250.00');
+      expect(
+        const Money.fromMinorUnits(125000).toFormattedString(showSign: true),
+        '+1,250.00',
+      );
+
+      // Money.parse accepts all supported currency prefixes and suffixes
+      expect(Money.parse('SAR 1,250.00').inMinorUnits, 125000);
+      expect(Money.parse('1,250.00 ر.س').inMinorUnits, 125000);
+      expect(Money.parse('AED 500').inMinorUnits, 50000);
+      expect(Money.parse('500 د.إ').inMinorUnits, 50000);
+      expect(Money.parse(r'$99.95').inMinorUnits, 9995);
+      expect(Money.parse('99.95 USD').inMinorUnits, 9995);
+      expect(Money.parse('€40.00').inMinorUnits, 4000);
+      expect(Money.parse('£75.50').inMinorUnits, 7550);
+    });
   });
 }

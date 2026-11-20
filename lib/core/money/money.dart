@@ -1,15 +1,72 @@
 import 'package:intl/intl.dart';
 
-/// Represents a monetary value stored as an exact integer of minor units (piastres).
-/// 1 EGP = 100 piastres.
+/// Supported primary currencies for SpendWise, including a minimalist plain-numbers mode.
+enum AppCurrency {
+  egp('EGP', 'EGP', 'ج.م'),
+  sar('SAR', 'SAR', 'ر.س'),
+  aed('AED', 'AED', 'د.إ'),
+  usd('USD', 'USD', r'$'),
+  eur('EUR', 'EUR', '€'),
+  gbp('GBP', 'GBP', '£'),
+  none('NONE', '', '');
+
+  final String code;
+  final String symbolEn;
+  final String symbolAr;
+
+  const AppCurrency(this.code, this.symbolEn, this.symbolAr);
+
+  /// Returns the localized symbol for this currency (`''` when [AppCurrency.none]).
+  String symbol({required bool isArabic}) => isArabic ? symbolAr : symbolEn;
+
+  /// Human-readable selector label for settings chips.
+  String displayLabel({required bool isArabic}) {
+    switch (this) {
+      case AppCurrency.egp:
+        return 'EGP (ج.م)';
+      case AppCurrency.sar:
+        return 'SAR (ر.س)';
+      case AppCurrency.aed:
+        return 'AED (د.إ)';
+      case AppCurrency.usd:
+        return r'USD ($)';
+      case AppCurrency.eur:
+        return 'EUR (€)';
+      case AppCurrency.gbp:
+        return 'GBP (£)';
+      case AppCurrency.none:
+        return isArabic ? 'بدون عملة (أرقام فقط)' : 'None / Plain Numbers';
+    }
+  }
+
+  static AppCurrency fromCode(String? code) {
+    if (code == null || code.trim().isEmpty) return AppCurrency.egp;
+    final normalized = code.trim().toUpperCase();
+    for (final currency in AppCurrency.values) {
+      if (currency.code == normalized) return currency;
+    }
+    return AppCurrency.egp;
+  }
+}
+
+/// Represents a monetary value stored as an exact integer of minor units (1/100 of major unit).
 class Money implements Comparable<Money> {
-  /// Maximum allowable transaction or budget amount (999,999,999 EGP).
+  /// Maximum allowable transaction or budget amount (999,999,999 major units).
   static const int maxMajorUnits = 999999999;
   static const int maxMinorUnits = 99999999900;
 
+  /// Currently active primary currency configuration.
+  static AppCurrency currentCurrency = AppCurrency.egp;
+
   /// Default currency symbol used when none is explicitly specified in [toFormattedString].
-  /// Can be dynamically synchronized with the active locale (e.g. 'ج.م' or 'EGP').
+  /// Can be dynamically synchronized with the active locale and selected [AppCurrency].
   static String defaultCurrencySymbol = 'EGP';
+
+  /// Updates [currentCurrency] and synchronizes [defaultCurrencySymbol] for the active locale.
+  static void applyCurrency(AppCurrency currency, {required bool isArabic}) {
+    currentCurrency = currency;
+    defaultCurrencySymbol = currency.symbol(isArabic: isArabic);
+  }
 
   final int minorUnits;
 
@@ -42,22 +99,48 @@ class Money implements Comparable<Money> {
 
   /// Parses a decimal string (e.g., "120", "120.5", "120.50", "-50.00") into a [Money] instance.
   ///
-  /// Supports optional "EGP" or "ج.م" prefix/suffix, Eastern Arabic numerals, and leading/trailing whitespace.
+  /// Supports optional currency prefixes/suffixes (EGP, ج.م, SAR, ر.س, AED, د.إ, USD, $, EUR, €, GBP, £),
+  /// Eastern Arabic numerals, and leading/trailing whitespace.
   /// Throws [FormatException] if the string is not a valid number.
   factory Money.parse(String input) {
     var cleaned = normalizeDigits(input.trim());
-    if (cleaned.toUpperCase().startsWith('EGP')) {
-      cleaned = cleaned.substring(3).trim();
+    final tokens = <String>{
+      'EGP',
+      'ج.م',
+      'SAR',
+      'ر.س',
+      'AED',
+      'د.إ',
+      'USD',
+      r'$',
+      'EUR',
+      '€',
+      'GBP',
+      '£',
+      if (defaultCurrencySymbol.trim().isNotEmpty) defaultCurrencySymbol.trim(),
+    };
+
+    String stripCurrencyTokens(String s) {
+      var res = s.trim();
+      var changed = true;
+      while (changed && res.isNotEmpty) {
+        changed = false;
+        for (final token in tokens) {
+          final upperRes = res.toUpperCase();
+          final upperToken = token.toUpperCase();
+          if (upperRes.startsWith(upperToken)) {
+            res = res.substring(token.length).trim();
+            changed = true;
+          } else if (upperRes.endsWith(upperToken)) {
+            res = res.substring(0, res.length - token.length).trim();
+            changed = true;
+          }
+        }
+      }
+      return res;
     }
-    if (cleaned.toUpperCase().endsWith('EGP')) {
-      cleaned = cleaned.substring(0, cleaned.length - 3).trim();
-    }
-    if (cleaned.startsWith('ج.م')) {
-      cleaned = cleaned.substring(3).trim();
-    }
-    if (cleaned.endsWith('ج.م')) {
-      cleaned = cleaned.substring(0, cleaned.length - 3).trim();
-    }
+
+    cleaned = stripCurrencyTokens(cleaned);
 
     if (cleaned.isEmpty) {
       throw const FormatException('Cannot parse empty string as Money');
@@ -66,7 +149,7 @@ class Money implements Comparable<Money> {
     final isNegative = cleaned.startsWith('-');
     final isExplicitPositive = cleaned.startsWith('+');
     if (isNegative || isExplicitPositive) {
-      cleaned = cleaned.substring(1).trim();
+      cleaned = stripCurrencyTokens(cleaned.substring(1).trim());
     }
 
     // Strip thousands separators (Western commas and Arabic commas)
@@ -200,7 +283,10 @@ class Money implements Comparable<Money> {
       return '$signPrefix$valueString';
     }
 
-    final symbol = currencySymbol ?? defaultCurrencySymbol;
+    final symbol = (currencySymbol ?? defaultCurrencySymbol).trim();
+    if (symbol.isEmpty) {
+      return '$signPrefix$valueString';
+    }
     if (symbolPrefix) {
       return '$signPrefix$symbol $valueString';
     } else {

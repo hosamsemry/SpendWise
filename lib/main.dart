@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:money_tracker/app/main_navigation_shell.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
@@ -120,6 +121,7 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     final isLocked = ref.watch(isAppLockedProvider);
     final languageAsync = ref.watch(appLanguageProvider);
     final startDayAsync = ref.watch(budgetCycleStartDayProvider);
+    ref.watch(primaryCurrencyProvider);
 
     return MaterialApp(
       title: 'SpendWise',

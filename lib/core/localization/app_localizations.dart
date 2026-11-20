@@ -19,7 +19,7 @@ class AppLocalizations {
 
   // --- General & App ---
   String get appName => isArabic ? 'سبيند وايز' : 'SpendWise';
-  String get currencySymbol => isArabic ? 'ج.م' : 'EGP';
+  String get currencySymbol => Money.currentCurrency.symbol(isArabic: isArabic);
   String get cancel => isArabic ? 'إلغاء' : 'Cancel';
   String get save => isArabic ? 'حفظ' : 'Save';
   String get delete => isArabic ? 'حذف' : 'Delete';
@@ -185,7 +185,9 @@ class AppLocalizations {
   String get addTransaction => isArabic ? 'إضافة معاملة' : 'Add Transaction';
   String get editTransaction => isArabic ? 'تعديل المعاملة' : 'Edit Transaction';
   String get amountLabel => isArabic ? 'المبلغ' : 'Amount';
-  String get amountLabelWithCurrency => isArabic ? 'المبلغ (ج.م)' : 'Amount (EGP)';
+  String get amountLabelWithCurrency => currencySymbol.isEmpty
+      ? amountLabel
+      : (isArabic ? 'المبلغ ($currencySymbol)' : 'Amount ($currencySymbol)');
   String get amountHint => isArabic ? '0.00 أو معادلة مثل 50+20*2' : '0.00 or math like 50+20*2';
   String get mathPreview => isArabic ? 'الناتج:' : 'Evaluates to:';
   String get categoryLabelRequired => isArabic ? 'الفئة (مطلوبة)' : 'Category (Required)';
@@ -200,7 +202,9 @@ class AppLocalizations {
   String get nameRequired => isArabic ? 'الاسم مطلوب' : 'Name is required';
   String get enterValidAmount => isArabic ? 'أدخل مبلغاً صالحاً' : 'Enter a valid amount';
   String get amountCannotBeNegative => isArabic ? 'لا يمكن أن يكون المبلغ سالباً' : 'Amount cannot be negative';
-  String get amountExceedsLimit => isArabic ? 'لا يمكن أن يتجاوز المبلغ 999,999,999 ج.م' : 'Amount cannot exceed 999,999,999 EGP';
+  String get amountExceedsLimit => currencySymbol.isEmpty
+      ? (isArabic ? 'لا يمكن أن يتجاوز المبلغ 999,999,999' : 'Amount cannot exceed 999,999,999')
+      : (isArabic ? 'لا يمكن أن يتجاوز المبلغ 999,999,999 $currencySymbol' : 'Amount cannot exceed 999,999,999 $currencySymbol');
   String get enterValidAmountOrExpr => isArabic ? 'أدخل مبلغاً أو معادلة صحيحة (مثال: 45 + 30)' : 'Enter a valid amount or expression (e.g. 45 + 30)';
   String get selectCategoryForExpense => isArabic ? 'يرجى اختيار فئة لهذا المصروف' : 'Please select a category for this expense';
   String deletedTransactionNotice(String name, String amount) => isArabic
@@ -226,7 +230,9 @@ class AppLocalizations {
   String get editBudget => isArabic ? 'تعديل الميزانية' : 'Edit Budget';
   String editBudgetForCategory(String name) => isArabic ? 'تعديل الميزانية: $name' : 'Edit Budget: $name';
   String get budgetedAmount => isArabic ? 'المبلغ المخصص للميزانية' : 'Budgeted Amount';
-  String get budgetAmountForCycle => isArabic ? 'مبلغ الميزانية لهذه الدورة (ج.م)' : 'Budget Amount for this Cycle (EGP)';
+  String get budgetAmountForCycle => currencySymbol.isEmpty
+      ? (isArabic ? 'مبلغ الميزانية لهذه الدورة' : 'Budget Amount for this Cycle')
+      : (isArabic ? 'مبلغ الميزانية لهذه الدورة ($currencySymbol)' : 'Budget Amount for this Cycle ($currencySymbol)');
   String get updateDefaultAllocationForFuture => isArabic
       ? 'تحديث التخصيص الافتراضي للدورات المستقبلية أيضاً'
       : 'Also update default allocation for future cycles';
@@ -251,8 +257,12 @@ class AppLocalizations {
   String get categoryNameLabel => isArabic ? 'اسم الفئة' : 'Category Name';
   String get expenseCategoryNameLabel => isArabic ? 'اسم فئة المصروفات' : 'Expense Category Name';
   String get incomeCategoryNameLabel => isArabic ? 'اسم فئة الدخل' : 'Income Category Name';
-  String get defaultAllocationLabel => isArabic ? 'التخصيص الافتراضي (ج.م)' : 'Default Allocation (EGP)';
-  String get expectedIncomeLabel => isArabic ? 'الدخل المتوقع / الافتراضي (ج.م)' : 'Expected / Default Income (EGP)';
+  String get defaultAllocationLabel => currencySymbol.isEmpty
+      ? (isArabic ? 'التخصيص الافتراضي' : 'Default Allocation')
+      : (isArabic ? 'التخصيص الافتراضي ($currencySymbol)' : 'Default Allocation ($currencySymbol)');
+  String get expectedIncomeLabel => currencySymbol.isEmpty
+      ? (isArabic ? 'الدخل المتوقع / الافتراضي' : 'Expected / Default Income')
+      : (isArabic ? 'الدخل المتوقع / الافتراضي ($currencySymbol)' : 'Expected / Default Income ($currencySymbol)');
   String get defaultBudgetDesc => isArabic ? 'الميزانية الشهرية الافتراضية للدورات المستقبلية' : 'Default monthly budget for future cycles';
   String get defaultIncomeDesc => isArabic ? 'المبلغ المتوقع افتراضياً (مثل الراتب، اختياري)' : 'Default expected amount (e.g. Salary, optional)';
   String get editingDefaultBudgetNote => isArabic
@@ -362,6 +372,11 @@ class AppLocalizations {
   String get themeLight => isArabic ? 'فاتح' : 'Light';
   String get themeDark => isArabic ? 'داكن' : 'Dark';
   String get themeSystem => isArabic ? 'تلقائي (حسب النظام)' : 'System';
+  String get sectionCurrency => isArabic ? 'العملة' : 'CURRENCY';
+  String get primaryCurrencyLabel => isArabic ? 'العملة الأساسية' : 'Primary Currency';
+  String get primaryCurrencySubtitle => isArabic
+      ? 'تظهر في بطاقات الملخص فقط لإبقاء القوائم نظيفة'
+      : 'Displayed on summary cards; lists use clean numbers';
   String get sectionSecurity => isArabic ? 'الأمان' : 'SECURITY';
   String get pinLock => isArabic ? 'قفل برمز PIN' : 'PIN Lock';
   String get pinLockSubtitle => isArabic ? 'حماية التطبيق عند المغادرة' : 'Protect SpendWise when paused';
@@ -465,7 +480,9 @@ class AppLocalizations {
   String get noCyclesRecordedYet => isArabic ? 'لا توجد دورات ميزانية مسجلة حتى الآن.' : 'No budget cycles recorded yet.';
   String get newBadge => isArabic ? 'جديد' : 'New';
   String get sameBadge => isArabic ? 'مطابق' : 'Same';
-  String get zeroDiffNotice => isArabic ? 'لا يوجد فارق في الإنفاق (0.00 ج.م)' : '0.00 EGP difference';
+  String get zeroDiffNotice => currencySymbol.isEmpty
+      ? (isArabic ? 'لا يوجد فارق في الإنفاق (0.00)' : '0.00 difference')
+      : (isArabic ? 'لا يوجد فارق في الإنفاق (0.00 $currencySymbol)' : '0.00 $currencySymbol difference');
   String varianceVsLastCycle(String diff, bool increase) => isArabic
       ? (increase ? '+$diff مقارنة بالدورة السابقة' : '-$diff مقارنة بالدورة السابقة')
       : (increase ? '+$diff vs last cycle' : '-$diff vs last cycle');
