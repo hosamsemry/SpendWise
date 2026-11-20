@@ -11,6 +11,7 @@ import 'package:money_tracker/features/categories/data/category_repository.dart'
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:money_tracker/features/dashboard/presentation/widgets/velvet_titanium_hero_card.dart';
+import 'package:money_tracker/features/savings/presentation/savings_vault_card.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import '../../../test_helper.dart';
@@ -165,6 +166,18 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      // Savings Vault balance and Dashboard category/recent transaction amounts are also masked
+      final vaultFinder = find.byType(SavingsVaultCard);
+      expect(
+        find.descendant(of: vaultFinder, matching: find.text('••••••')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: vaultFinder, matching: find.textContaining('EGP')),
+        findsNothing,
+      );
+      expect(find.text('•••• / ••••', skipOffstage: false), findsWidgets);
 
       // Tap again to reveal all numbers
       await tester.tap(heroFinder);

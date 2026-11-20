@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
+import 'package:money_tracker/core/providers/privacy_provider.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'savings_vault_dialog.dart';
 
@@ -13,6 +14,7 @@ class SavingsVaultCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(primaryCurrencyProvider);
+    final isAmountsHidden = ref.watch(dashboardAmountsHiddenProvider);
     final vaultAsync = ref.watch(savingsVaultProvider);
 
     return vaultAsync.when(
@@ -71,20 +73,29 @@ class SavingsVaultCard extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          balance.toFormattedString(currencySymbol: context.l10n.currencySymbol),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: context.textPrimary,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: Text(
+                            isAmountsHidden
+                                ? '••••••'
+                                : balance.toFormattedString(
+                                    currencySymbol: context.l10n.currencySymbol,
+                                  ),
+                            key: ValueKey('vault_balance_$isAmountsHidden'),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: isAmountsHidden ? 1.8 : 0,
+                              color: context.textPrimary,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 1),
                         Text(
                           vault.lastSweepAmount != null
                               ? (context.l10n.isArabic
-                                  ? 'تم حفظ +${vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)} مؤخراً'
-                                  : 'Last swept +${vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)}')
+                                  ? 'تم حفظ +${isAmountsHidden ? '••••' : vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)} مؤخراً'
+                                  : 'Last swept +${isAmountsHidden ? '••••' : vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)}')
                               : (context.l10n.isArabic
                                   ? 'انقر للإيداع أو سحب الأموال'
                                   : 'Tap to deposit or withdraw funds'),

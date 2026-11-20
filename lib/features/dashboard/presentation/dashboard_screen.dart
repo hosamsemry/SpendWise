@@ -24,6 +24,7 @@ import 'package:money_tracker/features/settings/presentation/settings_screen.dar
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 import 'widgets/near_limit_alert_card.dart';
+import 'widgets/overspent_alert_card.dart';
 import 'widgets/velvet_titanium_hero_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -39,6 +40,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(primaryCurrencyProvider);
+    final isAmountsHidden = ref.watch(dashboardAmountsHiddenProvider);
     final currentCycleAsync = ref.watch(currentCycleProvider);
     final recentTxsAsync = ref.watch(recentTransactionsProvider);
 
@@ -100,7 +102,12 @@ class DashboardScreen extends ConsumerWidget {
                   loading: () => const Center(child: LinearProgressIndicator()),
                   error: (err, _) => Text('${context.l10n.error}: $err'),
                   data: (summary) {
-                    final overspentCount = summary.overspentCategoriesCount;
+                    final overspentBudgets = summary.categoryBudgets
+                        .where((b) => b.isOverspent)
+                        .toList()
+                      ..sort(
+                        (a, b) => a.remainingAmount.compareTo(b.remainingAmount),
+                      );
                     final nearLimitBudgets = summary.categoryBudgets
                         .where((b) => b.isNearLimit)
                         .toList()
@@ -259,41 +266,21 @@ class DashboardScreen extends ConsumerWidget {
                           },
                         ),
 
-                        // Overspent Categories Alert
-                        if (overspentCount > 0)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: context.isDark
-                                  ? context.crimsonLightColor.withValues(alpha: 0.6)
-                                  : context.overspentLightColor,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: context.isDark
-                                    ? context.crimsonColor
-                                    : Colors.red.shade200,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.error_outline_rounded,
-                                  color: context.overspentColor,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                      context.l10n.overspentAlert(overspentCount),
-                                    style: TextStyle(
-                                      color: context.overspentColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                        // Overspent Categories Alert (Interactive)
+                        if (overspentBudgets.isNotEmpty)
+                          OverspentAlertCard(
+                            cycle: cycle,
+                            overspentBudgets: overspentBudgets,
+                            onViewTransactions: (budget) {
+                              ref
+                                  .read(selectedCycleProvider.notifier)
+                                  .select(cycle);
+                              ref
+                                  .read(categoryFilterProvider.notifier)
+                                  .set(budget.categoryId);
+                              onNavigateToTransactions();
+                            },
+                            onEditBudgets: onNavigateToBudgets,
                           ),
 
                         if (nearLimitBudgets.isNotEmpty)
@@ -439,7 +426,9 @@ class DashboardScreen extends ConsumerWidget {
                                                     ),
                                                   ),
                                                   Text(
-                                                    '${b.spentAmount.toFormattedString(includeCurrency: false)} / ${b.budgetedAmount.toFormattedString(includeCurrency: false)}',
+                                                    isAmountsHidden
+                                                        ? '•••• / ••••'
+                                                        : '${b.spentAmount.toFormattedString(includeCurrency: false)} / ${b.budgetedAmount.toFormattedString(includeCurrency: false)}',
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
@@ -559,6 +548,10 @@ class DashboardScreen extends ConsumerWidget {
 
                           return ListTile(
                             dense: true,
+                            onTap: () => AddEditTransactionDialog.show(
+                              context,
+                              transaction: tx,
+                            ),
                             leading: CircleAvatar(
                               radius: 16,
                               backgroundColor: isIncome
@@ -592,7 +585,9 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             trailing: Text(
-                              '${isIncome ? '+' : '-'}${tx.amount.toFormattedString(includeCurrency: false)}',
+                              isAmountsHidden
+                                  ? '••••'
+                                  : '${isIncome ? '+' : '-'}${tx.amount.toFormattedString(includeCurrency: false)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
