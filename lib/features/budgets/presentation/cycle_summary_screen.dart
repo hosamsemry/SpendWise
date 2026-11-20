@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
-import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
+import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 
 class CycleSummaryScreen extends ConsumerWidget {
@@ -12,14 +13,20 @@ class CycleSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(primaryCurrencyProvider);
     final summaryAsync = ref.watch(cycleSummaryProvider(cycle));
+    final isDark = context.isDark;
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.cycleSummaryTitle)),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) =>
-            Center(child: Text('${context.l10n.error}: $err')),
+        error: (err, stack) => Center(
+          child: Text(
+            '${context.l10n.error}: $err',
+            style: TextStyle(color: context.textPrimary),
+          ),
+        ),
         data: (summary) {
           final isNetPositive = summary.netRemainingTotal.inMinorUnits >= 0;
 
@@ -31,29 +38,59 @@ class CycleSummaryScreen extends ConsumerWidget {
               32 + MediaQuery.of(context).padding.bottom,
             ),
             children: [
-              // Cycle Banner
+              // 1. Cycle Period Banner
               Card(
-                color: AppColors.primaryLight,
+                color: isDark ? context.surfaceColor : context.primaryLightColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(
+                    color: context.goldColor.withValues(
+                      alpha: isDark ? 0.32 : 0.42,
+                    ),
+                  ),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        context.l10n.budgetCyclePeriod,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: context.primaryColor.withValues(
+                            alpha: isDark ? 0.16 : 0.12,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.calendar_month_rounded,
+                          color: context.primaryColor,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        cycle.formattedRange,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.budgetCyclePeriod.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                                color: context.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              cycle.formattedRange,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -62,23 +99,25 @@ class CycleSummaryScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // Overview Grid Cards
+              // 2. Overview Grid Cards
               Row(
                 children: [
                   Expanded(
                     child: _buildMetricCard(
+                      context: context,
                       title: context.l10n.totalIncomeLabel,
                       amount: summary.totalIncome.toFormattedString(),
-                      color: AppColors.income,
+                      color: context.incomeColor,
                       icon: Icons.arrow_downward_rounded,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMetricCard(
+                      context: context,
                       title: context.l10n.totalExpensesLabel,
                       amount: summary.totalSpent.toFormattedString(),
-                      color: AppColors.expense,
+                      color: context.expenseColor,
                       icon: Icons.arrow_upward_rounded,
                     ),
                   ),
@@ -90,20 +129,22 @@ class CycleSummaryScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _buildMetricCard(
+                      context: context,
                       title: context.l10n.totalBudgetedLabel,
                       amount: summary.totalBudgeted.toFormattedString(),
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                       icon: Icons.account_balance_wallet_outlined,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMetricCard(
+                      context: context,
                       title: context.l10n.overspentCategoriesLabel,
                       amount: '${summary.overspentCategoriesCount}',
                       color: summary.overspentCategoriesCount > 0
-                          ? AppColors.overspent
-                          : AppColors.income,
+                          ? context.overspentColor
+                          : context.incomeColor,
                       icon: Icons.warning_amber_rounded,
                     ),
                   ),
@@ -111,7 +152,7 @@ class CycleSummaryScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // Dual Remaining Totals: Positive Unused vs Net Remaining (Spec Section 5.1 & 7.5)
+              // 3. Dual Remaining Totals: Positive Unused vs Net Remaining
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -123,7 +164,7 @@ class CycleSummaryScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -131,33 +172,38 @@ class CycleSummaryScreen extends ConsumerWidget {
                       // Positive Unused Total
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.l10n.positiveUnusedTotal,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.l10n.positiveUnusedTotal,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: context.textPrimary,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                context.l10n.positiveUnusedDesc,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                const SizedBox(height: 2),
+                                Text(
+                                  context.l10n.positiveUnusedDesc,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: context.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           Text(
                             summary.positiveUnusedTotal.toFormattedString(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                              color: context.primaryColor,
                             ),
                           ),
                         ],
@@ -167,37 +213,42 @@ class CycleSummaryScreen extends ConsumerWidget {
                       // Net Remaining Total
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.l10n.netRemainingTotalLabel,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.l10n.netRemainingTotalLabel,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: context.textPrimary,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                context.l10n.netRemainingDesc,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                const SizedBox(height: 2),
+                                Text(
+                                  context.l10n.netRemainingDesc,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: context.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           Text(
                             summary.netRemainingTotal.toFormattedString(
                               showSign: true,
                             ),
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w800,
                               color: isNetPositive
-                                  ? AppColors.income
-                                  : AppColors.overspent,
+                                  ? context.incomeColor
+                                  : context.overspentColor,
                             ),
                           ),
                         ],
@@ -208,145 +259,167 @@ class CycleSummaryScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
 
-              // Category Breakdown Table
+              // 4. Per-Category Breakdown Table
               Text(
                 context.l10n.perCategoryBreakdown,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
 
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    children: [
-                      // Table Header
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                context.l10n.colCategory,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                context.l10n.colBudget,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                context.l10n.colSpent,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                context.l10n.colRemaining,
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    // Table Header
+                    Container(
+                      color: context.surfaceVariantColor.withValues(
+                        alpha: isDark ? 0.55 : 0.75,
                       ),
-                      const Divider(height: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              context.l10n.colCategory,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              context.l10n.colBudget,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              context.l10n.colSpent,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              context.l10n.colRemaining,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
 
-                      // Rows
-                      ...summary.categoryBudgets.map((b) {
-                        final isOver = b.isOverspent;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  context.l10n.localizedCategoryName(b.categoryName),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                    // Rows
+                    for (var i = 0; i < summary.categoryBudgets.length; i++) ...[
+                      if (i > 0) const Divider(height: 1),
+                      Builder(
+                        builder: (context) {
+                          final b = summary.categoryBudgets[i];
+                          final isOver = b.isOverspent;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    context.l10n.localizedCategoryName(
+                                      b.categoryName,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13.5,
+                                      color: context.textPrimary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  b.budgetedAmount.toFormattedString(
-                                    decimalDigits: 0,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  b.spentAmount.toFormattedString(
-                                    decimalDigits: 0,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  b.remainingAmount.toFormattedString(
-                                    decimalDigits: 0,
-                                    showSign: true,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isOver
-                                        ? AppColors.overspent
-                                        : AppColors.income,
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    b.budgetedAmount.toFormattedString(
+                                      includeCurrency: false,
+                                      decimalDigits: 0,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.textSecondary,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    b.spentAmount.toFormattedString(
+                                      includeCurrency: false,
+                                      decimalDigits: 0,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    b.remainingAmount.toFormattedString(
+                                      includeCurrency: false,
+                                      decimalDigits: 0,
+                                      showSign: true,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isOver
+                                          ? context.overspentColor
+                                          : context.incomeColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -357,6 +430,7 @@ class CycleSummaryScreen extends ConsumerWidget {
   }
 
   Widget _buildMetricCard({
+    required BuildContext context,
     required String title,
     required String amount,
     required Color color,
@@ -371,23 +445,40 @@ class CycleSummaryScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: context.textSecondary,
+                    ),
                   ),
                 ),
-                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: context.isDark ? 0.18 : 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 16, color: color),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              amount,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                amount,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
               ),
             ),
           ],
