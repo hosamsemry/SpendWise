@@ -430,13 +430,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                   Icon(
                                     Icons.receipt_long_outlined,
                                     size: 64,
-                                    color: Colors.grey.shade400,
+                                    color: context.textTertiary,
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
                                     context.l10n.noTransactionsFound,
                                     style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: context.textSecondary,
                                       fontSize: 16,
                                     ),
                                   ),
