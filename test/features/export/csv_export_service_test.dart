@@ -129,5 +129,16 @@ void main() {
       expect(csvEnglish.contains('راتب'), isFalse);
     });
 
+    test('CSV headers dynamically reflect active primary currency and omit symbol for None', () async {
+      addTearDown(() => Money.applyCurrency(AppCurrency.egp, isArabic: false));
+
+      Money.applyCurrency(AppCurrency.sar, isArabic: false);
+      final sarCsv = await csvService.buildTransactionsCsv();
+      expect(sarCsv.contains('Amount (SAR)'), isTrue);
+
+      Money.applyCurrency(AppCurrency.none, isArabic: false);
+      final plainCsv = await csvService.buildTransactionsCsv();
+      expect(plainCsv.contains('ID,Date,Type,Category,Amount,Note,Created At'), isTrue);
+    });
   });
 }

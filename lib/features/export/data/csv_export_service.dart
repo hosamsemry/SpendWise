@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
@@ -34,7 +35,12 @@ class CsvExportService {
     buffer.write('\uFEFF');
 
     // CSV Header
-    buffer.writeln('ID,Date,Type,Category,Amount (EGP),Note,Created At');
+    final currencySuffix = Money.currentCurrency == AppCurrency.none
+        ? ''
+        : ' (${Money.currentCurrency.code})';
+    buffer.writeln(
+      'ID,Date,Type,Category,Amount$currencySuffix,Note,Created At',
+    );
 
     for (final tx in transactions) {
       final dateStr = BudgetCycleCalculator.formatDate(tx.date);
@@ -73,8 +79,11 @@ class CsvExportService {
     );
     buffer.writeln('');
 
+    final currencySuffix = Money.currentCurrency == AppCurrency.none
+        ? ''
+        : ' (${Money.currentCurrency.code})';
     buffer.writeln(
-      'Category,Budgeted (EGP),Spent (EGP),Remaining (EGP),Usage %',
+      'Category,Budgeted$currencySuffix,Spent$currencySuffix,Remaining$currencySuffix,Usage %',
     );
     for (final b in summary.categoryBudgets) {
       final localizedCat = categoryLocalizer != null ? categoryLocalizer(b.categoryName) : b.categoryName;
