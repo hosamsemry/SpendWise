@@ -314,15 +314,21 @@ void main() {
       expect(find.text('SpendWise'), findsOneWidget);
       expect(find.text('Enter App PIN'), findsNothing);
 
+      final refreshCountBeforeShadeSwipe = container.read(refreshTriggerProvider);
+
       // Simulate pulling down the status bar (inactive -> resumed)
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       await tester.pumpAndSettle();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
 
-      // Verify app is STILL unlocked (NOT locked by status bar swipe)
+      // Verify app is STILL unlocked AND screen did NOT unnecessarily refresh
       expect(find.text('SpendWise'), findsOneWidget);
       expect(find.text('Enter App PIN'), findsNothing);
+      expect(
+        container.read(refreshTriggerProvider),
+        equals(refreshCountBeforeShadeSwipe),
+      );
 
       // Simulate leaving app / locking screen (inactive -> hidden -> paused -> hidden -> inactive -> resumed)
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);

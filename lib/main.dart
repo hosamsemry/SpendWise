@@ -44,6 +44,9 @@ class MoneyTrackerApp extends ConsumerStatefulWidget {
 class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     with WidgetsBindingObserver {
   bool _wasInBackground = false;
+  DateTime? _lastReconciledDay;
+
+  static DateTime _dayKey(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   @override
   void initState() {
@@ -72,20 +75,27 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _wasInBackground = true;
     } else if (state == AppLifecycleState.resumed) {
-      if (_wasInBackground) {
-        _wasInBackground = false;
-        _checkInitialSecurity();
+      final returnedFromBackground = _wasInBackground;
+      _wasInBackground = false;
+
+      // Ignore transient inactive -> resumed transitions (e.g. notification shade swipe)
+      if (!returnedFromBackground) return;
+
+      _checkInitialSecurity();
+
+      // Reconcile cycles/reminders when returning from background only if the calendar day changed
+      final today = _dayKey(DateTime.now());
+      if (_lastReconciledDay != today) {
+        _reconcileLifecycle();
       }
-      _reconcileLifecycle();
     }
   }
 
   Future<void> _reconcileLifecycle() async {
     try {
-      final startDayAsync = ref.read(budgetCycleStartDayProvider);
-      final startDay = startDayAsync.asData?.value;
+      final startDay = await ref.read(budgetCycleStartDayProvider.future);
       // Do not create cycles or schedule cycle reminders until user configures cycle!
-      if (startDay == null) return;
+      if (startDay == null || !mounted) return;
 
       final cycleRepo = ref.read(budgetCycleRepositoryProvider);
       final catRepo = ref.read(categoryRepositoryProvider);
@@ -98,6 +108,7 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
 
       // 2. Reconcile current cycle for today's local date
       final now = DateTime.now();
+      _lastReconciledDay = _dayKey(now);
       final cycle = await cycleRepo.getOrCreateCycleForDate(now);
       await cycleRepo.syncCategoriesForCycle(cycle.id);
       await ref
