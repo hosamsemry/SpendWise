@@ -49,9 +49,9 @@ class DashboardScreen extends ConsumerWidget {
           currentCycleAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (e, s) => const SizedBox.shrink(),
-            data: (cycle) => TextButton.icon(
-              icon: const Icon(Icons.analytics_outlined, size: 18),
-              label: Text(context.l10n.summary),
+            data: (cycle) => IconButton(
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: context.l10n.cycleSummaryTitle,
               onPressed: () {
                 Navigator.push(
                   context,
