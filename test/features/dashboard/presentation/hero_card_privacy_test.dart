@@ -98,7 +98,7 @@ void main() {
 
       // Initially visible inside the hero card:
       // Remaining = +8,766 EGP, Total Budgeted = 10,000 EGP,
-      // Today & Cycle Spent = 1,234 EGP, Total Income = 25,000 EGP
+      // Today & Cycle Spent = 1,234 EGP (Total Income is intentionally omitted from Hero Card)
       expect(
         find.descendant(of: heroFinder, matching: find.textContaining('8,766')),
         findsOneWidget,
@@ -113,7 +113,7 @@ void main() {
       );
       expect(
         find.descendant(of: heroFinder, matching: find.textContaining('25,000')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.descendant(
@@ -140,10 +140,6 @@ void main() {
         find.descendant(of: heroFinder, matching: find.textContaining('1,234')),
         findsNothing,
       );
-      expect(
-        find.descendant(of: heroFinder, matching: find.textContaining('25,000')),
-        findsNothing,
-      );
       // No EGP currency amounts remain inside the hero card
       expect(
         find.descendant(of: heroFinder, matching: find.textContaining('EGP')),
@@ -157,7 +153,7 @@ void main() {
       );
       expect(
         find.descendant(of: heroFinder, matching: find.textContaining('••••')),
-        findsAtLeastNWidgets(5),
+        findsAtLeastNWidgets(4),
       );
       expect(
         find.descendant(
@@ -185,10 +181,6 @@ void main() {
 
       expect(
         find.descendant(of: heroFinder, matching: find.textContaining('8,766')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: heroFinder, matching: find.textContaining('25,000')),
         findsOneWidget,
       );
       expect(

@@ -94,6 +94,12 @@ class AppLocalizations {
 
   // --- Dashboard Screen ---
   String get currentBudgetCycle => isArabic ? 'دورة الميزانية الحالية' : 'CURRENT BUDGET CYCLE';
+  String get pastBudgetCycle => isArabic ? 'دورة ميزانية سابقة' : 'PAST BUDGET CYCLE';
+  String get previousCycleTooltip => isArabic ? 'الدورة السابقة' : 'Previous cycle';
+  String get nextCycleTooltip => isArabic ? 'الدورة التالية' : 'Next cycle';
+  String get cycleCompleted => isArabic ? 'مكتملة' : 'Completed';
+  String get avgDailySpend => isArabic ? 'المتوسط اليومي' : 'AVG / DAY';
+  String cycleDaysCount(int days) => isArabic ? '$days يوم' : '$days days';
   String get totalBudget => isArabic ? 'إجمالي الميزانية' : 'Total Budget';
   String get spent => isArabic ? 'المصروف' : 'Spent';
   String get remaining => isArabic ? 'المتبقي' : 'Remaining';

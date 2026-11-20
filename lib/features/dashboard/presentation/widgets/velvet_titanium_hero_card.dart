@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 
@@ -13,6 +14,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
   final DailySpendingSummary daily;
   final bool isAmountsHidden;
   final VoidCallback? onToggleAmountsVisibility;
+  final bool isHistoricalCycle;
 
   static const String _maskedHero = '••••••';
   static const String _maskedCompact = '••••';
@@ -24,6 +26,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
     required this.daily,
     this.isAmountsHidden = false,
     this.onToggleAmountsVisibility,
+    this.isHistoricalCycle = false,
   });
 
   Widget _buildPrivacyText(
@@ -134,10 +137,6 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
         ? const Color(0xFF8E9AB0)
         : const Color(0xFF64748B);
 
-    final incomeColor = isDark
-        ? const Color(0xFF34D399)
-        : const Color(0xFF047857);
-
     final overspentColor = isDark
         ? const Color(0xFFF87171)
         : const Color(0xFFB91C1C);
@@ -171,11 +170,17 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
       1,
       cycle.endDate.difference(cycle.startDate).inDays + 1,
     );
-    final daysRemaining = (daily.daysRemainingInCycle ??
-            cycle.endDate.difference(DateTime.now()).inDays + 1)
-        .clamp(0, totalCycleDays);
-    final daysElapsed = (totalCycleDays - daysRemaining).clamp(0, totalCycleDays);
+    final daysRemaining = isHistoricalCycle
+        ? 0
+        : (daily.daysRemainingInCycle ??
+                cycle.endDate.difference(DateTime.now()).inDays + 1)
+            .clamp(0, totalCycleDays);
+    final daysElapsed =
+        isHistoricalCycle ? totalCycleDays : (totalCycleDays - daysRemaining).clamp(0, totalCycleDays);
     final cycleTimeProgress = (daysElapsed / totalCycleDays).clamp(0.0, 1.0);
+    final avgDailySpent = Money.fromMinorUnits(
+      (summary.totalSpent.inMinorUnits / totalCycleDays).round(),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -274,40 +279,43 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top Row: Cycle dates & Floating Pace Pill
+                      // Top Row: Remaining Budget header (+ privacy eye) & Floating Pace Pill
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  context.l10n.currentBudgetCycle.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.9,
-                                    color: headerGold,
+                                Flexible(
+                                  child: Text(
+                                    context.l10n.remainingBudget.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.9,
+                                      color: headerGold,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  cycle.formattedRange,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: textPrimary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                const SizedBox(width: 6),
+                                Icon(
+                                  isAmountsHidden
+                                      ? Icons.visibility_off_rounded
+                                      : Icons.visibility_outlined,
+                                  size: 14,
+                                  color: isAmountsHidden ? headerGold : textMuted,
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Pace Pill Badge
-                          if (daily.dailyPace != null || !isNetPositive)
+                          // Pace / Status Pill Badge
+                          if (isHistoricalCycle ||
+                              daily.dailyPace != null ||
+                              !isNetPositive)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 9,
@@ -343,7 +351,8 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                       shape: BoxShape.circle,
                                       color: !isNetPositive
                                           ? overspentColor
-                                          : daily.isOverDailyPace
+                                          : (!isHistoricalCycle &&
+                                                  daily.isOverDailyPace)
                                               ? warningColor
                                               : (isDark
                                                   ? const Color(0xFFE5C158)
@@ -354,33 +363,36 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                   Text(
                                     !isNetPositive
                                         ? context.l10n.overBudget
-                                        : daily.isOverDailyPace
-                                            ? context.l10n.overDailyPaceBadge(
-                                                isAmountsHidden
-                                                    ? _maskedCompact
-                                                    : daily.overDailyPaceAmount
-                                                        .toFormattedString(
-                                                          decimalDigits:
-                                                              daily.overDailyPaceAmount
+                                        : isHistoricalCycle
+                                            ? context.l10n.cycleCompleted
+                                            : daily.isOverDailyPace
+                                                ? context.l10n.overDailyPaceBadge(
+                                                    isAmountsHidden
+                                                        ? _maskedCompact
+                                                        : daily
+                                                            .overDailyPaceAmount
+                                                            .toFormattedString(
+                                                              decimalDigits: daily
+                                                                          .overDailyPaceAmount
                                                                           .inMajorUnits >=
                                                                       100
                                                                   ? 0
                                                                   : 2,
-                                                        ),
-                                              )
-                                            : context.l10n.safeDailyPaceBadge(
-                                                isAmountsHidden
-                                                    ? _maskedCompact
-                                                    : daily.dailyPace!
-                                                        .toFormattedString(
-                                                          decimalDigits:
-                                                              daily.dailyPace!
+                                                            ),
+                                                  )
+                                                : context.l10n.safeDailyPaceBadge(
+                                                    isAmountsHidden
+                                                        ? _maskedCompact
+                                                        : daily.dailyPace!
+                                                            .toFormattedString(
+                                                              decimalDigits: daily
+                                                                          .dailyPace!
                                                                           .inMajorUnits >=
                                                                       100
                                                                   ? 0
                                                                   : 2,
-                                                        ),
-                                              ),
+                                                            ),
+                                                  ),
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w600,
@@ -397,7 +409,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 10),
 
                       // Center Row: Balance Metrics on Left + Circular Pace Gauge on Right
                       Row(
@@ -408,31 +420,6 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      context.l10n.remainingBudget.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.8,
-                                        color: textSecondary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      isAmountsHidden
-                                          ? Icons.visibility_off_rounded
-                                          : Icons.visibility_outlined,
-                                      size: 14,
-                                      color: isAmountsHidden
-                                          ? headerGold
-                                          : textMuted,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
                                 _buildPrivacyText(
                                   isAmountsHidden
                                       ? _maskedHero
@@ -527,16 +514,18 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
 
-                      // Bottom 3 Key Metrics Row
+                      // Bottom 2 Key Metrics Row (Today's Spending & Cycle Spent)
                       Row(
                         children: [
-                          // Metric 1: Today's Spent
+                          // Metric 1: Today's Spent (or Avg / Day for historical cycles)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  context.l10n.todaysSpending,
+                                  isHistoricalCycle
+                                      ? context.l10n.avgDailySpend
+                                      : context.l10n.todaysSpending,
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -547,36 +536,50 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                 _buildPrivacyText(
                                   isAmountsHidden
                                       ? _maskedCompact
-                                      : daily.totalSpentToday.toFormattedString(),
+                                      : (isHistoricalCycle
+                                          ? avgDailySpent.toFormattedString()
+                                          : daily.totalSpentToday
+                                              .toFormattedString()),
                                   keySuffix: 'today_spent',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: daily.isOverDailyPace
+                                    color: (!isHistoricalCycle &&
+                                            daily.isOverDailyPace)
                                         ? warningColor
                                         : textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  daily.isOverDailyPace
-                                      ? context.l10n.overDailyPace
-                                      : (daily.dailyPace != null &&
-                                              daily.dailyPace!.inMinorUnits > 0
-                                          ? context.l10n.safeLeft(
-                                              isAmountsHidden
-                                                  ? _maskedCompact
-                                                  : daily.remainingToday
-                                                      .toFormattedString(),
-                                            )
-                                          : (daily.transactionCountToday == 0
-                                              ? context.l10n.expensesCount(0)
-                                              : context.l10n.expensesCount(
-                                                  daily.transactionCountToday,
-                                                ))),
+                                  isHistoricalCycle
+                                      ? context.l10n.cycleDaysCount(
+                                          totalCycleDays,
+                                        )
+                                      : daily.isOverDailyPace
+                                          ? context.l10n.overDailyPace
+                                          : (daily.dailyPace != null &&
+                                                  daily.dailyPace!.inMinorUnits >
+                                                      0
+                                              ? context.l10n.safeLeft(
+                                                  isAmountsHidden
+                                                      ? _maskedCompact
+                                                      : daily.remainingToday
+                                                          .toFormattedString(),
+                                                )
+                                              : (daily.transactionCountToday ==
+                                                      0
+                                                  ? context.l10n.expensesCount(
+                                                      0,
+                                                    )
+                                                  : context.l10n.expensesCount(
+                                                      daily
+                                                          .transactionCountToday,
+                                                    ))),
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: daily.isOverDailyPace
+                                    color: (!isHistoricalCycle &&
+                                            daily.isOverDailyPace)
                                         ? warningColor
                                         : textMuted,
                                   ),
@@ -592,7 +595,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                             height: 32,
                             color: separatorColor,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
 
                           // Metric 2: Cycle Spent
                           Expanded(
@@ -630,52 +633,6 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                               .toStringAsFixed(0),
                                         )
                                       : context.l10n.noBudgetSetShort,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: textMuted,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Separator
-                          Container(
-                            width: 1,
-                            height: 32,
-                            color: separatorColor,
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Metric 3: Total Income
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.l10n.totalIncomeLabel,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                _buildPrivacyText(
-                                  isAmountsHidden
-                                      ? _maskedCompact
-                                      : summary.totalIncome.toFormattedString(),
-                                  keySuffix: 'total_income',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: incomeColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 1),
-                                Text(
-                                  context.l10n.recorded,
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: textMuted,

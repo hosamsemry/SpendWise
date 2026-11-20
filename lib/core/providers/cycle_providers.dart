@@ -114,6 +114,19 @@ final selectedCycleProvider =
       SelectedCycleNotifier.new,
     );
 
+class DashboardCycleNotifier extends Notifier<BudgetCycle?> {
+  @override
+  BudgetCycle? build() => null;
+
+  void select(BudgetCycle? cycle) => state = cycle;
+}
+
+/// Optional historical cycle override for the inline Dashboard Hero Card switcher (`null` = live current cycle).
+final dashboardCycleProvider =
+    NotifierProvider<DashboardCycleNotifier, BudgetCycle?>(
+      DashboardCycleNotifier.new,
+    );
+
 /// Computes the complete [CycleSummary] for a specific [cycle]
 final cycleSummaryProvider = FutureProvider.family<CycleSummary, BudgetCycle>((
   ref,

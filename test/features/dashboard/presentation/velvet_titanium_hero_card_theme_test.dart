@@ -81,11 +81,11 @@ void main() {
     final remainingTextWidget = tester.widget<Text>(remainingTextFinder);
     expect(remainingTextWidget.style?.color, const Color(0xFF0B0F19)); // Deep Obsidian
 
-    // Cycle label text should be rendered with AA-compliant burnished bronze
-    final cycleLabelFinder = find.text('CURRENT BUDGET CYCLE');
-    expect(cycleLabelFinder, findsOneWidget);
-    final cycleLabelWidget = tester.widget<Text>(cycleLabelFinder);
-    expect(cycleLabelWidget.style?.color, const Color(0xFF8C6514));
+    // Header accent label should be rendered with AA-compliant burnished bronze
+    final headerLabelFinder = find.text('REMAINING BUDGET');
+    expect(headerLabelFinder, findsOneWidget);
+    final headerLabelWidget = tester.widget<Text>(headerLabelFinder);
+    expect(headerLabelWidget.style?.color, const Color(0xFF8C6514));
 
     // Days remaining text in the pace ring gauge should be deep obsidian
     final daysRemainingFinder = find.text('15');
@@ -106,11 +106,11 @@ void main() {
     final remainingTextWidget = tester.widget<Text>(remainingTextFinder);
     expect(remainingTextWidget.style?.color, const Color(0xFFF8FAFC));
 
-    // Cycle label should be Champagne Gold
-    final cycleLabelFinder = find.text('CURRENT BUDGET CYCLE');
-    expect(cycleLabelFinder, findsOneWidget);
-    final cycleLabelWidget = tester.widget<Text>(cycleLabelFinder);
-    expect(cycleLabelWidget.style?.color, const Color(0xFFE5C158));
+    // Header accent label should be Champagne Gold
+    final headerLabelFinder = find.text('REMAINING BUDGET');
+    expect(headerLabelFinder, findsOneWidget);
+    final headerLabelWidget = tester.widget<Text>(headerLabelFinder);
+    expect(headerLabelWidget.style?.color, const Color(0xFFE5C158));
 
     // Days remaining text should be luminous porcelain white
     final daysRemainingFinder = find.text('15');

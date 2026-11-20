@@ -42,6 +42,8 @@ class DashboardScreen extends ConsumerWidget {
     ref.watch(primaryCurrencyProvider);
     final isAmountsHidden = ref.watch(dashboardAmountsHiddenProvider);
     final currentCycleAsync = ref.watch(currentCycleProvider);
+    final allCycles = ref.watch(allCyclesProvider).asData?.value ?? const [];
+    final overrideCycle = ref.watch(dashboardCycleProvider);
     final recentTxsAsync = ref.watch(recentTransactionsProvider);
 
     return Scaffold(
@@ -51,18 +53,24 @@ class DashboardScreen extends ConsumerWidget {
           currentCycleAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (e, s) => const SizedBox.shrink(),
-            data: (cycle) => IconButton(
-              icon: const Icon(Icons.analytics_outlined),
-              tooltip: context.l10n.cycleSummaryTitle,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (ctx) => CycleSummaryScreen(cycle: cycle),
-                  ),
-                );
-              },
-            ),
+            data: (currentCycle) {
+              final activeCycle = (overrideCycle != null &&
+                      allCycles.any((c) => c.id == overrideCycle.id))
+                  ? overrideCycle
+                  : currentCycle;
+              return IconButton(
+                icon: const Icon(Icons.analytics_outlined),
+                tooltip: context.l10n.cycleSummaryTitle,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => CycleSummaryScreen(cycle: activeCycle),
+                    ),
+                  );
+                },
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -82,7 +90,19 @@ class DashboardScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) =>
             Center(child: Text('${context.l10n.error}: $err')),
-        data: (cycle) {
+        data: (currentCycle) {
+          final cycle = (overrideCycle != null &&
+                  allCycles.any((c) => c.id == overrideCycle.id))
+              ? overrideCycle
+              : currentCycle;
+          final cycleIndex = allCycles.indexWhere((c) => c.id == cycle.id);
+          final prevCycle =
+              (cycleIndex >= 0 && cycleIndex < allCycles.length - 1)
+                  ? allCycles[cycleIndex + 1]
+                  : null;
+          final nextCycle = cycleIndex > 0 ? allCycles[cycleIndex - 1] : null;
+          final isHistoricalCycle = cycle.id != currentCycle.id;
+
           final summaryAsync = ref.watch(cycleSummaryProvider(cycle));
 
           return RefreshIndicator(
@@ -99,6 +119,7 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 // 1. Financial Pulse Hero Card & Summary Metrics
                 summaryAsync.when(
+                  skipLoadingOnReload: true,
                   loading: () => const Center(child: LinearProgressIndicator()),
                   error: (err, _) => Text('${context.l10n.error}: $err'),
                   data: (summary) {
@@ -132,12 +153,33 @@ class DashboardScreen extends ConsumerWidget {
                             );
                           },
                         ),
+                        _DashboardCycleSwitcherBar(
+                          formattedRange: cycle.formattedRange,
+                          isHistoricalCycle: isHistoricalCycle,
+                          onPreviousCycle: prevCycle != null
+                              ? () => ref
+                                  .read(dashboardCycleProvider.notifier)
+                                  .select(prevCycle)
+                              : null,
+                          onNextCycle: nextCycle != null
+                              ? () => ref
+                                  .read(dashboardCycleProvider.notifier)
+                                  .select(
+                                    nextCycle.id == currentCycle.id
+                                        ? null
+                                        : nextCycle,
+                                  )
+                              : null,
+                          onJumpToCurrent: isHistoricalCycle
+                              ? () => ref
+                                  .read(dashboardCycleProvider.notifier)
+                                  .select(null)
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
                         Consumer(
                           builder: (context, ref, _) {
                             final dailyAsync = ref.watch(todaySpendingSummaryProvider);
-                            final isAmountsHidden = ref.watch(
-                              dashboardAmountsHiddenProvider,
-                            );
                             return dailyAsync.when(
                               skipLoadingOnReload: true,
                               loading: () => const SizedBox.shrink(),
@@ -148,6 +190,7 @@ class DashboardScreen extends ConsumerWidget {
                                   summary: summary,
                                   daily: daily,
                                   isAmountsHidden: isAmountsHidden,
+                                  isHistoricalCycle: isHistoricalCycle,
                                   onToggleAmountsVisibility: () {
                                     ref
                                         .read(
@@ -719,12 +762,168 @@ class DashboardScreen extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+      } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.failedToAddPreset(e.toString()))),
         );
       }
     }
+  }
+}
+
+class _DashboardCycleSwitcherBar extends StatelessWidget {
+  final String formattedRange;
+  final bool isHistoricalCycle;
+  final VoidCallback? onPreviousCycle;
+  final VoidCallback? onNextCycle;
+  final VoidCallback? onJumpToCurrent;
+
+  const _DashboardCycleSwitcherBar({
+    required this.formattedRange,
+    required this.isHistoricalCycle,
+    required this.onPreviousCycle,
+    required this.onNextCycle,
+    required this.onJumpToCurrent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final accentColor = context.goldColor;
+
+    return Container(
+      key: const ValueKey('dashboard_cycle_switcher_bar'),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark ? context.surfaceColor : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isHistoricalCycle
+              ? accentColor.withValues(alpha: 0.45)
+              : context.borderColor,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildArrowButton(
+            context,
+            key: const ValueKey('hero_prev_cycle_btn'),
+            icon: Icons.chevron_left_rounded,
+            tooltip: context.l10n.previousCycleTooltip,
+            onTap: onPreviousCycle,
+          ),
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: onJumpToCurrent == null
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      onJumpToCurrent!();
+                    },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      (isHistoricalCycle
+                              ? context.l10n.pastBudgetCycle
+                              : context.l10n.currentBudgetCycle)
+                          .toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: isDark
+                            ? const Color(0xFFE5C158)
+                            : const Color(0xFF8C6514),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 12,
+                          color: isHistoricalCycle
+                              ? accentColor
+                              : context.textSecondary,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            formattedRange,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: isHistoricalCycle
+                                  ? accentColor
+                                  : context.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          _buildArrowButton(
+            context,
+            key: const ValueKey('hero_next_cycle_btn'),
+            icon: Icons.chevron_right_rounded,
+            tooltip: context.l10n.nextCycleTooltip,
+            onTap: onNextCycle,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArrowButton(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onTap,
+  }) {
+    final isEnabled = onTap != null;
+    return IconButton(
+      key: key,
+      onPressed: isEnabled
+          ? () {
+              HapticFeedback.selectionClick();
+              onTap();
+            }
+          : null,
+      tooltip: tooltip,
+      icon: Icon(
+        icon,
+        size: 20,
+        color: isEnabled
+            ? context.primaryColor
+            : context.textTertiary.withValues(alpha: 0.35),
+      ),
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+    );
   }
 }
