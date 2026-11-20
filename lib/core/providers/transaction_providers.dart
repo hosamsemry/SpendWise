@@ -72,6 +72,20 @@ final transactionsForCycleProvider =
       );
     });
 
+/// All expense transactions for a given cycle, independent of TransactionsScreen filters.
+final cycleExpenseTransactionsProvider =
+    FutureProvider.family<List<TransactionModel>, BudgetCycle>((
+      ref,
+      cycle,
+    ) async {
+      ref.watch(refreshTriggerProvider);
+      final txRepo = ref.watch(transactionRepositoryProvider);
+      return txRepo.getTransactionsForCycle(
+        cycle,
+        type: TransactionType.expense,
+      );
+    });
+
 /// Recent transactions across all cycles (for Dashboard)
 final recentTransactionsProvider = FutureProvider<List<TransactionModel>>((
   ref,

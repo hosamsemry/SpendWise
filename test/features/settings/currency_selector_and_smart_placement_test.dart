@@ -84,7 +84,7 @@ void main() {
       // 2. Smart Placement Rule: Quick chip, category budget row, and recent transaction have NO currency symbol
       expect(find.text('Coffee • 45.00'), findsOneWidget);
       expect(find.text('500.00 / 3,000.00'), findsOneWidget);
-      expect(find.text('-500.00', skipOffstage: false), findsOneWidget);
+      expect(find.text('-500.00', skipOffstage: false), findsWidgets);
 
       // 3. Open Settings via Dashboard AppBar gear icon
       await tester.tap(find.byIcon(Icons.settings_outlined));
@@ -143,7 +143,7 @@ void main() {
       // Lists and chips remain clean plain numbers
       expect(find.text('Coffee • 45.00'), findsOneWidget);
       expect(find.text('500.00 / 3,000.00'), findsOneWidget);
-      expect(find.text('-500.00', skipOffstage: false), findsOneWidget);
+      expect(find.text('-500.00', skipOffstage: false), findsWidgets);
 
       // 5. Open Settings and select "None / Plain Numbers"
       await tester.tap(find.byIcon(Icons.settings_outlined));

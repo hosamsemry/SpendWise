@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
+import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 import 'package:money_tracker/features/reports/presentation/widgets/cash_flow_bar_chart.dart';
+import 'package:money_tracker/features/reports/presentation/widgets/category_donut_chart.dart';
+import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   final bool showAppBar;
@@ -20,9 +26,11 @@ class ReportsScreen extends ConsumerStatefulWidget {
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   // 0 = All Sections (Fluid Page), 1 = Cash Flow, 2 = Categories, 3 = MoM Comparison, 4 = Budget vs Actual
   int _selectedFilterIndex = 0;
+  String? _selectedDonutCategoryId;
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(primaryCurrencyProvider);
     final currentCycleAsync = ref.watch(currentCycleProvider);
     final selectedCycle = ref.watch(selectedCycleProvider);
     final allCyclesAsync = ref.watch(allCyclesProvider);
@@ -78,6 +86,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     onChanged: (id) {
                       if (id == null) return;
                       final found = cycles.firstWhere((c) => c.id == id);
+                      setState(() => _selectedDonutCategoryId = null);
                       ref
                           .read(selectedCycleProvider.notifier)
                           .select(found);
@@ -254,7 +263,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             context.l10n.categoryDistributionSection,
             Icons.pie_chart_outline_rounded,
           ),
-          _buildSpendingByCategorySection(summary),
+          _buildSpendingByCategorySection(activeCycle, summary),
           const SizedBox(height: 16),
         ],
 
@@ -280,8 +289,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildSpendingByCategorySection(CycleSummary summary) {
+  Widget _buildSpendingByCategorySection(
+    BudgetCycle activeCycle,
+    CycleSummary summary,
+  ) {
     final totalSpentMinor = summary.totalSpent.inMinorUnits;
+    final isDark = context.isDark;
 
     final categoriesWithSpending = summary.categoryBudgets
         .where((b) => b.spentAmount.inMinorUnits > 0)
@@ -314,111 +327,359 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       );
     }
 
+    final slices = <DonutSliceData>[];
+    final colorByCategoryId = <String, Color>{};
+    for (var i = 0; i < categoriesWithSpending.length; i++) {
+      final b = categoriesWithSpending[i];
+      final sharePct = totalSpentMinor > 0
+          ? (b.spentAmount.inMinorUnits / totalSpentMinor) * 100.0
+          : 0.0;
+      final color = CategoryDonutChart.colorForIndex(i, isDark: isDark);
+      colorByCategoryId[b.categoryId] = color;
+      slices.add(
+        DonutSliceData(
+          categoryId: b.categoryId,
+          label: context.l10n.localizedCategoryName(b.categoryName),
+          amount: b.spentAmount,
+          percentage: sharePct,
+          color: color,
+        ),
+      );
+    }
+
+    final effectiveSelectedId = _selectedDonutCategoryId != null &&
+            categoriesWithSpending
+                .any((b) => b.categoryId == _selectedDonutCategoryId)
+        ? _selectedDonutCategoryId
+        : null;
+
+    DonutSliceData? selectedSlice;
+    if (effectiveSelectedId != null) {
+      selectedSlice = slices.firstWhere(
+        (s) => s.categoryId == effectiveSelectedId,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Total Spending Card
-        Card(
-          color: context.primaryLightColor,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.totalCycleExpenses,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: context.primaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      summary.totalSpent.toFormattedString(),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  Icons.receipt_long_rounded,
-                  size: 32,
-                  color: context.primaryColor.withValues(alpha: 0.6),
-                ),
-              ],
-            ),
-          ),
+        // 1. Interactive Animated Donut Chart
+        CategoryDonutChart(
+          slices: slices,
+          totalSpent: summary.totalSpent,
+          selectedCategoryId: effectiveSelectedId,
+          onCategorySelected: (categoryId) {
+            setState(() => _selectedDonutCategoryId = categoryId);
+          },
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
 
+        // 2. Interactive Category Breakdown Rows (tap any row to sync with Donut Chart)
         ...categoriesWithSpending.map((b) {
           final sharePct = totalSpentMinor > 0
               ? (b.spentAmount.inMinorUnits / totalSpentMinor) * 100.0
               : 0.0;
+          final sliceColor =
+              colorByCategoryId[b.categoryId] ?? context.primaryColor;
+          final isSelected = effectiveSelectedId == b.categoryId;
+          final isDimmed = effectiveSelectedId != null && !isSelected;
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isDimmed ? 0.58 : 1.0,
+            child: Card(
+              key: ValueKey('category_breakdown_${b.categoryId}'),
+              margin: const EdgeInsets.only(bottom: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isSelected
+                      ? sliceColor
+                      : context.borderColor.withValues(alpha: 0.6),
+                  width: isSelected ? 1.6 : 1.0,
+                ),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _selectedDonutCategoryId = isSelected ? null : b.categoryId;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        context.l10n.localizedCategoryName(b.categoryName),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.textPrimary,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: sliceColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    context.l10n.localizedCategoryName(
+                                      b.categoryName,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            b.spentAmount.toFormattedString(
+                              includeCurrency: false,
+                            ),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (sharePct / 100.0).clamp(0.0, 1.0),
+                          backgroundColor: isDark
+                              ? context.surfaceVariantColor
+                              : Colors.grey.shade100,
+                          valueColor: AlwaysStoppedAnimation<Color>(sliceColor),
+                          minHeight: 6,
                         ),
                       ),
+                      const SizedBox(height: 6),
                       Text(
-                        b.spentAmount.toFormattedString(),
+                        context.l10n.pctOfTotalExpenses(
+                          sharePct.toStringAsFixed(1),
+                        ),
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: context.textPrimary,
+                          fontSize: 11,
+                          color: isSelected
+                              ? sliceColor
+                              : context.textSecondary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (sharePct / 100.0).clamp(0.0, 1.0),
-                      backgroundColor: context.isDark
-                          ? context.surfaceVariantColor
-                          : Colors.grey.shade100,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        context.primaryColor,
-                      ),
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    context.l10n.pctOfTotalExpenses(sharePct.toStringAsFixed(1)),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textSecondary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );
         }),
+
+        const SizedBox(height: 8),
+
+        // 3. Dynamically Filtered Transaction List below the Category Report
+        _buildFilteredCategoryTransactions(
+          activeCycle: activeCycle,
+          selectedSlice: selectedSlice,
+          colorByCategoryId: colorByCategoryId,
+        ),
       ],
+    );
+  }
+
+  Widget _buildFilteredCategoryTransactions({
+    required BudgetCycle activeCycle,
+    required DonutSliceData? selectedSlice,
+    required Map<String, Color> colorByCategoryId,
+  }) {
+    final expensesAsync = ref.watch(
+      cycleExpenseTransactionsProvider(activeCycle),
+    );
+
+    return expensesAsync.when(
+      skipLoadingOnReload: true,
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (allExpenses) {
+        final filtered = selectedSlice == null
+            ? allExpenses
+            : allExpenses
+                .where((tx) => tx.categoryId == selectedSlice.categoryId)
+                .toList();
+
+        return Column(
+          key: const ValueKey('category_filtered_transactions_section'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (selectedSlice != null) ...[
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: selectedSlice.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          selectedSlice != null
+                              ? context.l10n.categoryTransactionsTitle(
+                                  selectedSlice.label,
+                                )
+                              : context.l10n.allCycleExpensesTitle,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (selectedSlice?.color ?? context.primaryColor)
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${filtered.length}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: selectedSlice?.color ?? context.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selectedSlice != null)
+                  TextButton.icon(
+                    key: const ValueKey('clear_donut_filter_button'),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedDonutCategoryId = null);
+                    },
+                    icon: const Icon(Icons.close_rounded, size: 15),
+                    label: Text(context.l10n.clearFilter),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (filtered.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    context.l10n.noTransactionsFound,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Card(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final tx = filtered[index];
+                    final dotColor =
+                        colorByCategoryId[tx.categoryId] ?? context.expenseColor;
+                    final catLabel =
+                        (tx.categoryName != null && tx.categoryName!.isNotEmpty)
+                            ? context.l10n.localizedCategoryName(tx.categoryName)
+                            : context.l10n.expense;
+                    final hasNote = tx.note != null && tx.note!.trim().isNotEmpty;
+
+                    return ListTile(
+                      key: ValueKey('donut_tx_${tx.id}'),
+                      dense: true,
+                      onTap: () => AddEditTransactionDialog.show(
+                        context,
+                        transaction: tx,
+                      ),
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: dotColor.withValues(alpha: 0.14),
+                        child: Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 16,
+                          color: dotColor,
+                        ),
+                      ),
+                      title: Text(
+                        hasNote ? tx.note!.trim() : catLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        hasNote
+                            ? '$catLabel • ${DateFormat('d MMM').format(tx.date)}'
+                            : DateFormat('d MMM').format(tx.date),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                      trailing: Text(
+                        '-${tx.amount.toFormattedString(includeCurrency: false)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13.5,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

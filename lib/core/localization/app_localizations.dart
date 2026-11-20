@@ -336,6 +336,13 @@ class AppLocalizations {
   String get noExpensesRecordedInCycle => isArabic ? 'لا توجد مصروفات مسجلة في هذه الدورة.' : 'No expenses recorded in this cycle.';
   String get totalCycleExpenses => isArabic ? 'إجمالي مصروفات الدورة' : 'Total Cycle Expenses';
   String get expenseBreakdown => isArabic ? 'تفصيل المصروفات' : 'Expense Breakdown';
+  String get tapSliceToInspect => isArabic ? 'انقر على قسم للتفاصيل' : 'Tap slice to inspect';
+  String get clearFilter => isArabic ? 'عرض الكل' : 'Clear';
+  String get allCycleExpensesTitle => isArabic ? 'مصروفات الدورة' : 'Cycle Expenses';
+  String categoryTransactionsTitle(String categoryName) =>
+      isArabic ? 'معاملات $categoryName' : '$categoryName Transactions';
+  String filteredByCategory(String categoryName) =>
+      isArabic ? 'تصفية: $categoryName' : 'Filtered: $categoryName';
   String pctOfTotalExpenses(String pct) => isArabic ? '$pct% من إجمالي المصروفات' : '$pct% of total expenses';
   String get totalActualSpent => isArabic ? 'إجمالي المنصرف الفعلي' : 'Total Actual Spent';
   String overAmount(String amt) => isArabic ? '$amt تجاوز' : '$amt Over';
