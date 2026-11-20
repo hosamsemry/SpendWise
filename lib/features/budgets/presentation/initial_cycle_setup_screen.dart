@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
@@ -21,6 +23,7 @@ class _InitialCycleSetupScreenState
     extends ConsumerState<InitialCycleSetupScreen> {
   _CycleMode? _selectedMode; // Null by default - NO DEFAULT VALUE!
   int? _selectedCustomDay; // Null by default - NO DEFAULT VALUE!
+  AppCurrency _selectedCurrency = AppCurrency.egp;
   bool _isSaving = false;
 
   int? get _effectiveDay {
@@ -55,7 +58,10 @@ class _InitialCycleSetupScreenState
     setState(() => _isSaving = true);
 
     try {
-      // 1. Save start day to app_settings via provider
+      // 1. Save start day & primary currency to app_settings via providers
+      await ref.read(primaryCurrencyProvider.notifier).setCurrency(
+            _selectedCurrency,
+          );
       await ref.read(budgetCycleStartDayProvider.notifier).setStartDay(day);
 
       // 2. Seed default categories if none exist and unarchive any inactive categories
@@ -478,7 +484,96 @@ class _InitialCycleSetupScreenState
                   ),
                 ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+
+              // Primary Currency Quick Selector
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.payments_outlined,
+                          size: 20,
+                          color: context.primaryColor,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.primaryCurrencyLabel,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                context.l10n.primaryCurrencySubtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: AppCurrency.values.map((currency) {
+                        final isSelected = currency == _selectedCurrency;
+                        return ChoiceChip(
+                          key: ValueKey('onboarding_currency_${currency.code}'),
+                          label: Text(
+                            currency.displayLabel(
+                              isArabic: context.l10n.isArabic,
+                            ),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? context.primaryColor
+                                  : context.textPrimary,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor:
+                              context.primaryColor.withValues(alpha: 0.16),
+                          checkmarkColor: context.primaryColor,
+                          side: BorderSide(
+                            color: isSelected
+                                ? context.primaryColor
+                                : context.borderColor,
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedCurrency = currency);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
 
               // Confirm Button (Disabled until an option is selected)
               ElevatedButton(
