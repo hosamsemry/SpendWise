@@ -21,6 +21,7 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 ```
 - Tests use an in-memory Drift DB plus a Linux system sqlite (`test/test_helper.dart` → `setupTestSqlite()`, which needs `libsqlite3.so`).
 - **Release signing**: `android/app/build.gradle.kts` reads `android/key.properties` (gitignored; keys `storePassword`, `keyPassword`, `keyAlias`, `storeFile`). The keystore is `~/keystores/spendwise-release.jks` (alias `spendwise`, cert SHA-256 `59:D7:2A:CC:…:44:13`) and lives outside the repo. If `key.properties` is missing, release builds fail on purpose. They never fall back to debug signing. Losing the keystore means future APKs can't update existing installs.
+- **Always build releases the same way** (split arm64, command above). `--split-per-abi` sets versionCode = ABI offset + build number (arm64 → 2000 + n, armv7 → 1000 + n, x86_64 → 4000 + n), while a universal `flutter build apk` uses n alone. Installing a universal build over a split one is a downgrade, and Android just says "App not installed". Bump `version:` in `pubspec.yaml` for every release you install over an older one.
 - `*.apk` files are gitignored. `SpendWise*.apk` in the root are local build outputs.
 
 ## Stack
