@@ -128,5 +128,42 @@ void main() {
       // "LEarn" must not be read as the LE (Egyptian pound) suffix.
       expect(BankMessageParser.parse('Paid 20 LEarning credits today'), isNull);
     });
+
+    group('strict mode (SMS apps that also carry personal messages)', () {
+      const personal = [
+        'I paid 200 EGP for dinner, send me your share',
+        'Mom: I sent 1000 EGP to Ali today',
+        'You paid EGP 85.50 for your trip',
+        'Netflix: payment of \$9.99 is due on 12/05',
+        'Salah transferred for \$150 million to Al Hilal',
+        'You received EGP 50 cashback! Shop now',
+        'دفعت 300 جنيه في العشا امبارح',
+      ];
+      const bank = [
+        'Your card ending 1234 was debited with EGP 350.00 at Carrefour on 20/11 Ref# 998877',
+        'IPN transfer sent with amount of EGP 100.01 from 5561 on 18/11 at 03:49 PM. Ref# 18369757.',
+        'تم خصم مبلغ 515.00 جم لحظيا باستخدام (شبكة المدفوعات اللحظية) من حسابكم رقم 0140 عند كهرباء جنوب القاهرة يوم 10-29 الساعة20:32 مرجع التاجر 1613746459',
+        'تم إضافة 2,500.00 جنيه إلى حسابك رقم 4455. رصيدك الحالي 7,000.00 جنيه',
+        'SAR 120 credited to your account ****7788. Avl bal SAR 3,400',
+      ];
+
+      for (final msg in personal) {
+        test('rejects personal/non-bank text: $msg', () {
+          expect(BankMessageParser.parse(msg, strict: true), isNull);
+        });
+      }
+
+      for (final msg in bank) {
+        test('accepts bank alert: ${msg.substring(0, 30)}…', () {
+          expect(BankMessageParser.parse(msg, strict: true), isNotNull);
+        });
+      }
+
+      test('requires a currency-anchored amount, not just "مبلغ <n>"', () {
+        const msg = 'تم خصم مبلغ 300 من حسابكم رقم 0140';
+        expect(BankMessageParser.parse(msg), isNotNull);
+        expect(BankMessageParser.parse(msg, strict: true), isNull);
+      });
+    });
   });
 }

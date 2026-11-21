@@ -63,6 +63,21 @@ class BankMessageParser {
     ),
   ];
 
+  /// Markers of a real account/instrument (card, account, reference, balance,
+  /// payment network). Personal chats mentioning money almost never contain one.
+  static final List<RegExp> _instrumentPatterns = [
+    RegExp(
+      r'(?<![A-Za-z])(?:card|account|a/c|acct|ref(?:erence)?|balance|avl|bal|ipn|instapay|wallet|pos|atm)(?![A-Za-z])',
+      caseSensitive: false,
+    ),
+    RegExp(
+      r'(بطاق|حساب|مرجع|رصيد|محفظ|شبكة\s*المدفوعات\s*اللحظية|(?:إ|ا)نستا\s*باي)',
+    ),
+  ];
+
+  /// Number of leading [_amountPatterns] that are anchored to a currency.
+  static const int _currencyAnchoredAmountPatterns = 2;
+
   static final List<RegExp> _referencePatterns = [
     RegExp(
       r'(?:مرجع(?:\s*التاجر|\s*العملية)?|رقم\s*المرجع)\s*:?\s*([A-Za-z0-9][A-Za-z0-9,_-]*)',
@@ -76,10 +91,16 @@ class BankMessageParser {
   /// Attempts to parse [rawText] into a [ParsedBankMessage].
   /// Returns `null` if the message does not represent a financial debit/credit event
   /// (for example OTPs, declined alerts, or ordinary chat/system messages).
+  ///
+  /// Use [strict] for sources that also carry personal messages (SMS apps):
+  /// the amount must then be tied to a currency and the text must reference an
+  /// account/instrument (card, account, ref, balance, IPN, ...). Keep it off for
+  /// text the user explicitly pasted or shared, or apps they chose to watch.
   static ParsedBankMessage? parse(
     String rawText, {
     String? title,
     DateTime? receivedAt,
+    bool strict = false,
   }) {
     final trimmed = rawText.trim();
     if (trimmed.isEmpty) return null;
@@ -103,8 +124,16 @@ class BankMessageParser {
     if (type == null) return null;
 
     // 3. Extract monetary amount
-    final amount = _extractAmount(normalized);
+    final amount = _extractAmount(
+      normalized,
+      currencyAnchoredOnly: strict,
+    );
     if (amount == null || amount.inMinorUnits <= 0) return null;
+
+    // 3b. Strict sources must look like they come from a bank or wallet.
+    if (strict && !_instrumentPatterns.any((p) => p.hasMatch(normalized))) {
+      return null;
+    }
 
     // 4. Extract reference ID (optional, for deduplication)
     final referenceId = _extractReferenceId(normalized);
@@ -155,8 +184,14 @@ class BankMessageParser {
     return null;
   }
 
-  static Money? _extractAmount(String normalized) {
-    for (final pattern in _amountPatterns) {
+  static Money? _extractAmount(
+    String normalized, {
+    bool currencyAnchoredOnly = false,
+  }) {
+    final patterns = currencyAnchoredOnly
+        ? _amountPatterns.take(_currencyAnchoredAmountPatterns)
+        : _amountPatterns;
+    for (final pattern in patterns) {
       final match = pattern.firstMatch(normalized);
       if (match != null) {
         final rawNumber = match.group(1);
