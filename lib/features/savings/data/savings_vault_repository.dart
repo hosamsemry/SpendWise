@@ -55,83 +55,95 @@ class SavingsVaultRepository {
     );
   }
 
+  Future<Set<String>> _sweptCycleIds() async {
+    final raw = await _getSetting(keySweptCycleIds);
+    return raw != null && raw.isNotEmpty ? raw.split(',').toSet() : <String>{};
+  }
+
   /// Sweeps cycle surplus into the Lifetime Savings Vault.
-  Future<void> sweepSurplus({
+  ///
+  /// Idempotent per cycle: returns `false` and changes nothing if [cycleId]
+  /// was already swept (e.g. a double tap before the card refreshes). The
+  /// check and the balance update run in one transaction.
+  Future<bool> sweepSurplus({
     required String cycleId,
     required Money amount,
-  }) async {
-    final currentBalance = await getVaultBalance();
-    final newBalanceMinor = currentBalance.inMinorUnits + amount.inMinorUnits;
+  }) {
+    return db.transaction(() async {
+      if (await isCycleSwept(cycleId)) return false;
 
-    final rawSwept = await _getSetting(keySweptCycleIds);
-    final Set<String> sweptIds =
-        rawSwept != null && rawSwept.isNotEmpty ? rawSwept.split(',').toSet() : {};
-    sweptIds.add(cycleId);
+      final balance = await getVaultBalance();
+      final sweptIds = await _sweptCycleIds()..add(cycleId);
 
-    await db.transaction(() async {
-      await _setSetting(keyVaultBalance, newBalanceMinor.toString());
+      await _setSetting(
+        keyVaultBalance,
+        (balance.inMinorUnits + amount.inMinorUnits).toString(),
+      );
       await _setSetting(keySweptCycleIds, sweptIds.join(','));
       await _setSetting(keyLastSweptCycleId, cycleId);
       await _setSetting(keyLastSweepAmount, amount.inMinorUnits.toString());
       await _setSetting(keyLastSweptAt, DateTime.now().toIso8601String());
+      return true;
     });
   }
 
-  /// Undoes a previously executed surplus sweep.
-  Future<void> undoSweep({
+  /// Undoes a previously executed surplus sweep. Returns `false` and changes
+  /// nothing if [cycleId] is not currently swept, so a repeated undo cannot
+  /// remove money twice.
+  Future<bool> undoSweep({
     required String cycleId,
     required Money amount,
-  }) async {
-    final currentBalance = await getVaultBalance();
-    var newBalanceMinor = currentBalance.inMinorUnits - amount.inMinorUnits;
-    if (newBalanceMinor < 0) newBalanceMinor = 0;
+  }) {
+    return db.transaction(() async {
+      if (!await isCycleSwept(cycleId)) return false;
 
-    final rawSwept = await _getSetting(keySweptCycleIds);
-    final Set<String> sweptIds =
-        rawSwept != null && rawSwept.isNotEmpty ? rawSwept.split(',').toSet() : {};
-    sweptIds.remove(cycleId);
+      final balance = await getVaultBalance();
+      var newBalanceMinor = balance.inMinorUnits - amount.inMinorUnits;
+      if (newBalanceMinor < 0) newBalanceMinor = 0;
+      final sweptIds = await _sweptCycleIds()..remove(cycleId);
 
-    await db.transaction(() async {
       await _setSetting(keyVaultBalance, newBalanceMinor.toString());
       await _setSetting(keySweptCycleIds, sweptIds.join(','));
       final lastSwept = await _getSetting(keyLastSweptCycleId);
       if (lastSwept == cycleId) {
         await (db.delete(db.appSettingsTable)
-              ..where((tbl) => tbl.key.equals(keyLastSweptCycleId)))
-            .go();
-        await (db.delete(db.appSettingsTable)
-              ..where((tbl) => tbl.key.equals(keyLastSweepAmount)))
-            .go();
-        await (db.delete(db.appSettingsTable)
-              ..where((tbl) => tbl.key.equals(keyLastSweptAt)))
+              ..where((tbl) => tbl.key.isIn([
+                    keyLastSweptCycleId,
+                    keyLastSweepAmount,
+                    keyLastSweptAt,
+                  ])))
             .go();
       }
+      return true;
     });
   }
 
   /// Manually deposits funds into the Savings Vault.
-  Future<Money> deposit({required Money amount}) async {
+  Future<Money> deposit({required Money amount}) {
     if (amount.inMinorUnits <= 0) {
       throw ArgumentError('Deposit amount must be positive');
     }
-    final current = await getVaultBalance();
-    final updated = current + amount;
-    await _setSetting(keyVaultBalance, updated.inMinorUnits.toString());
-    return updated;
+    return db.transaction(() async {
+      final updated = await getVaultBalance() + amount;
+      await _setSetting(keyVaultBalance, updated.inMinorUnits.toString());
+      return updated;
+    });
   }
 
   /// Manually withdraws funds from the Savings Vault (e.g. for emergencies or planned spending).
-  Future<Money> withdraw({required Money amount}) async {
+  Future<Money> withdraw({required Money amount}) {
     if (amount.inMinorUnits <= 0) {
       throw ArgumentError('Withdrawal amount must be positive');
     }
-    final current = await getVaultBalance();
-    if (amount > current) {
-      throw StateError('Cannot withdraw more than available vault balance');
-    }
-    final updated = current - amount;
-    await _setSetting(keyVaultBalance, updated.inMinorUnits.toString());
-    return updated;
+    return db.transaction(() async {
+      final current = await getVaultBalance();
+      if (amount > current) {
+        throw StateError('Cannot withdraw more than available vault balance');
+      }
+      final updated = current - amount;
+      await _setSetting(keyVaultBalance, updated.inMinorUnits.toString());
+      return updated;
+    });
   }
 
   /// Checks whether surplus from [cycleId] has already been swept.

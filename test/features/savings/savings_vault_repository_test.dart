@@ -131,5 +131,43 @@ void main() {
       expect(await vaultRepo.isCycleSwept('cycle-1'), isTrue);
       expect(await vaultRepo.isCycleSwept('cycle-2'), isFalse);
     });
+
+    test('sweeping the same cycle twice credits the vault only once', () async {
+      const surplus = Money.fromMinorUnits(10000);
+      expect(await vaultRepo.sweepSurplus(cycleId: 'c1', amount: surplus), isTrue);
+      expect(await vaultRepo.sweepSurplus(cycleId: 'c1', amount: surplus), isFalse);
+      expect((await vaultRepo.getVaultBalance()).inMinorUnits, 10000);
+    });
+
+    test('concurrent double taps credit the vault only once', () async {
+      const surplus = Money.fromMinorUnits(10000);
+      final results = await Future.wait([
+        vaultRepo.sweepSurplus(cycleId: 'c1', amount: surplus),
+        vaultRepo.sweepSurplus(cycleId: 'c1', amount: surplus),
+      ]);
+      expect(results.where((r) => r), hasLength(1));
+      expect((await vaultRepo.getVaultBalance()).inMinorUnits, 10000);
+    });
+
+    test('undo only reverses a sweep that happened, once', () async {
+      const surplus = Money.fromMinorUnits(10000);
+      await vaultRepo.deposit(amount: const Money.fromMinorUnits(5000));
+      expect(await vaultRepo.undoSweep(cycleId: 'c1', amount: surplus), isFalse);
+      expect((await vaultRepo.getVaultBalance()).inMinorUnits, 5000);
+
+      await vaultRepo.sweepSurplus(cycleId: 'c1', amount: surplus);
+      expect(await vaultRepo.undoSweep(cycleId: 'c1', amount: surplus), isTrue);
+      expect(await vaultRepo.undoSweep(cycleId: 'c1', amount: surplus), isFalse);
+      expect((await vaultRepo.getVaultBalance()).inMinorUnits, 5000);
+      expect(await vaultRepo.isCycleSwept('c1'), isFalse);
+    });
+
+    test('concurrent deposits are not lost', () async {
+      await Future.wait([
+        for (var i = 0; i < 5; i++)
+          vaultRepo.deposit(amount: const Money.fromMinorUnits(100)),
+      ]);
+      expect((await vaultRepo.getVaultBalance()).inMinorUnits, 500);
+    });
   });
 }

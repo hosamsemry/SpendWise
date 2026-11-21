@@ -20,10 +20,11 @@ class CycleCloseoutCard extends ConsumerWidget {
     final cycle = closeout.cycle;
     final surplus = closeout.surplus;
 
-    await repo.sweepSurplus(cycleId: cycle.id, amount: surplus);
+    final swept = await repo.sweepSurplus(cycleId: cycle.id, amount: surplus);
     ref.read(refreshTriggerProvider.notifier).trigger();
 
-    if (!context.mounted) return;
+    // A repeated tap is a no-op; only offer Undo for the sweep that happened.
+    if (!swept || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(
