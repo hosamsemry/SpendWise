@@ -44,7 +44,7 @@ class CycleSummaryScreen extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                   side: BorderSide(
-                    color: context.goldColor.withValues(
+                    color: context.accentColor.withValues(
                       alpha: isDark ? 0.32 : 0.42,
                     ),
                   ),

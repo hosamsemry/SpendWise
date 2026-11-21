@@ -68,8 +68,8 @@ class CycleCloseoutCard extends ConsumerWidget {
                   const Color(0xFF0B1411),
                 ]
               : [
-                  const Color(0xFFFFFDF5),
-                  const Color(0xFFF0FDF4),
+                  context.surfaceColor,
+                  context.surfaceColor,
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -77,8 +77,8 @@ class CycleCloseoutCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: context.isDark
-              ? context.goldColor.withValues(alpha: 0.35)
-              : context.goldColor.withValues(alpha: 0.5),
+              ? context.savingsColor.withValues(alpha: 0.35)
+              : context.borderColor,
           width: 1.2,
         ),
       ),
@@ -163,7 +163,7 @@ class CycleCloseoutCard extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: context.goldColor,
+                      backgroundColor: context.savingsColor,
                       foregroundColor: Colors.black,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

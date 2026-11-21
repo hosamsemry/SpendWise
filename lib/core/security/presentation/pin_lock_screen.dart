@@ -196,7 +196,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         : AppColors.textPrimary;
     final dotEmptyColor = isDark
         ? AppColorsDark.surfaceVariant
-        : const Color(0xFFE2E8F0);
+        : AppColors.primaryContainer;
 
     final title = widget.mode == PinMode.unlock
         ? context.l10n.enterAppPin
@@ -417,7 +417,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final btnBg = isDark
         ? AppColorsDark.surfaceVariant
-        : const Color(0xFFF1F5F9);
+        : AppColors.surfaceVariant;
     final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     final textColor = isDark
         ? AppColorsDark.textPrimary

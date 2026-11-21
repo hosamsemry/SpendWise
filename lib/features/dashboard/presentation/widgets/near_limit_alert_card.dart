@@ -90,7 +90,7 @@ class NearLimitAlertCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: context.isDark
                           ? context.warningLightColor.withValues(alpha: 0.7)
-                          : Colors.amber.shade50,
+                          : context.warningLightColor,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -194,7 +194,7 @@ class NearLimitAlertCard extends StatelessWidget {
                               value: (pct / 100.0).clamp(0.0, 1.0),
                               backgroundColor: context.isDark
                                   ? context.surfaceColor
-                                  : Colors.grey.shade200,
+                                  : context.surfaceVariantColor,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 context.warningColor,
                               ),
@@ -363,12 +363,12 @@ class NearLimitAlertCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.isDark
               ? context.warningLightColor.withValues(alpha: 0.6)
-              : Colors.amber.shade50,
+              : context.warningLightColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: context.isDark
                 ? context.warningColor.withValues(alpha: 0.5)
-                : Colors.amber.shade200,
+                : context.warningColor.withValues(alpha: 0.25),
           ),
         ),
         child: Material(
@@ -404,7 +404,7 @@ class NearLimitAlertCard extends StatelessWidget {
                           style: TextStyle(
                             color: context.isDark
                                 ? context.textPrimary.withValues(alpha: 0.85)
-                                : const Color(0xFF92400E),
+                                : context.warningColor,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

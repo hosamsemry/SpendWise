@@ -48,7 +48,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: context.l10n.undo,
-          textColor: context.goldColor,
+          textColor: context.accentColor,
           onPressed: () async {
             HapticFeedback.lightImpact();
             await txService.restore(tx);
@@ -144,7 +144,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   horizontal: 16,
                   vertical: 8,
                 ),
-                color: context.surfaceColor,
+                // Light: blend with the paper app bar; dark keeps the lifted surface.
+                color: context.isDark ? context.surfaceColor : context.backgroundColor,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -361,7 +362,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               duration: const Duration(seconds: 4),
                               action: SnackBarAction(
                                 label: context.l10n.undo,
-                                textColor: context.goldColor,
+                                textColor: context.accentColor,
                                 onPressed: () {
                                   HapticFeedback.lightImpact();
                                   ref

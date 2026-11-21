@@ -48,16 +48,10 @@ class FloatingDockNavBar extends StatelessWidget {
                 BoxShadow(
                   color: isDark
                       ? Colors.black.withValues(alpha: 0.45)
-                      : const Color(0xFF0B0F19).withValues(alpha: 0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
+                      : AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: isDark ? 24 : 16,
+                  offset: Offset(0, isDark ? 8 : 4),
                 ),
-                if (!isDark)
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 2),
-                  ),
               ],
             ),
             child: ClipRRect(
@@ -116,9 +110,7 @@ class FloatingDockNavBar extends StatelessWidget {
                                             ? AppColorsDark.gold.withValues(
                                                 alpha: 0.35,
                                               )
-                                            : AppColors.gold.withValues(
-                                                alpha: 0.45,
-                                              ),
+                                            : Colors.transparent,
                                         width: 1,
                                       )
                                     : Border.all(

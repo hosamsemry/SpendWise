@@ -65,7 +65,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
     // Harmonized palette tokens for Dark (Velvet Titanium) & Light (Porcelain Silk & Champagne Gold)
     final cardBorder = isDark
         ? const Color(0xFFE5C158).withValues(alpha: 0.35)
-        : const Color(0xFFC6972C).withValues(alpha: 0.35);
+        : AppColors.border;
 
     final cardShadows = isDark
         ? [
@@ -80,18 +80,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
               offset: const Offset(0, 2),
             ),
           ]
-        : [
-            BoxShadow(
-              color: const Color(0xFF0B0F19).withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: const Color(0xFFC6972C).withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ];
+        : const <BoxShadow>[]; // light: flat card, hairline border only
 
     final cardBaseGradient = isDark
         ? const LinearGradient(
@@ -104,66 +93,60 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
             ],
           )
         : const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFFFFF),
-              Color(0xFFFCFDFE),
-              Color(0xFFF7F8FC),
-            ],
+            colors: [AppColors.surface, AppColors.surface],
           );
 
     final ambientGlowTopRight = isDark
         ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-        : const Color(0xFFE5C158).withValues(alpha: 0.12);
+        : Colors.transparent;
 
     final ambientGlowBottomLeft = isDark
         ? const Color(0xFF580F1A).withValues(alpha: 0.20)
-        : const Color(0xFFBE185D).withValues(alpha: 0.04);
+        : Colors.transparent;
 
     final headerGold = isDark
         ? const Color(0xFFE5C158)
-        : const Color(0xFF8C6514);
+        : AppColors.textSecondary;
 
     final textPrimary = isDark
         ? const Color(0xFFF8FAFC)
-        : const Color(0xFF0B0F19);
+        : AppColors.textPrimary;
 
     final textSecondary = isDark
         ? const Color(0xFFB4BED0)
-        : const Color(0xFF475569);
+        : AppColors.textSecondary;
 
     final textMuted = isDark
         ? const Color(0xFF8E9AB0)
-        : const Color(0xFF64748B);
+        : AppColors.textTertiary;
 
     final overspentColor = isDark
         ? const Color(0xFFF87171)
-        : const Color(0xFFB91C1C);
+        : AppColors.overspent;
 
     final warningColor = isDark
         ? const Color(0xFFFBBF24)
-        : const Color(0xFFB45309);
+        : AppColors.warning;
 
     final dividerColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : const Color(0xFFE9EDF5);
+        : AppColors.divider;
 
     final separatorColor = isDark
         ? Colors.white.withValues(alpha: 0.10)
-        : const Color(0xFFE2E8F0);
+        : AppColors.border;
 
     final progressTrackColor = isDark
         ? Colors.white.withValues(alpha: 0.10)
-        : const Color(0xFFEEF2F6);
+        : AppColors.surfaceVariant;
 
     final paceGaugeTrackColor = isDark
         ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-        : const Color(0xFFE2E8F0);
+        : AppColors.surfaceVariant;
 
     final paceGaugeProgressColor = isDark
         ? const Color(0xFFE5C158)
-        : const Color(0xFFC6972C);
+        : AppColors.primary;
 
     // Cycle days calculations
     final totalCycleDays = math.max(
@@ -184,15 +167,15 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(isDark ? 24 : 18),
         border: Border.all(
           color: cardBorder,
-          width: 1.2,
+          width: isDark ? 1.2 : 1,
         ),
         boxShadow: cardShadows,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: BorderRadius.circular(isDark ? 23 : 17),
         child: Stack(
           children: [
             // 1. Base Layer Gradient
@@ -253,7 +236,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                       Colors.transparent,
                       isDark
                           ? const Color(0xFFE5C158).withValues(alpha: 0.3)
-                          : const Color(0xFFC6972C).withValues(alpha: 0.25),
+                          : Colors.transparent,
                       Colors.transparent,
                     ],
                   ),
@@ -265,9 +248,9 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(23),
-                splashColor: (isDark ? const Color(0xFFE5C158) : const Color(0xFFC6972C)).withValues(alpha: 0.10),
-                highlightColor: (isDark ? const Color(0xFFE5C158) : const Color(0xFFC6972C)).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(isDark ? 23 : 17),
+                splashColor: (isDark ? const Color(0xFFE5C158) : AppColors.primary).withValues(alpha: 0.06),
+                highlightColor: (isDark ? const Color(0xFFE5C158) : AppColors.primary).withValues(alpha: 0.03),
                 onTap: onToggleAmountsVisibility == null
                     ? null
                     : () {
@@ -325,19 +308,19 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                 color: !isNetPositive
                                     ? (isDark
                                         ? overspentColor.withValues(alpha: 0.16)
-                                        : const Color(0xFFFEF2F2))
+                                        : AppColors.overspentLight)
                                     : (isDark
                                         ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-                                        : const Color(0xFFFFFBEB)),
+                                        : AppColors.surfaceVariant),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: !isNetPositive
                                       ? (isDark
                                           ? overspentColor.withValues(alpha: 0.5)
-                                          : const Color(0xFFFCA5A5))
+                                          : Colors.transparent)
                                       : (isDark
                                           ? const Color(0xFFE5C158).withValues(alpha: 0.45)
-                                          : const Color(0xFFC6972C).withValues(alpha: 0.40)),
+                                          : Colors.transparent),
                                   width: 0.9,
                                 ),
                               ),
@@ -356,7 +339,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                               ? warningColor
                                               : (isDark
                                                   ? const Color(0xFFE5C158)
-                                                  : const Color(0xFFC6972C)),
+                                                  : AppColors.income),
                                     ),
                                   ),
                                   const SizedBox(width: 5),
@@ -401,7 +384,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                           ? overspentColor
                                           : (isDark
                                               ? const Color(0xFFF8FAFC)
-                                              : const Color(0xFF8C6514)),
+                                              : AppColors.textPrimary),
                                     ),
                                   ),
                                 ],
@@ -492,13 +475,18 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                               Color(0xFFF7E29B),
                                             ]
                                           : const [
-                                              Color(0xFFC6972C),
-                                              Color(0xFFE5C158),
+                                              AppColors.primary,
+                                              AppColors.primary,
                                             ])
-                                      : const [
-                                          Color(0xFFDC2626),
-                                          Color(0xFFEF4444),
-                                        ],
+                                      : isDark
+                                          ? const [
+                                              Color(0xFFDC2626),
+                                              Color(0xFFEF4444),
+                                            ]
+                                          : const [
+                                              AppColors.overspent,
+                                              AppColors.overspent,
+                                            ],
                                 ),
                               ),
                             ),

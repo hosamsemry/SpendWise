@@ -237,7 +237,7 @@ class _SmartDetectionSettingsPageState
                                       'source_apps_suggestion_badge',
                                     ),
                                     label: Text('$suggestionCount'),
-                                    backgroundColor: context.goldColor,
+                                    backgroundColor: context.accentColor,
                                     textColor: Colors.black,
                                   ),
                                 Icon(

@@ -309,7 +309,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                       fontWeight: FontWeight.w500,
                       color: context.isDark
                           ? context.warningColor
-                          : const Color(0xFF92400E),
+                          : context.warningColor,
                       height: 1.35,
                     ),
                   ),
@@ -582,7 +582,8 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   horizontal: 16,
                   vertical: 8,
                 ),
-                color: context.surfaceColor,
+                // Light: blend with the paper app bar; dark keeps the lifted surface.
+                color: context.isDark ? context.surfaceColor : context.backgroundColor,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -878,9 +879,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                           value: hasBudget
                               ? (pct! / 100.0).clamp(0.0, 1.0)
                               : (b.spentAmount.inMinorUnits > 0 ? 1.0 : 0.0),
-                          backgroundColor: context.isDark
-                              ? context.surfaceVariantColor
-                              : Colors.grey.shade100,
+                          backgroundColor: context.surfaceVariantColor,
                           valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                           minHeight: 6,
                         ),

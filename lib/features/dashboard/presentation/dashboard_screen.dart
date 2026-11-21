@@ -498,9 +498,8 @@ class DashboardScreen extends ConsumerWidget {
                                                                 0
                                                             ? 1.0
                                                             : 0.0),
-                                                  backgroundColor: context.isDark
-                                                      ? context.surfaceVariantColor
-                                                      : Colors.grey.shade100,
+                                                  backgroundColor:
+                                                      context.surfaceVariantColor,
                                                   valueColor:
                                                       AlwaysStoppedAnimation<
                                                         Color
@@ -509,7 +508,7 @@ class DashboardScreen extends ConsumerWidget {
                                                             ? context.overspentColor
                                                             : (b.isNearLimit
                                                                 ? context.warningColor
-                                                                : context.goldColor),
+                                                                : context.accentColor),
                                                       ),
                                                   minHeight: 6,
                                                 ),
@@ -733,7 +732,7 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDark;
-    final accentColor = context.goldColor;
+    final accentColor = context.accentColor;
 
     return Container(
       key: const ValueKey('dashboard_cycle_switcher_bar'),
@@ -749,7 +748,7 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.0),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -791,7 +790,7 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
                         letterSpacing: 0.8,
                         color: isDark
                             ? const Color(0xFFE5C158)
-                            : const Color(0xFF8C6514),
+                            : context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),

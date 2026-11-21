@@ -1,42 +1,44 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand / Refined Burnished Bronze & Champagne Gold (WCAG AA compliant on white)
-  static const Color primary = Color(0xFF8C6514); // Rich Burnished Bronze-Gold (~5.3:1 on white)
-  static const Color primaryLight = Color(0xFFFBF5E6); // Warm Champagne Tint
-  static const Color primaryContainer = Color(0xFFF2E3BE); // Soft Metallic Gold Container
-  static const Color gold = Color(0xFFC6972C); // Brushed Champagne Gold Accent
+  // "Paper & ink" light palette: warm neutral paper, near-black ink as the
+  // primary colour, and colour reserved for meaning (money in/out, alerts).
+  // All text colours meet WCAG AA on white and on the paper background.
+  static const Color primary = Color(0xFF1B1B18); // Ink (17:1 on white)
+  static const Color primaryLight = Color(0xFFEFEEE9); // Selected / tinted surfaces
+  static const Color primaryContainer = Color(0xFFE6E4DE);
+  static const Color gold = Color(0xFF8F6A1C); // Brand gold, used sparingly (savings)
 
-  // Financial States (AA+ contrast on porcelain surfaces)
-  static const Color income = Color(0xFF047857);
-  static const Color incomeLight = Color(0xFFECFDF5);
+  // Financial states
+  static const Color income = Color(0xFF12715A);
+  static const Color incomeLight = Color(0xFFE7F2EC);
 
-  static const Color expense = Color(0xFF475569);
-  static const Color expenseLight = Color(0xFFF1F5F9);
+  static const Color expense = Color(0xFF5C5B56);
+  static const Color expenseLight = Color(0xFFF0EFEA);
 
-  static const Color crimson = Color(0xFF881337);
-  static const Color crimsonLight = Color(0xFFFFE4E6);
+  static const Color crimson = Color(0xFF8E2A3A);
+  static const Color crimsonLight = Color(0xFFF7E8EA);
 
-  static const Color overspent = Color(0xFFB91C1C);
-  static const Color overspentLight = Color(0xFFFEF2F2);
+  static const Color overspent = Color(0xFFC2372B);
+  static const Color overspentLight = Color(0xFFFAECE9);
 
-  static const Color warning = Color(0xFFB45309);
-  static const Color warningLight = Color(0xFFFFFBEB);
+  static const Color warning = Color(0xFF9A5A06);
+  static const Color warningLight = Color(0xFFFAF0DF);
 
-  // Crisp Porcelain Surfaces
-  static const Color background = Color(0xFFF6F7FA);
+  // Surfaces
+  static const Color background = Color(0xFFF7F6F2); // Paper
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFEFF2F7);
-  static const Color inputFill = Color(0xFFF3F5F9);
+  static const Color surfaceVariant = Color(0xFFEFEEE9);
+  static const Color inputFill = Color(0xFFF4F3EF);
 
-  // Deep Obsidian Typography (High legibility)
-  static const Color textPrimary = Color(0xFF0B0F19);
-  static const Color textSecondary = Color(0xFF475569); // ~7.5:1 on white
-  static const Color textTertiary = Color(0xFF64748B); // ~4.6:1 on white
+  // Typography
+  static const Color textPrimary = Color(0xFF1B1B18);
+  static const Color textSecondary = Color(0xFF5C5B56); // 6.8:1 on white
+  static const Color textTertiary = Color(0xFF6F6E68); // 5.0:1 on white
 
-  static const Color border = Color(0xFFDDE2EC);
-  static const Color inputBorder = Color(0xFFCBD5E1);
-  static const Color divider = Color(0xFFE9EDF5);
+  static const Color border = Color(0xFFE4E2DC);
+  static const Color inputBorder = Color(0xFFD6D4CD);
+  static const Color divider = Color(0xFFECEAE5);
 }
 
 class AppColorsDark {
@@ -171,10 +173,10 @@ class AppTheme {
         thickness: 1,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
@@ -189,7 +191,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: AppColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,
@@ -201,7 +203,7 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
@@ -216,7 +218,7 @@ class AppTheme {
           side: const BorderSide(color: AppColors.inputBorder),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontFamily: fontFamily,
@@ -226,35 +228,32 @@ class AppTheme {
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(
-            fontFamily: fontFamily,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        // No textStyle override: the default (textTheme.labelLarge, Outfit
+        // w600) already matches, and a partial style here would differ from
+        // the dark theme's and break the light <-> dark theme animation.
+        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.inputFill,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.inputBorder, width: 1.4),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.inputBorder, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.inputBorder, width: 1.4),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.inputBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.overspent, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.overspent, width: 2.0),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -263,7 +262,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(
           fontFamily: fontFamily,
-          color: Color(0xFF334155),
+          color: AppColors.textSecondary,
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
@@ -298,7 +297,7 @@ class AppTheme {
         ),
         suffixStyle: const TextStyle(
           fontFamily: fontFamily,
-          color: Color(0xFF334155),
+          color: AppColors.textSecondary,
           fontSize: 15,
           fontWeight: FontWeight.w700,
         ),
@@ -306,9 +305,9 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 8,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.border, width: 1),
         ),
         titleTextStyle: const TextStyle(
@@ -357,7 +356,8 @@ class AppTheme {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 3,
+        elevation: 1,
+        highlightElevation: 2,
         shape: CircleBorder(),
       ),
       chipTheme: ChipThemeData(
@@ -382,8 +382,9 @@ class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: SegmentedButton.styleFrom(
-          selectedBackgroundColor: AppColors.primary,
-          selectedForegroundColor: Colors.white,
+          // iOS-style segmented control: white "thumb" on a paper track.
+          selectedBackgroundColor: AppColors.surface,
+          selectedForegroundColor: AppColors.textPrimary,
           backgroundColor: AppColors.surfaceVariant,
           foregroundColor: AppColors.textPrimary,
           textStyle: const TextStyle(
@@ -419,7 +420,7 @@ class AppTheme {
           color: Colors.white,
           fontSize: 14,
         ),
-        actionTextColor: AppColorsDark.gold,
+        actionTextColor: Color(0xFFE9D3A0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
@@ -788,6 +789,12 @@ extension ThemeContextExt on BuildContext {
       isDark ? AppColorsDark.primaryLight : AppColors.primaryLight;
 
   Color get goldColor => isDark ? AppColorsDark.gold : AppColors.gold;
+
+  /// Interactive / highlight accent: champagne gold in dark mode, ink in light.
+  Color get accentColor => isDark ? AppColorsDark.gold : AppColors.primary;
+
+  /// Savings & vault accent: the brand gold in both modes.
+  Color get savingsColor => isDark ? AppColorsDark.gold : AppColors.gold;
   Color get crimsonColor => isDark ? AppColorsDark.crimson : AppColors.crimson;
   Color get crimsonLightColor =>
       isDark ? AppColorsDark.crimsonLight : AppColors.crimsonLight;

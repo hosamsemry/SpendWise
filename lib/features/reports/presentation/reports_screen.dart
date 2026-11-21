@@ -56,7 +56,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 horizontal: 16,
                 vertical: 8,
               ),
-              color: context.surfaceColor,
+              // Light: blend with the paper app bar; dark keeps the lifted surface.
+              color: context.isDark ? context.surfaceColor : context.backgroundColor,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

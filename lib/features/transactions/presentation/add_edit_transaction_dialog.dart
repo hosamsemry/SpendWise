@@ -407,7 +407,7 @@ class _AddEditTransactionDialogState
         border: Border(
           top: BorderSide(
             color: context.isDark
-                ? context.goldColor.withValues(alpha: 0.3)
+                ? context.accentColor.withValues(alpha: 0.3)
                 : context.borderColor,
             width: 1.5,
           ),

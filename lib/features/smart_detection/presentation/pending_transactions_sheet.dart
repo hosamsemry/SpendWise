@@ -41,7 +41,7 @@ class PendingTransactionsSheet extends ConsumerWidget {
         border: Border(
           top: BorderSide(
             color: context.isDark
-                ? context.goldColor.withValues(alpha: 0.4)
+                ? context.accentColor.withValues(alpha: 0.4)
                 : context.borderColor,
             width: 1.4,
           ),

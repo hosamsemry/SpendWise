@@ -28,7 +28,7 @@ class PendingTransactionsBanner extends ConsumerWidget {
 
         final latest = items.first;
         final isDark = context.isDark;
-        final accent = context.goldColor;
+        final accent = context.accentColor;
 
         return Padding(
           padding: margin,
@@ -49,7 +49,7 @@ class PendingTransactionsBanner extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isDark
                       ? accent.withValues(alpha: 0.12)
-                      : const Color(0xFFFFFBEB),
+                      : context.surfaceColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: accent.withValues(alpha: isDark ? 0.45 : 0.55),

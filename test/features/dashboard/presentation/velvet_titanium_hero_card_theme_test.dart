@@ -68,7 +68,7 @@ void main() {
     );
   }
 
-  testWidgets('Light mode uses light porcelain surface and deep obsidian typography', (tester) async {
+  testWidgets('Light mode uses paper surfaces and ink typography', (tester) async {
     await tester.pumpWidget(buildThemedCard(AppTheme.lightTheme));
     await tester.pumpAndSettle();
 
@@ -79,19 +79,19 @@ void main() {
     final remainingTextFinder = find.text('+6,000.00 EGP');
     expect(remainingTextFinder, findsOneWidget);
     final remainingTextWidget = tester.widget<Text>(remainingTextFinder);
-    expect(remainingTextWidget.style?.color, const Color(0xFF0B0F19)); // Deep Obsidian
+    expect(remainingTextWidget.style?.color, AppColors.textPrimary); // Ink
 
     // Header accent label should be rendered with AA-compliant burnished bronze
     final headerLabelFinder = find.text('REMAINING BUDGET');
     expect(headerLabelFinder, findsOneWidget);
     final headerLabelWidget = tester.widget<Text>(headerLabelFinder);
-    expect(headerLabelWidget.style?.color, const Color(0xFF8C6514));
+    expect(headerLabelWidget.style?.color, AppColors.textSecondary);
 
     // Days remaining text in the pace ring gauge should be deep obsidian
     final daysRemainingFinder = find.text('15');
     expect(daysRemainingFinder, findsOneWidget);
     final daysRemainingWidget = tester.widget<Text>(daysRemainingFinder);
-    expect(daysRemainingWidget.style?.color, const Color(0xFF0B0F19));
+    expect(daysRemainingWidget.style?.color, AppColors.textPrimary);
   });
 
   testWidgets('Dark mode maintains Velvet Titanium obsidian surface and luminous text', (tester) async {

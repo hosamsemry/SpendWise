@@ -29,13 +29,13 @@ class SavingsVaultCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(18),
             side: BorderSide(
               color: context.isDark
-                  ? context.goldColor.withValues(alpha: 0.3)
-                  : context.goldColor.withValues(alpha: 0.45),
+                  ? context.savingsColor.withValues(alpha: 0.3)
+                  : context.borderColor,
             ),
           ),
           color: context.isDark
               ? const Color(0xFF14141B)
-              : const Color(0xFFFFFDF5),
+              : context.surfaceColor,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
@@ -49,12 +49,12 @@ class SavingsVaultCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: context.goldColor.withValues(alpha: 0.12),
+                      color: context.savingsColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.savings_rounded,
-                      color: context.goldColor,
+                      color: context.savingsColor,
                       size: 24,
                     ),
                   ),
@@ -69,7 +69,7 @@ class SavingsVaultCard extends ConsumerWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.6,
-                            color: context.goldColor,
+                            color: context.savingsColor,
                           ),
                         ),
                         const SizedBox(height: 2),
