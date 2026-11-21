@@ -331,7 +331,9 @@ class BudgetCycleRepository {
   }
 
   /// Ensures any active category created after the cycle was started
-  /// has a corresponding CategoryBudget record (defaulting to its default allocation).
+  /// has a corresponding CategoryBudget record (defaulting to its default
+  /// allocation). Existing budgets, including deliberate zeros, are never
+  /// changed.
   Future<void> syncCategoriesForCycle(String cycleId) async {
     final existingBudgets = await getCycleBudgets(cycleId);
     final activeCategories =
@@ -340,45 +342,19 @@ class BudgetCycleRepository {
             ))
             .get();
 
-    final hasAnyNonSavingsBudget = activeCategories.any((cat) {
-      final lower = cat.name.trim().toLowerCase();
-      if (lower == 'savings' || lower == 'مدخرات') return false;
-      return (existingBudgets[cat.id]?.inMinorUnits ?? 0) > 0;
-    });
-
     final now = DateTime.now().toIso8601String();
     for (final cat in activeCategories) {
-      if (!existingBudgets.containsKey(cat.id)) {
-        await db
-            .into(db.categoryBudgetsTable)
-            .insert(
-              CategoryBudgetsTableCompanion.insert(
-                id: _uuid.v4(),
-                cycleId: cycleId,
-                categoryId: cat.id,
-                budgetAmountMinor: cat.defaultBudgetMinor,
-                createdAt: now,
-                updatedAt: now,
-              ),
-            );
-      } else if (!hasAnyNonSavingsBudget &&
-          cat.defaultBudgetMinor > 0 &&
-          existingBudgets[cat.id]!.inMinorUnits == 0) {
-        final lower = cat.name.trim().toLowerCase();
-        if (lower != 'savings' && lower != 'مدخرات') {
-          await (db.update(db.categoryBudgetsTable)..where(
-                (tbl) =>
-                    tbl.cycleId.equals(cycleId) &
-                    tbl.categoryId.equals(cat.id),
-              ))
-              .write(
-                CategoryBudgetsTableCompanion(
-                  budgetAmountMinor: Value(cat.defaultBudgetMinor),
-                  updatedAt: Value(now),
-                ),
-              );
-        }
-      }
+      if (existingBudgets.containsKey(cat.id)) continue;
+      await db.into(db.categoryBudgetsTable).insert(
+            CategoryBudgetsTableCompanion.insert(
+              id: _uuid.v4(),
+              cycleId: cycleId,
+              categoryId: cat.id,
+              budgetAmountMinor: cat.defaultBudgetMinor,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
     }
   }
 }

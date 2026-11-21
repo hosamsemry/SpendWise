@@ -190,5 +190,30 @@ void main() {
         expect(found.endDateString, '2026-05-31');
       },
     );
+
+    test('syncCategoriesForCycle adds missing categories but keeps deliberate zeros', () async {
+      final food = await categoryRepo.createCategory(
+        name: 'Food',
+        defaultBudget: Money.fromMajorUnits(500),
+      );
+      final cycle = await cycleRepo.getOrCreateCycleForDate(DateTime(2026, 11, 26));
+      // The user sets every budget of this cycle to zero on purpose.
+      await cycleRepo.updateCategoryBudget(
+        cycleId: cycle.id,
+        categoryId: food.id,
+        budgetAmount: const Money.zero(),
+      );
+      final gym = await categoryRepo.createCategory(
+        name: 'Gym',
+        defaultBudget: Money.fromMajorUnits(300),
+      );
+
+      await cycleRepo.syncCategoriesForCycle(cycle.id);
+      await cycleRepo.syncCategoriesForCycle(cycle.id); // idempotent
+
+      final budgets = await cycleRepo.getCycleBudgets(cycle.id);
+      expect(budgets[food.id], const Money.zero(), reason: 'zero kept');
+      expect(budgets[gym.id], Money.fromMajorUnits(300), reason: 'new category added');
+    });
   });
 }
