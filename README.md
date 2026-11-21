@@ -9,7 +9,7 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
 [![Tests](https://img.shields.io/badge/Tests-165%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
-[![Security](https://img.shields.io/badge/Security-SHA--256%20%2B%20Biometrics-darkgreen)](lib/core/security/)
+[![Security](https://img.shields.io/badge/Security-PBKDF2%20%2B%20AES--256--GCM%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
@@ -23,9 +23,10 @@
 ## 🌟 Key Highlights
 
 ### 🔒 100% Offline & Private
-- **Zero Cloud Dependency**: Operates entirely offline with a local, hardened SQLite database via [Drift](https://drift.simonbinder.eu).
-- **No Telemetry or Tracking**: Your financial data never leaves your device. No analytics, no ads, no external servers.
-- **Biometric & PIN Lock**: Encrypted SHA-256 salted PIN protection with device biometric (fingerprint / face) unlock and automatic 30-second lockout throttling after repeated failures.
+- **Zero Cloud Dependency**: Operates entirely offline with a local SQLite database via [Drift](https://drift.simonbinder.eu). App data is excluded from Android cloud backup and device-to-device transfer.
+- **No Telemetry or Tracking**: Your financial data never leaves your device unless you export it. No analytics, no ads, no external servers, no internet permission.
+- **Biometric & PIN Lock**: PIN stored as a salted PBKDF2-HMAC-SHA256 hash, with device biometric (fingerprint / face) unlock. The lock covers every open screen, and after 5 wrong PINs an escalating lockout (30s doubling up to 1h) applies that survives app restarts.
+- **Private App Switcher**: Balances are hidden from the recent-apps preview while your own screenshots keep working.
 
 ### 📅 Discrete Budget Cycle Engine
 - **Payday Alignment**: Configure custom cycle start days (e.g., the 25th) or traditional calendar months (the 1st).
@@ -53,7 +54,7 @@
 - Pre-seeded starter categories customized by selected language.
 
 ### 💾 Open Data Portability
-- **Encrypted JSON Backups**: Full database snapshot export and restore with schema validation and PIN preservation options.
+- **Password-Protected Backups**: Full database snapshot export and restore, encrypted with AES-256-GCM (PBKDF2-derived key) when you set a password, with schema validation and PIN preservation options.
 - **CSV Spreadsheets**: Export clean transaction ledgers and category cycle breakdowns formatted for spreadsheet analysis (Excel, Google Sheets).
 
 ---
