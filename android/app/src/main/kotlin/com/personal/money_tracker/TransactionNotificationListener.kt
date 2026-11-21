@@ -65,30 +65,12 @@ class TransactionNotificationListener : NotificationListenerService() {
         val combined = "$title $bodyText".trim()
         val pkg = sbn.packageName.orEmpty()
 
-        if (OTP_OR_FAILURE_PATTERNS.any { it.containsMatchIn(combined) }) {
-            SmartDetectionStorage.appendDiagnosticLog(
-                context = applicationContext,
-                packageName = pkg,
-                preview = combined,
-                status = "ignored_otp_or_failed",
-                timestampMs = sbn.postTime
-            )
-            return
-        }
+        if (OTP_OR_FAILURE_PATTERNS.any { it.containsMatchIn(combined) }) return
+        if (!looksLikeFinancialAlert(combined)) return
 
-        val looksFinancial = looksLikeFinancialAlert(combined)
         val sourceKind = SourceAppPolicy.classify(applicationContext, pkg)
-
-        val rejection: String? = when {
-            !looksFinancial -> "ignored_non_financial"
-            sourceKind == SourceAppPolicy.SourceKind.OTHER -> "ignored_unwatched_app"
-            sourceKind == SourceAppPolicy.SourceKind.SMS &&
-                !SourceAppPolicy.passesStrictCheck(combined) -> "ignored_sms_not_bank"
-            else -> null
-        }
-
-        if (rejection != null) {
-            if (rejection == "ignored_unwatched_app") {
+        when (sourceKind) {
+            SourceAppPolicy.SourceKind.OTHER -> {
                 // Let the user discover and opt in to their bank/wallet app.
                 SmartDetectionStorage.recordSuggestedApp(
                     context = applicationContext,
@@ -96,15 +78,11 @@ class TransactionNotificationListener : NotificationListenerService() {
                     label = SourceAppPolicy.resolveAppLabel(applicationContext, pkg),
                     timestampMs = sbn.postTime
                 )
+                return
             }
-            SmartDetectionStorage.appendDiagnosticLog(
-                context = applicationContext,
-                packageName = pkg,
-                preview = combined,
-                status = rejection,
-                timestampMs = sbn.postTime
-            )
-            return
+            SourceAppPolicy.SourceKind.SMS ->
+                if (!SourceAppPolicy.passesStrictCheck(combined)) return
+            SourceAppPolicy.SourceKind.WATCHED -> Unit
         }
 
         val alertMap = SmartDetectionStorage.enqueueAlert(
@@ -115,24 +93,7 @@ class TransactionNotificationListener : NotificationListenerService() {
             timestampMs = sbn.postTime,
             sourceKind = sourceKind.wireName
         )
-        if (alertMap == null) {
-            SmartDetectionStorage.appendDiagnosticLog(
-                context = applicationContext,
-                packageName = pkg,
-                preview = combined,
-                status = "ignored_duplicate",
-                timestampMs = sbn.postTime
-            )
-            return
-        }
-
-        SmartDetectionStorage.appendDiagnosticLog(
-            context = applicationContext,
-            packageName = pkg,
-            preview = combined,
-            status = SmartDetectionStorage.STATUS_QUEUED,
-            timestampMs = sbn.postTime
-        )
+        if (alertMap == null) return // immediate duplicate
 
         val deliveredLive = MainActivity.notifyLiveAlertIfActive(alertMap)
         if (!deliveredLive) {

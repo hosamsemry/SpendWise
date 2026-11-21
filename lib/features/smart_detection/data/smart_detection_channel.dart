@@ -173,29 +173,4 @@ class SmartDetectionChannel {
       return null;
     }
   }
-
-  Future<List<Map<String, dynamic>>> getDiagnosticLogs() async {
-    if (!Platform.isAndroid) return const [];
-    try {
-      final raw = await _channel.invokeMethod<List<dynamic>>(
-        'getDiagnosticLogs',
-      );
-      if (raw == null) return const [];
-      return raw
-          .whereType<Map<dynamic, dynamic>>()
-          .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
-          .toList();
-    } catch (_) {
-      return const [];
-    }
-  }
-
-  Future<void> clearDiagnosticLogs() async {
-    if (!Platform.isAndroid) return;
-    try {
-      await _channel.invokeMethod<void>('clearDiagnosticLogs');
-    } catch (_) {
-      // No-op
-    }
-  }
 }

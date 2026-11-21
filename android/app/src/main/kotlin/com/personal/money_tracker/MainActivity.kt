@@ -87,7 +87,7 @@ class MainActivity : FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
         activeChannel = channel
-        SmartDetectionStorage.scrubSensitivePreviews(applicationContext)
+        SmartDetectionStorage.purgeLegacyDiagnostics(applicationContext)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PRIVACY_CHANNEL_NAME)
             .setMethodCallHandler { call, result ->
@@ -139,14 +139,6 @@ class MainActivity : FlutterFragmentActivity() {
                 "consumeSharedText" -> {
                     val shared = SmartDetectionStorage.consumeSharedText(applicationContext)
                     result.success(shared)
-                }
-                "getDiagnosticLogs" -> {
-                    val logs = SmartDetectionStorage.getDiagnosticLogs(applicationContext)
-                    result.success(logs)
-                }
-                "clearDiagnosticLogs" -> {
-                    SmartDetectionStorage.clearDiagnosticLogs(applicationContext)
-                    result.success(null)
                 }
                 else -> result.notImplemented()
             }
