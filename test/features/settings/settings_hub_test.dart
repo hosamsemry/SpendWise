@@ -11,10 +11,18 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/backup/data/backup_service.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../test_helper.dart';
 
 void main() {
   setUpAll(setupTestSqlite);
+  setUp(() => PackageInfo.setMockInitialValues(
+        appName: 'SpendWise',
+        packageName: 'com.personal.money_tracker',
+        version: '1.0.2',
+        buildNumber: '3',
+        buildSignature: '',
+      ));
 
   const groups = {
     'settings_nav_budget_money': 'Budget & Money',
@@ -23,6 +31,7 @@ void main() {
     'settings_nav_smart_detection': 'Smart Detection',
     'settings_nav_reminders': 'Reminders',
     'settings_nav_backup': 'Backup & Export',
+    'settings_nav_about': 'About SpendWise',
   };
 
   Future<AppDatabase> pumpHub(
@@ -203,5 +212,22 @@ void main() {
       await pumpHubWith(tester, db);
       expect(find.byKey(const ValueKey('backup_nudge_card')), findsOneWidget);
     });
+  });
+
+  testWidgets('About shows the real version and opens licences', (tester) async {
+    await pumpHub(tester, const Locale('en'));
+    expect(find.text('Version 1.0.2 (3)'), findsOneWidget);
+
+    final about = find.byKey(const ValueKey('settings_nav_about'));
+    await tester.ensureVisible(about);
+    await tester.pumpAndSettle();
+    await tester.tap(about);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('about_version')), findsOneWidget);
+    expect(find.textContaining('no internet access'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('about_licenses')));
+    await tester.pumpAndSettle();
+    expect(find.byType(LicensePage), findsOneWidget);
   });
 }

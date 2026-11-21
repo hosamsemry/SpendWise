@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/security/biometric_service.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
@@ -46,3 +47,12 @@ bool shouldShowBackupNudge({
 }) =>
     hasData &&
     (lastBackup == null || now.difference(lastBackup) >= backupNudgeAfter);
+
+/// Installed app version, e.g. `1.0.2 (3)`, read from the platform so it can
+/// never go stale like a hard-coded string.
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return info.buildNumber.isEmpty
+      ? info.version
+      : '${info.version} (${info.buildNumber})';
+});

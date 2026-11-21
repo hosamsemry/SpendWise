@@ -8,6 +8,7 @@ import 'package:money_tracker/core/providers/reminder_provider.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
 import 'package:money_tracker/features/settings/presentation/settings_providers.dart';
 import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
+import 'package:money_tracker/features/settings/presentation/pages/about_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/backup_export_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/budget_money_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/language_appearance_settings_page.dart';
@@ -85,6 +86,8 @@ class SettingsScreen extends ConsumerWidget {
           now: DateTime.now(),
         );
 
+    final version = ref.watch(appVersionProvider).asData?.value;
+
     final reminder = ref.watch(dailyReminderProvider);
     final reminderSummary = reminder.isEnabled
         ? l10n.reminderSummary(reminder.formattedTime)
@@ -154,25 +157,18 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 28),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset('assets/images/logo.png', height: 48),
-              const SizedBox(height: 6),
-              Text(
-                'SpendWise v1.0.0 • Offline & Private',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: context.textTertiary,
-                ),
-              ),
-            ],
+        const SizedBox(height: 16),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: SettingsNavTile(
+            key: const ValueKey('settings_nav_about'),
+            icon: Icons.info_outline_rounded,
+            iconColor: context.textSecondary,
+            title: l10n.aboutTitle,
+            summary: version == null ? null : l10n.versionLabel(version),
+            onTap: () => open(const AboutSettingsPage()),
           ),
         ),
-        const SizedBox(height: 32),
       ],
     );
   }

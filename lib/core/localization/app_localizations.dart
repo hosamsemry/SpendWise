@@ -403,6 +403,23 @@ class AppLocalizations {
   String get settingsPrivacySecurityTitle => isArabic ? 'الخصوصية والأمان' : 'Privacy & Security';
   String get settingsSmartDetectionTitle => isArabic ? 'الرصد الذكي' : 'Smart Detection';
   String get settingsRemindersTitle => isArabic ? 'التذكيرات' : 'Reminders';
+  String get aboutTitle => isArabic ? 'عن سبيند وايز' : 'About SpendWise';
+  String versionLabel(String version) => isArabic ? 'الإصدار $version' : 'Version $version';
+  String get aboutTagline => isArabic ? 'إدارة ميزانية خاصة دون إنترنت' : 'Private, offline budgeting';
+  String get aboutPrivacyTitle => isArabic ? 'خصوصيتك' : 'Your privacy';
+  String get aboutPrivacyOffline => isArabic
+      ? 'تبقى جميع بياناتك على هذا الهاتف. لا يملك سبيند وايز صلاحية الاتصال بالإنترنت.'
+      : 'All your data stays on this phone. SpendWise has no internet access.';
+  String get aboutPrivacyNoTracking => isArabic
+      ? 'لا حسابات ولا إعلانات ولا تحليلات ولا تتبع.'
+      : 'No accounts, ads, analytics or tracking.';
+  String get aboutPrivacyBackups => isArabic
+      ? 'لا تغادر بياناتك الهاتف إلا عندما تصدّر نسخة احتياطية أو ملفاً بنفسك.'
+      : 'Your data only leaves the phone when you export a backup or file yourself.';
+  String get openSourceLicenses => isArabic ? 'تراخيص المصادر المفتوحة' : 'Open-source licenses';
+  String get aboutLicense => isArabic
+      ? 'مرخّص بموجب رخصة أباتشي 2.0'
+      : 'Licensed under the Apache License 2.0';
   String get settingsBackupExportTitle => isArabic ? 'النسخ الاحتياطي والتصدير' : 'Backup & Export';
   /// "Last backup" summary for [last] relative to [now] (calendar days).
   String backupAgeLabel(DateTime? last, DateTime now) {
