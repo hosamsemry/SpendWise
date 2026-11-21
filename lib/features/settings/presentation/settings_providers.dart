@@ -48,11 +48,10 @@ bool shouldShowBackupNudge({
     hasData &&
     (lastBackup == null || now.difference(lastBackup) >= backupNudgeAfter);
 
-/// Installed app version, e.g. `1.0.2 (3)`, read from the platform so it can
-/// never go stale like a hard-coded string.
+/// Installed app version name, e.g. `1.0.2`, read from the platform so it
+/// can never go stale like a hard-coded string. The build number is left out:
+/// split-per-ABI builds inflate it (e.g. 2003), which means nothing to users.
 final appVersionProvider = FutureProvider<String>((ref) async {
   final info = await PackageInfo.fromPlatform();
-  return info.buildNumber.isEmpty
-      ? info.version
-      : '${info.version} (${info.buildNumber})';
+  return info.version;
 });

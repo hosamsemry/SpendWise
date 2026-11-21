@@ -214,9 +214,18 @@ void main() {
     });
   });
 
-  testWidgets('About shows the real version and opens licences', (tester) async {
+  testWidgets('About shows the version name only, without licences',
+      (tester) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'SpendWise',
+      packageName: 'com.personal.money_tracker',
+      version: '1.0.2',
+      buildNumber: '2003', // split-per-ABI build number on device
+      buildSignature: '',
+    );
     await pumpHub(tester, const Locale('en'));
-    expect(find.text('Version 1.0.2 (3)'), findsOneWidget);
+    expect(find.text('Version 1.0.2'), findsOneWidget);
+    expect(find.textContaining('2003'), findsNothing);
 
     final about = find.byKey(const ValueKey('settings_nav_about'));
     await tester.ensureVisible(about);
@@ -225,9 +234,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('about_version')), findsOneWidget);
     expect(find.textContaining('no internet access'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('about_licenses')));
-    await tester.pumpAndSettle();
-    expect(find.byType(LicensePage), findsOneWidget);
+    expect(find.textContaining('2003'), findsNothing);
+    expect(find.byKey(const ValueKey('about_licenses')), findsNothing);
+    expect(find.text('Open-source licenses'), findsNothing);
   });
 }

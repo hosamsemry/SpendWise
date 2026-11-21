@@ -416,7 +416,6 @@ class AppLocalizations {
   String get aboutPrivacyBackups => isArabic
       ? 'لا تغادر بياناتك الهاتف إلا عندما تصدّر نسخة احتياطية أو ملفاً بنفسك.'
       : 'Your data only leaves the phone when you export a backup or file yourself.';
-  String get openSourceLicenses => isArabic ? 'تراخيص المصادر المفتوحة' : 'Open-source licenses';
   String get aboutLicense => isArabic
       ? 'مرخّص بموجب رخصة أباتشي 2.0'
       : 'Licensed under the Apache License 2.0';

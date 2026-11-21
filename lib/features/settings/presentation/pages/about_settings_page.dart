@@ -5,7 +5,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/features/settings/presentation/settings_providers.dart';
 import 'package:money_tracker/features/settings/presentation/widgets/settings_page_scaffold.dart';
 
-/// Version, privacy promise and licences.
+/// Version, privacy promise and copyright.
 class AboutSettingsPage extends ConsumerWidget {
   const AboutSettingsPage({super.key});
 
@@ -91,28 +91,6 @@ class AboutSettingsPage extends ConsumerWidget {
                 ),
                 point(Icons.ios_share_rounded, l10n.aboutPrivacyBackups),
               ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: ListTile(
-            key: const ValueKey('about_licenses'),
-            leading: const Icon(Icons.description_outlined),
-            title: Text(l10n.openSourceLicenses),
-            trailing: Icon(
-              Directionality.of(context) == TextDirection.rtl
-                  ? Icons.chevron_left
-                  : Icons.chevron_right,
-            ),
-            onTap: () => showLicensePage(
-              context: context,
-              applicationName: l10n.appName,
-              applicationVersion: version,
-              applicationIcon: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Image.asset('assets/images/logo.png', height: 48),
-              ),
             ),
           ),
         ),
