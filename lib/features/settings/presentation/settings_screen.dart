@@ -7,6 +7,7 @@ import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
@@ -592,6 +593,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     await ref
                         .read(budgetCycleStartDayProvider.notifier)
                         .setStartDay(selectedDay);
+                    await ref
+                        .read(notificationServiceProvider)
+                        .scheduleCycleStartReminder(
+                          nextCycleReminderTime(
+                            BudgetCycleCalculator(startDay: selectedDay),
+                            DateTime.now(),
+                          ),
+                        );
                     final currentCycle = await ref
                         .read(budgetCycleRepositoryProvider)
                         .getCycleForDateOrNull(DateTime.now());

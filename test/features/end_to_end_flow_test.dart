@@ -31,8 +31,8 @@ class TestNotificationService implements INotificationService {
   }
 
   @override
-  Future<void> scheduleNext25thReminder(DateTime fromDate) async {
-    eventLogs.add('Scheduled 25th reminder from $fromDate');
+  Future<void> scheduleCycleStartReminder(DateTime at) async {
+    eventLogs.add('Scheduled cycle reminder at $at');
   }
 
   @override

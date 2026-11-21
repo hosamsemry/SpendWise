@@ -1,3 +1,4 @@
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,6 +8,23 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+/// When the next 'new budget cycle' reminder should fire: [hour]:00 on the
+/// start day of the cycle containing [now] if that is still ahead, otherwise
+/// on the start day of the following cycle. Uses [calculator], so the user's
+/// start day and short-month clamping are respected.
+DateTime nextCycleReminderTime(
+  BudgetCycleCalculator calculator,
+  DateTime now, {
+  int hour = 9,
+}) {
+  final current = calculator.getCycleForDate(now);
+  final thisStart = current.startDate;
+  final atThisStart = DateTime(thisStart.year, thisStart.month, thisStart.day, hour);
+  if (atThisStart.isAfter(now)) return atThisStart;
+  final next = calculator.getNextCycle(current).startDate;
+  return DateTime(next.year, next.month, next.day, hour);
+}
+
 abstract class INotificationService {
   Future<bool> initialize();
   Future<bool> requestPermission();
@@ -15,7 +33,9 @@ abstract class INotificationService {
     required String title,
     required String body,
   });
-  Future<void> scheduleNext25thReminder(DateTime fromDate);
+  /// Schedules the 'new budget cycle' reminder at [at] (replacing any
+  /// previous one). See [nextCycleReminderTime].
+  Future<void> scheduleCycleStartReminder(DateTime at);
   Future<void> scheduleDailyEveningReminder({
     required int hour,
     required int minute,
@@ -182,28 +202,10 @@ class NotificationService implements INotificationService {
   }
 
   @override
-  Future<void> scheduleNext25thReminder(DateTime fromDate) async {
+  Future<void> scheduleCycleStartReminder(DateTime at) async {
     try {
       await cancel(cycleReminderNotificationId);
-
-      // Determine the next 25th calendar date
-      final int targetYear;
-      final int targetMonth;
-      if (fromDate.day < 25) {
-        targetYear = fromDate.year;
-        targetMonth = fromDate.month;
-      } else {
-        if (fromDate.month == 12) {
-          targetYear = fromDate.year + 1;
-          targetMonth = 1;
-        } else {
-          targetYear = fromDate.year;
-          targetMonth = fromDate.month + 1;
-        }
-      }
-
-      final targetDate = DateTime(targetYear, targetMonth, 25, 9, 0); // 9:00 AM
-      final scheduledDate = tz.TZDateTime.from(targetDate, tz.local);
+      final scheduledDate = tz.TZDateTime.from(at, tz.local);
 
       const androidDetails = AndroidNotificationDetails(
         channelId,
@@ -216,7 +218,7 @@ class NotificationService implements INotificationService {
       await _plugin.zonedSchedule(
         id: cycleReminderNotificationId,
         title: _l10n.newBudgetCycleNotificationTitle,
-        body: _l10n.newBudgetCycleNotificationBody(25),
+        body: _l10n.newBudgetCycleNotificationBody,
         scheduledDate: scheduledDate,
         notificationDetails: const NotificationDetails(android: androidDetails),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

@@ -650,9 +650,9 @@ class AppLocalizations {
   String failedToAddPreset(String e) => isArabic ? 'فشل تسجيل المعاملة السريعة: $e' : 'Failed to add preset transaction: $e';
   String errorSavingTransaction(String e) => isArabic ? 'فشل حفظ المعاملة: $e' : 'Error saving transaction: $e';
   String get newBudgetCycleNotificationTitle => isArabic ? 'بدأت دورة ميزانية جديدة' : 'New Budget Cycle Started';
-  String newBudgetCycleNotificationBody(int day) => isArabic
-      ? 'اليوم هو يوم $day! راجع مخصصات فئاتك للدورة الجديدة.'
-      : 'Today is the $day! Review your category allocations for the new cycle.';
+  String get newBudgetCycleNotificationBody => isArabic
+      ? 'بدأت دورة ميزانيتك الجديدة اليوم! راجع مخصصات فئاتك.'
+      : 'Your new budget cycle starts today! Review your category allocations.';
   String get eveningCheckinNotificationTitle => isArabic ? 'تسجيل مصاريف المساء مع سبيند وايز 🌙' : 'SpendWise Evening Check-in 🌙';
   String get eveningCheckinNotificationBody => isArabic
       ? 'هل أنفقت أي شيء اليوم؟ انقر لتسجيل مصروفاتك.'

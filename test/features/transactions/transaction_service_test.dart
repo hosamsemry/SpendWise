@@ -30,7 +30,7 @@ class _FakeNotifications implements INotificationService {
   @override
   Future<bool> requestPermission() async => true;
   @override
-  Future<void> scheduleNext25thReminder(DateTime fromDate) async {}
+  Future<void> scheduleCycleStartReminder(DateTime at) async {}
   @override
   Future<void> scheduleDailyEveningReminder({
     required int hour,

@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:money_tracker/app/main_navigation_shell.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
+import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
@@ -161,9 +162,11 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
           .read(savingsSyncServiceProvider)
           .syncSavingsBudgetForCycle(cycleId: cycle.id);
 
-      // 3. Reconcile 25th reminder
+      // 3. Reconcile the next 'new cycle' reminder for the user's start day
       await notificationService.initialize();
-      await notificationService.scheduleNext25thReminder(now);
+      await notificationService.scheduleCycleStartReminder(
+        nextCycleReminderTime(cycleRepo.calculator, now),
+      );
 
       // 4. Trigger reactive refresh
       ref.read(refreshTriggerProvider.notifier).trigger();
