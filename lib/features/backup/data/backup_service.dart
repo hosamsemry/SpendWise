@@ -5,7 +5,7 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/backup/data/backup_crypto.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:money_tracker/core/files/export_file_store.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
@@ -19,9 +19,14 @@ class BackupPasswordRequiredException extends BackupException {
 class BackupService {
   final AppDatabase db;
   final BackupCrypto crypto;
+  final ExportFileStore exportFiles;
   static const Uuid _uuid = Uuid();
 
-  BackupService(this.db, {this.crypto = const BackupCrypto()});
+  BackupService(
+    this.db, {
+    this.crypto = const BackupCrypto(),
+    ExportFileStore? exportFiles,
+  }) : exportFiles = exportFiles ?? ExportFileStore();
 
   /// Queries all tables from the database and packages them into a [BackupData] snapshot.
   Future<BackupData> createBackupData() async {
@@ -130,10 +135,8 @@ class BackupService {
     final backup = data ?? await createBackupData();
     final jsonContent = await encodeBackup(backup, password: password);
 
-    final dir = await getApplicationDocumentsDirectory();
     final dateStr = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(backup.metadata.createdAt);
-    final fileName = 'SpendWise_Backup_$dateStr.json';
-    final file = File('${dir.path}/$fileName');
+    final file = await exportFiles.fileFor('SpendWise_Backup_$dateStr.json');
     await file.writeAsString(jsonContent);
 
     final isArabic = Intl.defaultLocale?.startsWith('ar') == true;

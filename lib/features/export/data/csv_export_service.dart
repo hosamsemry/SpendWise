@@ -5,13 +5,15 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:money_tracker/core/files/export_file_store.dart';
 import 'package:share_plus/share_plus.dart';
 
 class CsvExportService {
   final TransactionRepository transactionRepo;
+  final ExportFileStore exportFiles;
 
-  CsvExportService(this.transactionRepo);
+  CsvExportService(this.transactionRepo, {ExportFileStore? exportFiles})
+      : exportFiles = exportFiles ?? ExportFileStore();
 
   static const _formulaTriggers = {'=', '+', '-', '@', '\t', '\r'};
 
@@ -120,8 +122,7 @@ class CsvExportService {
     required String csvContent,
     required String subject,
   }) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/$fileName');
+    final file = await exportFiles.fileFor(fileName);
     final contentWithBom = csvContent.startsWith('\uFEFF') ? csvContent : '\uFEFF$csvContent';
     await file.writeAsString(contentWithBom);
 
