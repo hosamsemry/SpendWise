@@ -13,6 +13,7 @@ import 'package:money_tracker/core/providers/language_provider.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
 import 'package:money_tracker/core/security/presentation/pin_lock_screen.dart';
+import 'package:money_tracker/core/security/privacy_cover.dart';
 import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/budgets/presentation/initial_cycle_setup_screen.dart';
 import 'package:money_tracker/features/onboarding/presentation/language_selection_screen.dart';
@@ -51,6 +52,11 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
   /// before we know whether the app must start locked.
   bool _securityChecked = false;
 
+  /// Current lifecycle state; the privacy cover shows whenever the app is
+  /// not resumed, unless Android already hides the recents thumbnail.
+  AppLifecycleState? _lifecycle;
+  bool _recentsHiddenNatively = false;
+
   static DateTime _dayKey(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   @override
@@ -60,6 +66,9 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     _checkInitialSecurity();
     _reconcileLifecycle();
     _initSmartDetection();
+    PrivacyChannel.isRecentsPreviewHiddenNatively().then((hidden) {
+      if (mounted && hidden) setState(() => _recentsHiddenNatively = true);
+    });
   }
 
   void _initSmartDetection() {
@@ -101,6 +110,9 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_recentsHiddenNatively && state != _lifecycle) {
+      setState(() => _lifecycle = state);
+    }
     if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _wasInBackground = true;
       // Lock while going to the background, so the first frame after
@@ -194,6 +206,10 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
           if (!_securityChecked)
             ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
           if (isLocked) const _LockOverlay(),
+          if (!_recentsHiddenNatively &&
+              _lifecycle != null &&
+              _lifecycle != AppLifecycleState.resumed)
+            const PrivacyCover(),
         ],
       ),
       home: languageAsync.when(

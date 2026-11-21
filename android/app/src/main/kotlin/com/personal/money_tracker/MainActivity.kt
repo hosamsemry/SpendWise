@@ -17,6 +17,7 @@ class MainActivity : FlutterFragmentActivity() {
 
     companion object {
         private const val CHANNEL_NAME = "com.personal.money_tracker/smart_detection"
+        private const val PRIVACY_CHANNEL_NAME = "com.personal.money_tracker/privacy"
 
         @Volatile
         private var activeChannel: MethodChannel? = null
@@ -36,6 +37,12 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Keep balances out of the recent-apps thumbnail while still allowing
+        // the user's own screenshots (unlike FLAG_SECURE). Android 13+ only;
+        // older versions rely on the Flutter-side privacy cover.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(false)
+        }
         extractSharedTextFromIntent(intent)
     }
 
@@ -81,6 +88,15 @@ class MainActivity : FlutterFragmentActivity() {
         val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
         activeChannel = channel
         SmartDetectionStorage.scrubSensitivePreviews(applicationContext)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PRIVACY_CHANNEL_NAME)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isRecentsPreviewHiddenNatively" ->
+                        result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                    else -> result.notImplemented()
+                }
+            }
 
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
