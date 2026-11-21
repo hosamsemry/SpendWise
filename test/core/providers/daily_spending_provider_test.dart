@@ -5,6 +5,7 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
+import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
@@ -130,6 +131,60 @@ void main() {
 
       await db.close();
       container.dispose();
+    });
+
+    test('daily pace excludes the Savings envelope', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await db.close();
+      });
+
+      final catRepo = CategoryRepository(db);
+      final food = await catRepo.createCategory(
+        name: 'Food',
+        type: CategoryType.expense,
+        defaultBudget: Money.fromMajorUnits(3000),
+      );
+      final today = DateTime.now();
+      final cycle = await container
+          .read(budgetCycleRepositoryProvider)
+          .getOrCreateCycleForDate(today);
+      await TransactionRepository(db).addTransaction(
+        type: TransactionType.income,
+        amount: Money.fromMajorUnits(10000),
+        date: today,
+      );
+      // Savings budget = 10,000 income - 3,000 other budgets = 7,000.
+      final savings = await container
+          .read(savingsSyncServiceProvider)
+          .syncSavingsBudgetForCycle(cycleId: cycle.id);
+      expect(savings, Money.fromMajorUnits(7000));
+
+      // Moving money into Savings must not reduce the spendable pace either.
+      final savingsCat = await container
+          .read(savingsSyncServiceProvider)
+          .ensureSavingsCategory();
+      await TransactionRepository(db).addTransaction(
+        type: TransactionType.expense,
+        amount: Money.fromMajorUnits(500),
+        categoryId: savingsCat.id,
+        date: today,
+      );
+      await TransactionRepository(db).addTransaction(
+        type: TransactionType.expense,
+        amount: Money.fromMajorUnits(600),
+        categoryId: food.id,
+        date: today,
+      );
+
+      final summary = await container.read(todaySpendingSummaryProvider.future);
+      final days = summary.daysRemainingInCycle!;
+      // Spendable = Food 3,000 - 600 spent = 2,400 (not 10,000 - 1,100).
+      expect(summary.dailyPace!.inMinorUnits, 240000 ~/ days);
     });
 
     test('Computes isOverDailyPace and remainingToday accurately', () {

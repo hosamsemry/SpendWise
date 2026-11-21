@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
+import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 
 class DailySpendingSummary {
@@ -90,10 +91,17 @@ final todaySpendingSummaryProvider =
   daysRemaining = dEndUtc.difference(dTodayUtc).inDays + 1;
   if (daysRemaining < 1) daysRemaining = 1;
 
-  if (summary.netRemainingTotal.inMinorUnits > 0) {
-    dailyPace = Money.fromMinorUnits(
-      summary.netRemainingTotal.inMinorUnits ~/ daysRemaining,
-    );
+  // Safe-to-spend excludes the Savings envelope: its budget is unallocated
+  // income set aside on purpose, not money to spend. Overspending and
+  // spending in deleted categories still reduce the pace.
+  var spendableRemainingMinor = 0;
+  for (final budget in summary.categoryBudgets) {
+    if (isSavingsCategoryName(budget.categoryName)) continue;
+    spendableRemainingMinor += budget.remainingAmount.inMinorUnits;
+  }
+
+  if (spendableRemainingMinor > 0) {
+    dailyPace = Money.fromMinorUnits(spendableRemainingMinor ~/ daysRemaining);
   } else {
     dailyPace = const Money.zero();
   }

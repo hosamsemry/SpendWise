@@ -1,5 +1,11 @@
 import 'package:money_tracker/core/money/money.dart';
 
+/// Whether [name] is the auto-managed Savings category (English or Arabic).
+bool isSavingsCategoryName(String name) {
+  final lower = name.trim().toLowerCase();
+  return lower == 'savings' || lower == 'مدخرات';
+}
+
 enum CategoryType {
   expense,
   income;
