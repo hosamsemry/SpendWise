@@ -126,7 +126,9 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
           _startLockout();
         } else {
           final remaining = 5 - _failedAttempts;
-          if (mounted) _triggerError(context.l10n.incorrectPinNotice(remaining));
+          if (mounted) {
+            _triggerError(context.l10n.incorrectPinNotice(remaining));
+          }
         }
       }
     } else if (widget.mode == PinMode.create) {
@@ -163,7 +165,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         if (mounted) {
           setState(() {
             _lockoutSeconds--;
-            if (mounted) _errorMessage = context.l10n.lockoutNotice(_lockoutSeconds);
+            _errorMessage = context.l10n.lockoutNotice(_lockoutSeconds);
           });
         }
       }
@@ -205,173 +207,192 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
       canPop: widget.mode != PinMode.unlock,
       child: Scaffold(
         body: SafeArea(
-          child: Column(
-            children: [
-              if (widget.onCancel != null)
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12, top: 8),
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: widget.onCancel,
-                    ),
-                  ),
-                )
-              else
-                const SizedBox(height: 48),
+          // Scrolls only when the screen is too short (small phones, landscape,
+          // long lockout messages); otherwise the Spacers distribute the space.
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      if (widget.onCancel != null)
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            child: IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: widget.onCancel,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 48),
 
-              const Spacer(flex: 1),
+                      const Spacer(flex: 1),
 
-              // Lock Icon & Header
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  widget.mode == PinMode.unlock
-                      ? Icons.lock_outline
-                      : Icons.security,
-                  size: 36,
-                  color: primaryColor,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark
-                      ? AppColorsDark.textSecondary
-                      : AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 32),
-
-              // PIN Indicator Dots with Shake Animation
-              AnimatedBuilder(
-                animation: _shakeController,
-                builder: (context, child) {
-                  final offset = (_shakeController.value * 6 * 3.14159);
-                  final dx = _shakeController.isAnimating
-                      ? (8 * (1 - _shakeController.value) * math.sin(offset))
-                      : 0.0;
-                  return Transform.translate(
-                    offset: Offset(dx, 0),
-                    child: child,
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(4, (index) {
-                    final isFilled = index < _enteredPin.length;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 10),
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _errorMessage != null
-                            ? (isDark
-                                  ? AppColorsDark.overspent
-                                  : AppColors.overspent)
-                            : isFilled
-                            ? primaryColor
-                            : dotEmptyColor,
+                      // Lock Icon & Header
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          widget.mode == PinMode.unlock
+                              ? Icons.lock_outline
+                              : Icons.security,
+                          size: 36,
+                          color: primaryColor,
+                        ),
                       ),
-                    );
-                  }),
-                ),
-              ),
+                      const SizedBox(height: 24),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark
+                              ? AppColorsDark.textSecondary
+                              : AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
 
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColorsDark.overspent
-                        : AppColors.overspent,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+                      const SizedBox(height: 32),
 
-              const Spacer(flex: 2),
-
-              // Keypad (3x4 Grid)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Column(
-                  children: [
-                    _buildKeypadRow(['1', '2', '3']),
-                    const SizedBox(height: 16),
-                    _buildKeypadRow(['4', '5', '6']),
-                    const SizedBox(height: 16),
-                    _buildKeypadRow(['7', '8', '9']),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        if (_canUseBiometrics && widget.mode == PinMode.unlock)
-                          SizedBox(
-                            width: 72,
-                            height: 72,
-                            child: InkWell(
-                              onTap: _lockoutSeconds > 0 ? null : _authenticateWithBiometrics,
-                              borderRadius: BorderRadius.circular(36),
-                              child: Center(
-                                child: Icon(
-                                  Icons.fingerprint,
-                                  size: 32,
-                                  color: _lockoutSeconds > 0
-                                      ? textColor.withValues(alpha: 0.3)
-                                      : primaryColor,
-                                ),
+                      // PIN Indicator Dots with Shake Animation
+                      AnimatedBuilder(
+                        animation: _shakeController,
+                        builder: (context, child) {
+                          final offset = (_shakeController.value * 6 * 3.14159);
+                          final dx = _shakeController.isAnimating
+                              ? (8 *
+                                    (1 - _shakeController.value) *
+                                    math.sin(offset))
+                              : 0.0;
+                          return Transform.translate(
+                            offset: Offset(dx, 0),
+                            child: child,
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(4, (index) {
+                            final isFilled = index < _enteredPin.length;
+                            return Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 10,
                               ),
-                            ),
-                          )
-                        else
-                          const SizedBox(width: 72, height: 72),
-                        _buildKeypadButton('0'),
-                        SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: InkWell(
-                            onTap: _onBackspacePressed,
-                            borderRadius: BorderRadius.circular(36),
-                            child: Center(
-                              child: Icon(
-                                Icons.backspace_outlined,
-                                size: 26,
-                                color: textColor,
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _errorMessage != null
+                                    ? (isDark
+                                          ? AppColorsDark.overspent
+                                          : AppColors.overspent)
+                                    : isFilled
+                                    ? primaryColor
+                                    : dotEmptyColor,
                               ),
-                            ),
+                            );
+                          }),
+                        ),
+                      ),
+
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColorsDark.overspent
+                                : AppColors.overspent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
                       ],
-                    ),
-                  ],
+
+                      const Spacer(flex: 2),
+
+                      // Keypad (3x4 Grid)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Column(
+                          children: [
+                            _buildKeypadRow(['1', '2', '3']),
+                            const SizedBox(height: 16),
+                            _buildKeypadRow(['4', '5', '6']),
+                            const SizedBox(height: 16),
+                            _buildKeypadRow(['7', '8', '9']),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                if (_canUseBiometrics &&
+                                    widget.mode == PinMode.unlock)
+                                  SizedBox(
+                                    width: 72,
+                                    height: 72,
+                                    child: InkWell(
+                                      onTap: _lockoutSeconds > 0
+                                          ? null
+                                          : _authenticateWithBiometrics,
+                                      borderRadius: BorderRadius.circular(36),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.fingerprint,
+                                          size: 32,
+                                          color: _lockoutSeconds > 0
+                                              ? textColor.withValues(alpha: 0.3)
+                                              : primaryColor,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: 72, height: 72),
+                                _buildKeypadButton('0'),
+                                SizedBox(
+                                  width: 72,
+                                  height: 72,
+                                  child: InkWell(
+                                    onTap: _onBackspacePressed,
+                                    borderRadius: BorderRadius.circular(36),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.backspace_outlined,
+                                        size: 26,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const Spacer(flex: 1),
+                    ],
+                  ),
                 ),
               ),
-
-              const Spacer(flex: 1),
-            ],
+            ),
           ),
         ),
       ),
@@ -387,7 +408,9 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
 
   Widget _buildKeypadButton(String digit) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final btnBg = isDark ? AppColorsDark.surfaceVariant : const Color(0xFFF1F5F9);
+    final btnBg = isDark
+        ? AppColorsDark.surfaceVariant
+        : const Color(0xFFF1F5F9);
     final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     final textColor = isDark
         ? AppColorsDark.textPrimary
