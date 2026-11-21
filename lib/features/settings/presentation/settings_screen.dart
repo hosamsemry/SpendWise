@@ -23,6 +23,7 @@ import 'package:money_tracker/features/export/data/csv_export_service.dart';
 import 'package:money_tracker/features/presets/presentation/presets_management_screen.dart';
 import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_sheet.dart';
 import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
+import 'package:money_tracker/features/smart_detection/presentation/source_apps_sheet.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -1340,6 +1341,80 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                           ),
+                        ),
+                        const Divider(height: 20),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final watchedCount = ref
+                                    .watch(watchedSourceAppsProvider)
+                                    .asData
+                                    ?.value
+                                    .length ??
+                                0;
+                            final suggestionCount = ref
+                                    .watch(suggestedSourceAppsProvider)
+                                    .asData
+                                    ?.value
+                                    .length ??
+                                0;
+                            return InkWell(
+                              key: const ValueKey('source_apps_tile'),
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () => SourceAppsSheet.show(context),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.account_balance_outlined,
+                                      size: 20,
+                                      color: context.primaryColor,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            context.l10n.sourceAppsTitle,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: context.textPrimary,
+                                            ),
+                                          ),
+                                          Text(
+                                            context.l10n.sourceAppsSubtitle(
+                                              watchedCount,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: context.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (suggestionCount > 0)
+                                      Badge(
+                                        key: const ValueKey(
+                                          'source_apps_suggestion_badge',
+                                        ),
+                                        label: Text('$suggestionCount'),
+                                        backgroundColor: context.goldColor,
+                                        textColor: Colors.black,
+                                      ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      color: context.textSecondary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         const Divider(height: 20),
                         InkWell(

@@ -427,6 +427,28 @@ class AppLocalizations {
       ? 'عند التفعيل، يقرأ سبيند وايز إشعارات البنوك والمحافظ (بما فيها إشعارات الرسائل القصيرة) محلياً على جهازك فقط لتجهيز المعاملات لتأكيدها قبل الحفظ.\n\nتتم المعالجة بدون إنترنت بالكامل ولا تغادر بياناتك هاتفك أبداً.\n\nملاحظة لأجهزة أندرويد 13+: عند التثبيت خارج المتجر، افتح معلومات التطبيق > النقاط الثلاث > السماح بالإعدادات المقيدة إذا كان الخيار معطلاً.'
       : 'When enabled, SpendWise reads incoming bank, wallet, and SMS notifications strictly on-device to pre-fill transactions for your review before saving.\n\nAll parsing happens 100% offline—message data never leaves your phone.\n\nAndroid 13+ note: if sideloaded, open App Info > ⋮ > Allow restricted settings if the toggle is greyed out.';
   String get enableSmartDetection => isArabic ? 'تفعيل' : 'Enable';
+  String get sourceAppsTitle => isArabic ? 'تطبيقات البنوك والمحافظ' : 'Bank & Wallet Apps';
+  String sourceAppsSubtitle(int watchedCount) => isArabic
+      ? (watchedCount == 0
+          ? 'الرسائل القصيرة فقط • لا توجد تطبيقات مضافة'
+          : 'الرسائل القصيرة + $watchedCount ${watchedCount == 1 ? 'تطبيق' : 'تطبيقات'}')
+      : (watchedCount == 0
+          ? 'SMS only • no apps added'
+          : 'SMS + $watchedCount ${watchedCount == 1 ? 'app' : 'apps'}');
+  String get sourceAppsExplainer => isArabic
+      ? 'يفحص سبيند وايز الرسائل القصيرة دائماً، لكنه لا يقبل إلا ما يبدو كإشعار بنكي حقيقي (مبلغ بعملة + بيانات بطاقة أو حساب). إشعارات التطبيقات الأخرى يتم تجاهلها ما لم تضف التطبيق هنا.'
+      : 'SpendWise always checks SMS, but only accepts messages that look like real bank alerts (an amount with a currency plus card or account details). Notifications from other apps are ignored unless you add the app here.';
+  String get suggestedSourceAppsHeader => isArabic ? 'مقترحة' : 'Suggested';
+  String suggestedSourceAppHint(int count) => isArabic
+      ? (count == 1 ? 'أرسل إشعاراً مالياً واحداً' : 'أرسل $count إشعارات مالية')
+      : (count == 1 ? 'Sent 1 money-related notification' : 'Sent $count money-related notifications');
+  String get watchedSourceAppsHeader => isArabic ? 'التطبيقات المضافة' : 'Watched Apps';
+  String get noWatchedSourceApps => isArabic
+      ? 'لم تتم إضافة أي تطبيق بعد. عندما يرسل تطبيق بنك أو محفظة إشعاراً مالياً سيظهر هنا كاقتراح.'
+      : 'No apps added yet. When a bank or wallet app sends a money-related notification, it will show up here as a suggestion.';
+  String get watchSourceApp => isArabic ? 'إضافة' : 'Watch';
+  String get ignoreSourceApp => isArabic ? 'تجاهل' : 'Ignore';
+  String get unwatchSourceApp => isArabic ? 'إزالة' : 'Remove';
   String pendingDetectedBannerTitle(int count) => isArabic
       ? (count == 1 ? 'تم رصد معاملة مالية للمراجعة' : 'تم رصد $count معاملات للمراجعة')
       : (count == 1 ? '1 detected transaction to confirm' : '$count detected transactions to confirm');
