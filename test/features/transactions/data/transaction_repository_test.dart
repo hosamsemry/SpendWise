@@ -185,6 +185,32 @@ void main() {
       expect(searched.first.note, "Dinner at McDonald's & Wendy's");
     });
 
+    test('Search treats LIKE wildcards and SQL syntax as literal text', () async {
+      final food = await categoryRepo.createCategory(name: 'Snacks');
+      final octCycle = calculator.getCycleForDate(DateTime(2026, 10, 26));
+      for (final note in ['file_name', 'fileXname', r'C:\tmp', 'plain']) {
+        await transactionRepo.addTransaction(
+          type: TransactionType.expense,
+          amount: Money.fromMajorUnits(1),
+          categoryId: food.id,
+          date: DateTime(2026, 10, 26),
+          note: note,
+        );
+      }
+
+      Future<List<String?>> search(String q) async => (await transactionRepo
+              .getTransactionsForCycle(octCycle, searchNote: q))
+          .map((t) => t.note)
+          .toList();
+
+      expect(await search('_'), ['file_name'], reason: '_ is not a wildcard');
+      expect(await search(r'C:\'), [r'C:\tmp'], reason: 'backslash is literal');
+      expect(await search("' OR 1=1 --"), isEmpty);
+      expect(await search('%'), isEmpty);
+      // The table is intact after hostile input.
+      expect((await search('plain')).length, 1);
+    });
+
     test('Editing and deleting transactions updates correctly', () async {
       final food = await categoryRepo.createCategory(name: 'Food');
       final tx = await transactionRepo.addTransaction(

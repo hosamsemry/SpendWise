@@ -253,18 +253,15 @@ class TransactionRepository {
     }
 
     if (searchNote != null && searchNote.trim().isNotEmpty) {
+      // The pattern is sent as a bound parameter (never spliced into SQL);
+      // only LIKE wildcards in the user's text need escaping.
       final escaped = searchNote
           .trim()
           .toLowerCase()
           .replaceAll(r'\', r'\\')
           .replaceAll('%', r'\%')
-          .replaceAll('_', r'\_')
-          .replaceAll("'", "''");
-      query.where(
-        CustomExpression<bool>(
-          "LOWER(transactions.note) LIKE '%$escaped%' ESCAPE '\\'",
-        ),
-      );
+          .replaceAll('_', r'\_');
+      query.where(tx.note.lower().like('%$escaped%', escapeChar: r'\'));
     }
 
     query.orderBy([
