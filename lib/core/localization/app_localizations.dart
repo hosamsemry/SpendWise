@@ -404,6 +404,26 @@ class AppLocalizations {
   String get settingsSmartDetectionTitle => isArabic ? 'الرصد الذكي' : 'Smart Detection';
   String get settingsRemindersTitle => isArabic ? 'التذكيرات' : 'Reminders';
   String get settingsBackupExportTitle => isArabic ? 'النسخ الاحتياطي والتصدير' : 'Backup & Export';
+  /// "Last backup" summary for [last] relative to [now] (calendar days).
+  String backupAgeLabel(DateTime? last, DateTime now) {
+    if (last == null) {
+      return isArabic ? 'لم يتم النسخ الاحتياطي بعد' : 'Never backed up';
+    }
+    final days = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(last.year, last.month, last.day))
+        .inDays;
+    if (days <= 0) return isArabic ? 'تم النسخ اليوم' : 'Backed up today';
+    if (days == 1) return isArabic ? 'تم النسخ أمس' : 'Backed up yesterday';
+    if (!isArabic) return 'Backed up $days days ago';
+    if (days == 2) return 'آخر نسخة منذ يومين';
+    if (days <= 10) return 'آخر نسخة منذ $days أيام';
+    return 'آخر نسخة منذ $days يومًا';
+  }
+  String get backupNudgeTitle => isArabic ? 'احتفظ بنسخة من بياناتك' : 'Back up your data';
+  String get backupNudgeBody => isArabic
+      ? 'بياناتك محفوظة على هذا الهاتف فقط. احتفظ بنسخة احتياطية تحسباً لفقدانه أو إعادة ضبطه.'
+      : 'Your data lives only on this phone. Keep a backup in case it is lost or reset.';
+  String get backupNudgeAction => isArabic ? 'نسخ احتياطي' : 'Back up';
   String get statusOn => isArabic ? 'مفعّل' : 'On';
   String get statusOff => isArabic ? 'متوقف' : 'Off';
   String settingsCycleSummary(int day) =>

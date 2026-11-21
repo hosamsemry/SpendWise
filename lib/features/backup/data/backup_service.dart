@@ -8,6 +8,10 @@ import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:money_tracker/core/files/export_file_store.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// When this device last exported a backup (ISO-8601). Device-local: kept as
+/// is when restoring, since an old file's value would be misleading.
+const String lastBackupAtKey = 'last_backup_at';
+
 /// Thrown when an encrypted backup is parsed without a password.
 class BackupPasswordRequiredException extends BackupException {
   const BackupPasswordRequiredException([
@@ -139,7 +143,7 @@ class BackupService {
 
     final isArabic = Intl.defaultLocale?.startsWith('ar') == true;
     final formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(backup.metadata.createdAt);
-    await SharePlus.instance.share(
+    final result = await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'application/json')],
         subject: isArabic ? 'نسخة احتياطية لـ SpendWise $dateStr' : 'SpendWise Backup $dateStr',
@@ -149,7 +153,28 @@ class BackupService {
       ),
     );
 
+    // Only count it as a backup if the user actually sent the file somewhere.
+    if (result.status != ShareResultStatus.dismissed) {
+      await markBackedUp(at: backup.metadata.createdAt);
+    }
     return file;
+  }
+
+  /// When this device last exported a backup, or `null` if never.
+  Future<DateTime?> lastBackupAt() async {
+    final entry = await (db.select(db.appSettingsTable)
+          ..where((tbl) => tbl.key.equals(lastBackupAtKey)))
+        .getSingleOrNull();
+    return entry == null ? null : DateTime.tryParse(entry.value);
+  }
+
+  Future<void> markBackedUp({DateTime? at}) async {
+    await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(
+            key: lastBackupAtKey,
+            value: (at ?? DateTime.now()).toIso8601String(),
+          ),
+        );
   }
 
   /// Parses and validates a backup JSON string.
@@ -183,6 +208,9 @@ class BackupService {
       final fallbackOnboardingSettings = await (db.select(db.appSettingsTable)
             ..where((tbl) => tbl.key.isIn(['app_language', 'budget_cycle_start_day'])))
           .get();
+      final deviceLastBackup = await (db.select(db.appSettingsTable)
+            ..where((tbl) => tbl.key.equals(lastBackupAtKey)))
+          .getSingleOrNull();
 
       // 2. Clear all tables in reverse foreign key dependency order
       await db.delete(db.notificationEventsTable).go();
@@ -335,6 +363,7 @@ class BackupService {
         if (keepCurrentPin && pinCredentialSettingKeys.contains(key)) {
           continue;
         }
+        if (key == lastBackupAtKey) continue; // device-local, restored below
 
         await db.into(db.appSettingsTable).insert(
           AppSettingsTableCompanion.insert(
@@ -355,6 +384,15 @@ class BackupService {
             ),
           );
         }
+      }
+
+      if (deviceLastBackup != null) {
+        await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(
+            key: lastBackupAtKey,
+            value: deviceLastBackup.value,
+          ),
+        );
       }
 
       // Restore onboarding fallback settings only if missing from backup

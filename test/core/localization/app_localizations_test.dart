@@ -56,4 +56,18 @@ void main() {
       expect(delegate.isSupported(const Locale('fr')), isFalse);
     });
   });
+
+  test('backupAgeLabel uses calendar days in both languages', () {
+    final en = AppLocalizations(const Locale('en'));
+    final ar = AppLocalizations(const Locale('ar'));
+    final now = DateTime(2026, 11, 21, 9);
+    expect(en.backupAgeLabel(null, now), 'Never backed up');
+    expect(en.backupAgeLabel(DateTime(2026, 11, 21, 1), now), 'Backed up today');
+    expect(en.backupAgeLabel(DateTime(2026, 11, 20, 23), now), 'Backed up yesterday');
+    expect(en.backupAgeLabel(DateTime(2026, 11, 18), now), 'Backed up 3 days ago');
+    expect(ar.backupAgeLabel(null, now), 'لم يتم النسخ الاحتياطي بعد');
+    expect(ar.backupAgeLabel(DateTime(2026, 11, 19), now), 'آخر نسخة منذ يومين');
+    expect(ar.backupAgeLabel(DateTime(2026, 11, 16), now), 'آخر نسخة منذ 5 أيام');
+    expect(ar.backupAgeLabel(DateTime(2026, 10, 1), now), 'آخر نسخة منذ 51 يومًا');
+  });
 }

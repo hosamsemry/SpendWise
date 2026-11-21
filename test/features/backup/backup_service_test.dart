@@ -331,6 +331,18 @@ void main() {
       expect(after.containsKey(gym.id), isFalse);
     });
 
+    test('records the last backup and keeps it across a restore', () async {
+      expect(await service.lastBackupAt(), equals(null));
+      final backup = await service.createBackupData(); // taken before any backup
+      final at = DateTime(2026, 11, 21, 10, 30);
+      await service.markBackedUp(at: at);
+      expect(await service.lastBackupAt(), at);
+
+      await service.restoreFromBackup(backup);
+      expect(await service.lastBackupAt(), at,
+          reason: "an old file must not erase this device's backup date");
+    });
+
     test('parseBackupString rejects malformed JSON and incompatible apps', () {
       expect(
         () => service.parseBackupString('{"invalid": true}'),

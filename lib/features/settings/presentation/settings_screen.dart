@@ -14,6 +14,7 @@ import 'package:money_tracker/features/settings/presentation/pages/language_appe
 import 'package:money_tracker/features/settings/presentation/pages/reminders_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/security_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/smart_detection_settings_page.dart';
+import 'package:money_tracker/features/settings/presentation/widgets/backup_nudge_card.dart';
 import 'package:money_tracker/features/settings/presentation/widgets/settings_nav_tile.dart';
 import 'package:money_tracker/features/settings/presentation/widgets/settings_page_scaffold.dart';
 
@@ -27,6 +28,7 @@ class SettingsScreen extends ConsumerWidget {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
       // Some pages change state that has no reactive provider (PIN, biometrics).
       ref.invalidate(settingsSecuritySummaryProvider);
+      ref.invalidate(lastBackupAtProvider);
     }
 
     final l10n = context.l10n;
@@ -71,6 +73,18 @@ class SettingsScreen extends ConsumerWidget {
         ? join([l10n.statusOn, l10n.sourceAppsSubtitle(watchedCount)])
         : l10n.statusOff;
 
+    final lastBackup = ref.watch(lastBackupAtProvider);
+    final backupSummary = lastBackup.hasValue
+        ? l10n.backupAgeLabel(lastBackup.value, DateTime.now())
+        : null;
+    final showNudge =
+        lastBackup.hasValue &&
+        shouldShowBackupNudge(
+          hasData: ref.watch(hasTransactionsProvider).asData?.value ?? false,
+          lastBackup: lastBackup.value,
+          now: DateTime.now(),
+        );
+
     final reminder = ref.watch(dailyReminderProvider);
     final reminderSummary = reminder.isEnabled
         ? l10n.reminderSummary(reminder.formattedTime)
@@ -79,6 +93,13 @@ class SettingsScreen extends ConsumerWidget {
     return SettingsPageScaffold(
       title: context.l10n.settingsTitle,
       children: [
+        if (showNudge) ...[
+          BackupNudgeCard(
+            ageLabel: backupSummary ?? '',
+            onBackUp: () => open(const BackupExportSettingsPage()),
+          ),
+          const SizedBox(height: 16),
+        ],
         Card(
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -127,6 +148,7 @@ class SettingsScreen extends ConsumerWidget {
                 key: const ValueKey('settings_nav_backup'),
                 icon: Icons.save_alt_rounded,
                 title: context.l10n.settingsBackupExportTitle,
+                summary: backupSummary,
                 onTap: () => open(const BackupExportSettingsPage()),
               ),
             ],

@@ -7,6 +7,10 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
+import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/features/backup/data/backup_service.dart';
+import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
+import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import '../../test_helper.dart';
 
 void main() {
@@ -51,6 +55,30 @@ void main() {
     );
     await tester.pumpAndSettle();
     return db;
+  }
+
+  Future<void> pumpHubWith(WidgetTester tester, AppDatabase db) async {
+    await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(key: 'budget_cycle_start_day', value: '25'),
+        );
+    await tester.pumpWidget(
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('ar')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const SettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
   }
 
   testWidgets('every hub row opens its page and comes back', (tester) async {
@@ -127,5 +155,53 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('PIN lock on'), findsOneWidget);
+  });
+
+  group('backup nudge', () {
+    Future<void> addTransaction(AppDatabase db) =>
+        TransactionRepository(db).addTransaction(
+          type: TransactionType.income,
+          amount: const Money.fromMinorUnits(1000),
+          date: DateTime.now(),
+        );
+
+    testWidgets('hidden for a new user with no data', (tester) async {
+      await pumpHub(tester, const Locale('en'));
+      expect(find.byKey(const ValueKey('backup_nudge_card')), findsNothing);
+      expect(find.text('Never backed up'), findsOneWidget);
+    });
+
+    testWidgets('shown when there is data and no backup; opens the backup page',
+        (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await addTransaction(db);
+      await pumpHubWith(tester, db);
+
+      expect(find.byKey(const ValueKey('backup_nudge_card')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('backup_nudge_action')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Backup & Export')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hidden after a recent backup, shown again after 30 days',
+        (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      await addTransaction(db);
+      await BackupService(db)
+          .markBackedUp(at: DateTime.now().subtract(const Duration(days: 3)));
+      await pumpHubWith(tester, db);
+      expect(find.byKey(const ValueKey('backup_nudge_card')), findsNothing);
+      expect(find.text('Backed up 3 days ago'), findsOneWidget);
+
+      await BackupService(db)
+          .markBackedUp(at: DateTime.now().subtract(const Duration(days: 31)));
+      await pumpHubWith(tester, db);
+      expect(find.byKey(const ValueKey('backup_nudge_card')), findsOneWidget);
+    });
   });
 }
