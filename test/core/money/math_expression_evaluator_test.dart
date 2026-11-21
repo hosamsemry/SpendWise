@@ -67,4 +67,12 @@ void main() {
       expect(MathExpressionEvaluator.tryEvaluate('١٢ × ٤'), equals(Money.parse('48')));
     });
   });
+
+  test('resolves separators per number inside expressions', () {
+    expect(MathExpressionEvaluator.tryEvaluate('12,5')?.inMinorUnits, 1250);
+    expect(MathExpressionEvaluator.tryEvaluate('1,5+1')?.inMinorUnits, 250);
+    expect(MathExpressionEvaluator.tryEvaluate('1,000+12,5')?.inMinorUnits, 101250);
+    expect(MathExpressionEvaluator.tryEvaluate('1.234,5*2')?.inMinorUnits, 246900);
+    expect(MathExpressionEvaluator.tryEvaluate('12,3456+1'), isNull);
+  });
 }

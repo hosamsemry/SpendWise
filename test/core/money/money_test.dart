@@ -179,4 +179,32 @@ void main() {
       expect(Money.parse('£75.50').inMinorUnits, 7550);
     });
   });
+
+  group('decimal vs thousands separators', () {
+    final cases = <String, int?>{
+      '12,5': 1250,
+      '12,50': 1250,
+      '0,99': 99,
+      '1,234': 123400,
+      '1,234,567': 123456700,
+      '1,234.56': 123456,
+      '1.234,56': 123456,
+      '1.234.567,8': 123456780,
+      '١٢٫٥': 1250, // Arabic digits + Arabic decimal separator
+      '١٬٢٣٤': 123400, // Arabic thousands separator
+      '12،5': 1250, // Arabic comma typed as a decimal point
+      'EGP 12,5': 1250,
+      // Ambiguous or malformed: rejected instead of silently guessed.
+      '12,3456': null,
+      '1,2,3': null,
+      '12,345,67': null,
+      '1,23.5': null,
+      '1.2,3.4': null,
+    };
+    cases.forEach((input, minor) {
+      test('"$input" -> $minor', () {
+        expect(Money.tryParse(input)?.inMinorUnits, minor);
+      });
+    });
+  });
 }

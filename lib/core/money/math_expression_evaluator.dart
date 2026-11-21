@@ -13,8 +13,9 @@ class MathExpressionEvaluator {
   /// - Exceeds the maximum allowable transaction limit ([Money.maxMajorUnits])
   static Money? tryEvaluate(String input) {
     final normalized = Money.normalizeDigits(input.trim())
-        .replaceAll('،', '')
-        .replaceAll('٫', '.');
+        .replaceAll('٫', '.')
+        .replaceAll('٬', ',')
+        .replaceAll('،', ',');
     if (normalized.isEmpty) return null;
 
     // Direct money parse if no arithmetic operators or parentheses exist
@@ -59,11 +60,13 @@ class MathExpressionEvaluator {
     final sanitized = Money.normalizeDigits(input)
         .replaceAll('×', '*')
         .replaceAll('÷', '/')
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .replaceAll('٫', '.');
+        .replaceAll('٫', '.')
+        .replaceAll('٬', ',')
+        .replaceAll('،', ',');
 
-    final regex = RegExp(r'([+\-*/()])|([0-9]+(?:\.[0-9]+)?)');
+    // Numbers may carry thousands/decimal separators; each one is resolved
+    // individually so `12,5 + 1` is 13.5, not 126.
+    final regex = RegExp(r'([+\-*/()])|([0-9][0-9.,]*)');
     final matches = regex.allMatches(sanitized);
 
     final matchedCharsCount = matches.fold<int>(
@@ -75,7 +78,18 @@ class MathExpressionEvaluator {
       return null;
     }
 
-    return matches.map((m) => m.group(0)!).toList();
+    final tokens = <String>[];
+    for (final m in matches) {
+      final token = m.group(0)!;
+      if (m.group(2) == null) {
+        tokens.add(token);
+        continue;
+      }
+      final resolved = Money.normalizeSeparators(token);
+      if (resolved == null || double.tryParse(resolved) == null) return null;
+      tokens.add(resolved);
+    }
+    return tokens;
   }
 
   static int _precedence(String op) {

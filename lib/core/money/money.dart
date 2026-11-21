@@ -87,6 +87,47 @@ class Money implements Comparable<Money> {
     return result;
   }
 
+  static final RegExp _groupedThousands = RegExp(r'^\d{1,3}(,\d{3})+$');
+
+  /// Resolves thousands vs. decimal separators in a bare number ([digits],
+  /// `.`, `,`) to plain `1234.56` form, or returns `null` if ambiguous.
+  ///
+  /// - Both `.` and `,` present: the last one is the decimal separator
+  ///   (`1,234.56` and `1.234,56` both mean 1234.56).
+  /// - Only commas: valid 3-digit groups are thousands (`1,234,567`);
+  ///   a single comma followed by 1–2 digits is a decimal point (`12,5`).
+  ///   Anything else (`12,3456`, `1,2,3`) is rejected rather than guessed,
+  ///   so a mistyped amount is never silently multiplied.
+  static String? normalizeSeparators(String number) {
+    final lastDot = number.lastIndexOf('.');
+    final lastComma = number.lastIndexOf(',');
+    if (lastComma == -1) return number;
+
+    if (lastDot != -1) {
+      final decimalIsComma = lastComma > lastDot;
+      final thousands = decimalIsComma ? '.' : ',';
+      final decimalAt = decimalIsComma ? lastComma : lastDot;
+      final intPart = number.substring(0, decimalAt);
+      final fracPart = number.substring(decimalAt + 1);
+      if (fracPart.contains(RegExp(r'[.,]'))) return null;
+      final grouped = intPart.replaceAll(thousands, ',');
+      if (intPart.contains(thousands) && !_groupedThousands.hasMatch(grouped)) {
+        return null;
+      }
+      return '${intPart.replaceAll(thousands, '')}.$fracPart';
+    }
+
+    if (_groupedThousands.hasMatch(number)) return number.replaceAll(',', '');
+    final parts = number.split(',');
+    if (parts.length == 2 &&
+        parts[0].isNotEmpty &&
+        parts[1].isNotEmpty &&
+        parts[1].length <= 2) {
+      return '${parts[0]}.${parts[1]}';
+    }
+    return null;
+  }
+
   /// Creates a [Money] instance from major units (EGP).
   ///
   /// Uses decimal-safe integer math by parsing the string representation
@@ -152,12 +193,17 @@ class Money implements Comparable<Money> {
       cleaned = stripCurrencyTokens(cleaned.substring(1).trim());
     }
 
-    // Strip thousands separators (Western commas and Arabic commas)
-    // Replace Arabic decimal separator (٫ U+066B) with period (.)
+    // Arabic decimal (٫) -> '.', Arabic thousands (٬) and comma (،) -> ',',
+    // then decide which separator is which (see normalizeSeparators).
     cleaned = cleaned
-        .replaceAll('،', '')
-        .replaceAll(',', '')
-        .replaceAll('٫', '.');
+        .replaceAll('٫', '.')
+        .replaceAll('٬', ',')
+        .replaceAll('،', ',');
+    final resolved = normalizeSeparators(cleaned);
+    if (resolved == null) {
+      throw FormatException('Ambiguous number separators in: "$input"');
+    }
+    cleaned = resolved;
 
     final parts = cleaned.split('.');
     if (parts.length > 2) {
