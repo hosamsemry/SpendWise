@@ -22,6 +22,7 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 - Tests use an in-memory Drift DB plus a Linux system sqlite (`test/test_helper.dart` → `setupTestSqlite()`, which needs `libsqlite3.so`).
 - **Release signing**: `android/app/build.gradle.kts` reads `android/key.properties` (gitignored; keys `storePassword`, `keyPassword`, `keyAlias`, `storeFile`). The keystore is `~/keystores/spendwise-release.jks` (alias `spendwise`, cert SHA-256 `59:D7:2A:CC:…:44:13`) and lives outside the repo. If `key.properties` is missing, release builds fail on purpose. They never fall back to debug signing. Losing the keystore means future APKs can't update existing installs.
 - **Always build releases the same way** (split arm64, command above). `--split-per-abi` sets versionCode = ABI offset + build number (arm64 → 2000 + n, armv7 → 1000 + n, x86_64 → 4000 + n), while a universal `flutter build apk` uses n alone. Installing a universal build over a split one is a downgrade, and Android just says "App not installed". Bump `version:` in `pubspec.yaml` for every release you install over an older one.
+- **Settings UX rules**: keep the hub short. New options go on the matching sub-page, and the hub row's summary in `settings_screen.dart` should show the new value. No developer or troubleshooting tools in the UI. Hub providers pause while a sub-page covers the hub and resume mid-frame on return, so **don't chain hub FutureProviders on each other** (that throws "setState during build"); combine independent providers in the widget instead.
 - `*.apk` files are gitignored. `SpendWise*.apk` in the root are local build outputs.
 
 ## Stack
@@ -52,14 +53,17 @@ lib/
     presets/      1-tap transaction presets (TransactionPreset, PresetRepository, management screen)
     reports/      "Insights" tab: cash-flow bar chart, animated category donut chart, cycle-over-cycle (hand-drawn, no chart lib)
     savings/      SavingsVaultRepository, SavingsSyncService, cycle closeout (surplus sweep) card, vault dialog
-    settings/     SettingsScreen (big file, ~1.8k lines), reached from the dashboard header (not a nav tab)
+    settings/     SettingsScreen = short hub (reached from the dashboard header, not a nav tab): backup nudge,
+                  rows with live summaries (settings_providers.dart), each opening presentation/pages/*:
+                  budget_money, language_appearance, security, smart_detection, reminders, backup_export, about.
+                  Shared widgets: SettingsPageScaffold, SettingsNavTile, BackupNudgeCard
     smart_detection/ Bank SMS/notification parsing → pending confirm-first queue (see below)
     transactions/ TransactionModel, TransactionRepository, TransactionsScreen (filters), AddEditTransactionDialog
 android/app/src/main/kotlin/com/personal/money_tracker/
     MainActivity.kt                       FlutterFragmentActivity (needed for local_auth), MethodChannel, ACTION_SEND handling
     TransactionNotificationListener.kt    NotificationListenerService: OTP/declined filter → source-app gate → keyword/strict filter
     SourceAppPolicy.kt                    Classifies the posting app (watched / SMS / other) + native strict check
-    SmartDetectionStorage.kt              SharedPreferences: alert queue (while Flutter isn't running), diagnostic logs,
+    SmartDetectionStorage.kt              SharedPreferences: alert queue (while Flutter isn't running),
                                           mirrored watched/dismissed apps, suggested apps
 ```
 Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Reports). Switch tabs via `currentNavigationIndexProvider`.
@@ -80,7 +84,7 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 - When changing the schema, also update **BackupService/BackupData** (backup = all tables) and the tests in `test/core/database/`.
 - **Restore is verbatim**: never substitute defaults for saved budgets, because past cycles are frozen snapshots. `syncCategoriesForCycle` only *adds* rows for missing categories and never changes existing budgets, including zeros.
 
-`app_settings` keys: `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (balance_minor, last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
+`app_settings` keys: `last_backup_at` (device-local, kept on restore), `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (balance_minor, last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
 
 ## Core domain rules (don't break these)
 - **Money is always int minor units** (`Money.fromMinorUnits`, `inMinorUnits`). Never use doubles for amounts. Max is 999,999,999 major units. `Money.parse` accepts Arabic digits and currency symbols.
@@ -118,7 +122,7 @@ On start, and on resume from real background (paused/hidden → resumed; transie
    - **watched** (apps the user approved in Settings → Bank & Wallet Apps): normal digit + keyword filter.
    - **SMS** (the device's default SMS app plus Google/Samsung/AOSP messaging): must also pass the **strict check**, meaning a currency-tied amount **and** an account/instrument marker (card, account, ref, balance, IPN/InstaPay, wallet, POS/ATM, بطاقة/حساب/مرجع/رصيد/محفظة…).
    - **other** (chat, email, shopping, news…): never queued. If the text looks financial, the app is recorded as a **suggestion** that the user can watch or ignore.
-   - Each queued alert carries `sourceKind` (`watched`/`sms`). Diagnostic log statuses: `queued`, `ignored_non_financial`, `ignored_unwatched_app`, `ignored_sms_not_bank`, `ignored_otp_or_failed`, `ignored_duplicate`.
+   - Each queued alert carries `sourceKind` (`watched`/`sms`). Rejected notifications are dropped silently: there is **no diagnostic log**. It was removed on purpose, and `purgeLegacyDiagnostics` deletes old data. Don't reintroduce one.
    - If the app is in the foreground, the alert is pushed live via MethodChannel `com.personal.money_tracker/smart_detection` (`onAlertDetected`).
    - Otherwise it's queued in `SmartDetectionStorage` (max 50, with a 30s dedup window).
 2. ACTION_SEND text/plain (sharing an SMS to the app) arrives via `onSharedText` / `consumeSharedText`. Users can also paste an SMS manually.
@@ -129,9 +133,8 @@ On start, and on resume from real background (paused/hidden → resumed; transie
    - Watched/dismissed apps live in `app_settings` via `SourceAppRepository` (so they're included in backups). They're pushed to native with `setSourcePolicy` on every `syncFromNative` and every change. Suggestions are native-only (`getSuggestedApps`); `suggestedSourceAppsProvider` filters out watched and dismissed apps.
    - It dedups by signature: the reference number, otherwise type + amount + day + merchant, plus the stated time when the message has one (`ParsedBankMessage.hasExplicitTime`). It suggests a category from the learned merchant→category map.
 4. Pending items show in `PendingTransactionsBanner`/`Sheet`. Confirming calls `SmartDetectionCoordinator.confirmPending`, which runs `TransactionService.add` (so alerts and savings apply as for manual entries) and then `PendingTransactionRepository.markConfirmed` (learn merchant, record dedup signature, dequeue). Nothing is auto-inserted.
-5. Native diagnostic logs (last 15) are viewable via `getDiagnosticLogs`.
 
-Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSettings`, `setSmartDetectionEnabled`, `consumePendingNativeAlerts`, `consumeSharedText`, `getDiagnosticLogs`, `clearDiagnosticLogs`, `setSourcePolicy`, `getSuggestedApps`.
+Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSettings`, `setSmartDetectionEnabled`, `consumePendingNativeAlerts`, `consumeSharedText`, `setSourcePolicy`, `getSuggestedApps`.
 
 ## Security
 - **App lock is an overlay**: `MaterialApp.builder` stacks `_LockOverlay` (its own Navigator plus `PinLockScreen`) above the root Navigator whenever `isAppLockedProvider` is true. Never gate security by swapping `home`: routes, dialogs and sheets pushed earlier would stay on top. While locked, `didPopRoute` swallows the back gesture. Nothing renders until the first PIN check completes, and the app locks on `paused`/`hidden`, not only on resume.
@@ -153,7 +156,7 @@ Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSe
   - A golden v1 envelope test must keep passing.
 - **Export files**: write through `ExportFileStore` (a cache `exports/` folder, pruned after 1h, plus a one-time removal of legacy exports in documents). Never write exports to the documents folder.
 - **CSV**: free-text cells go through `_escapeText` (prefixes `= + - @ \t \r` with `'`). Never pass numeric cells through it.
-- **Detection privacy**: only alerts with status `queued` may keep message text in diagnostics (enforced in `SmartDetectionStorage.appendDiagnosticLog`). Suggestions carry no text.
+- **Detection privacy**: the only notification text the app stores is the queued alert itself. Suggestions carry no text, and there is no diagnostic log.
 - **SQL**: use drift expressions or bound variables (e.g. `like(..., escapeChar:)`), never string-built `CustomExpression`s.
 
 ## Conventions
@@ -162,5 +165,5 @@ Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSe
 - Commits follow Conventional Commits: `feat(scope): …`, `fix(scope): …`, `refactor`, `chore`. Scopes are typically the feature name. Issues are referenced as `(closes #N)`.
 - **Split work into focused commits by concern** (e.g. parser + tests, native Android, Dart data layer, UI + l10n, docs). Never put all changed files in one commit.
 - Domain services (`BudgetCalculationService`, `BudgetCycleCalculator`, `BankMessageParser`, `Money`) are pure and unit-tested. Keep logic there rather than in widgets.
-- Big screen files (settings, reports, budgets, dashboard) still mix UI with some orchestration, such as budget, category and savings-vault edits. Transaction writes are centralized in `TransactionService`. Check the screen before assuming a non-transaction repo method handles every side effect.
+- Big screen files (reports, budgets, dashboard) still mix UI with some orchestration, such as budget, category and savings-vault edits. Transaction writes are centralized in `TransactionService`. Check the screen before assuming a non-transaction repo method handles every side effect.
 - Add or update tests under `test/` mirroring `lib/`. Cross-feature flows are in `test/features/end_to_end_flow_test.dart`, `audit_regression_test.dart`, and `test/widget_test.dart`.
