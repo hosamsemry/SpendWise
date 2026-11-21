@@ -50,8 +50,10 @@ class BankMessageParser {
       caseSensitive: false,
     ),
     // e.g., 357.00 جم, 515.00 ج.م, 100.01 EGP, 500 ريال
+    // `\b` only understands ASCII word characters, so it never matches after an
+    // Arabic suffix; a negative lookahead on Latin + Arabic letters is used instead.
     RegExp(
-      r'([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\.E\.|ج\.م|جم|جنيه(?:\s*مصري)?|ر\.س|ريال|د\.إ|درهم|\$|€|£)\b',
+      r'([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\.E\.|ج\.م|جم|جنيه(?:ات)?(?:\s*مصري)?|ر\.س|ريال|د\.إ|درهم|\$|€|£)(?![A-Za-z؀-ۿ])',
       caseSensitive: false,
     ),
     // Fallback: Arabic/English amount keyword directly preceding number: مبلغ 357.00 or amount of 100.01

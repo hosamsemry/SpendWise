@@ -108,5 +108,25 @@ void main() {
         isNull,
       );
     });
+
+    test('extracts amounts followed by Arabic currency suffixes', () {
+      final cases = {
+        'تم سحب 500 جنيه من حسابك رقم 1234': 50000,
+        'تم خصم 515.00 جم من بطاقتك المنتهية 9876': 51500,
+        'تم خصم 250 ريال من بطاقتك': 25000,
+        'تم إيداع 1,200 جنيهات في حسابك': 120000,
+        'تم خصم 75 درهم من بطاقتك': 7500,
+      };
+      cases.forEach((msg, minor) {
+        final parsed = BankMessageParser.parse(msg);
+        expect(parsed, isNotNull, reason: msg);
+        expect(parsed!.amount, Money.fromMinorUnits(minor), reason: msg);
+      });
+    });
+
+    test('does not treat a currency token embedded in a longer word as currency', () {
+      // "LEarn" must not be read as the LE (Egyptian pound) suffix.
+      expect(BankMessageParser.parse('Paid 20 LEarning credits today'), isNull);
+    });
   });
 }
