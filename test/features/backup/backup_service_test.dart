@@ -5,6 +5,11 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/features/backup/data/backup_crypto.dart';
 import 'package:money_tracker/features/backup/data/backup_service.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
+import 'package:money_tracker/features/categories/data/category_repository.dart';
+import 'package:money_tracker/features/categories/domain/category.dart';
 import '../../test_helper.dart';
 
 void main() {
@@ -290,6 +295,40 @@ void main() {
       expect(service.isEncryptedBackup(plain), isFalse);
       final parsed = await service.parseBackupContent(plain);
       expect(parsed.transactionCount, greaterThan(0));
+    });
+
+    test('restore reproduces past cycle budgets exactly (no default fill-in)', () async {
+      final cats = CategoryRepository(db);
+      final cycles = BudgetCycleRepository(
+        db,
+        calculator: const BudgetCycleCalculator(startDay: 1),
+      );
+      final food = await cats.createCategory(
+        name: 'Food',
+        type: CategoryType.expense,
+        defaultBudget: const Money.fromMinorUnits(50000),
+      );
+      final oct = await cycles.getOrCreateCycleForDate(DateTime(2026, 10, 5));
+      // Deliberately zero Food for October only.
+      await cycles.updateCategoryBudget(
+        cycleId: oct.id,
+        categoryId: food.id,
+        budgetAmount: const Money.zero(),
+      );
+      // A category created later must not appear in October's snapshot.
+      final gym = await cats.createCategory(
+        name: 'Gym',
+        type: CategoryType.expense,
+        defaultBudget: const Money.fromMinorUnits(30000),
+      );
+      final before = await cycles.getCycleBudgets(oct.id);
+
+      await service.restoreFromBackup(await service.createBackupData());
+
+      final after = await cycles.getCycleBudgets(oct.id);
+      expect(after, before);
+      expect(after[food.id], const Money.zero());
+      expect(after.containsKey(gym.id), isFalse);
     });
 
     test('parseBackupString rejects malformed JSON and incompatible apps', () {

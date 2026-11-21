@@ -7,7 +7,6 @@ import 'package:money_tracker/features/backup/data/backup_crypto.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:money_tracker/core/files/export_file_store.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:uuid/uuid.dart';
 
 /// Thrown when an encrypted backup is parsed without a password.
 class BackupPasswordRequiredException extends BackupException {
@@ -20,7 +19,6 @@ class BackupService {
   final AppDatabase db;
   final BackupCrypto crypto;
   final ExportFileStore exportFiles;
-  static const Uuid _uuid = Uuid();
 
   BackupService(
     this.db, {
@@ -197,9 +195,6 @@ class BackupService {
 
       final restoredCategoryIds = <String>{};
       final restoredCycleIds = <String>{};
-      final categoryDefaultBudgets = <String, int>{};
-      final activeExpenseCategoryIds = <String>{};
-      final savingsCategoryIds = <String>{};
 
       // 3. Insert categories
       for (final row in backup.categories) {
@@ -223,14 +218,6 @@ class BackupService {
           ),
         );
         restoredCategoryIds.add(id);
-        categoryDefaultBudgets[id] = defaultBudgetMinor;
-        if (type == 'expense' && isActive) {
-          activeExpenseCategoryIds.add(id);
-        }
-        final lowerName = name.trim().toLowerCase();
-        if (lowerName == 'savings' || lowerName == 'مدخرات') {
-          savingsCategoryIds.add(id);
-        }
       }
 
       // 4. Insert budget cycles
@@ -249,7 +236,6 @@ class BackupService {
       }
 
       // 5. Insert category budgets
-      final insertedBudgetKeys = <String>{};
       for (final row in backup.categoryBudgets) {
         final cycleId = row['cycleId'] as String;
         final categoryId = row['categoryId'] as String;
@@ -258,12 +244,9 @@ class BackupService {
           continue;
         }
         final nowIso = DateTime.now().toIso8601String();
-        var budgetMinor = row['budgetAmountMinor'] as int? ?? 0;
-        if (budgetMinor == 0 &&
-            !savingsCategoryIds.contains(categoryId) &&
-            (categoryDefaultBudgets[categoryId] ?? 0) > 0) {
-          budgetMinor = categoryDefaultBudgets[categoryId]!;
-        }
+        // Restore exactly what was saved: a 0 budget is a deliberate choice
+        // and past cycles are frozen snapshots, so never substitute defaults.
+        final budgetMinor = row['budgetAmountMinor'] as int? ?? 0;
         await db.into(db.categoryBudgetsTable).insert(
           CategoryBudgetsTableCompanion.insert(
             id: row['id'] as String,
@@ -274,27 +257,6 @@ class BackupService {
             updatedAt: row['updatedAt'] as String? ?? nowIso,
           ),
         );
-        insertedBudgetKeys.add('${cycleId}_$categoryId');
-      }
-
-      // Ensure active expense categories with default allocations have a budget row in restored cycles
-      for (final cycleId in restoredCycleIds) {
-        final nowIso = DateTime.now().toIso8601String();
-        for (final catId in activeExpenseCategoryIds) {
-          if (!insertedBudgetKeys.contains('${cycleId}_$catId') &&
-              (categoryDefaultBudgets[catId] ?? 0) > 0) {
-            await db.into(db.categoryBudgetsTable).insert(
-              CategoryBudgetsTableCompanion.insert(
-                id: _uuid.v4(),
-                cycleId: cycleId,
-                categoryId: catId,
-                budgetAmountMinor: categoryDefaultBudgets[catId]!,
-                createdAt: nowIso,
-                updatedAt: nowIso,
-              ),
-            );
-          }
-        }
       }
 
       // 6. Insert transactions
