@@ -398,6 +398,49 @@ class AppLocalizations {
   String get disablePin => isArabic ? 'تعطيل رمز PIN' : 'Disable PIN';
   String get pinEnabledSuccess => isArabic ? 'تم تفعيل قفل PIN بنجاح!' : 'PIN Lock enabled successfully!';
   String get pinDisabledSuccess => isArabic ? 'تم تعطيل قفل PIN.' : 'PIN Lock disabled.';
+  String get sectionSmartDetection => isArabic ? 'رصد المعاملات الذكي' : 'SMART DETECTION';
+  String get smartDetectionTitle => isArabic
+      ? 'اكتشاف رسائل البنوك والمحافظ'
+      : 'Detect Bank & Wallet Alerts';
+  String get smartDetectionSubtitle => isArabic
+      ? 'تجهيز المعاملات تلقائياً من الإشعارات لتأكيدها'
+      : 'Pre-fill alerts locally for 1-tap confirmation';
+  String get notificationAccessGranted => isArabic ? 'مفعّل' : 'Active';
+  String get notificationAccessNeeded => isArabic ? 'يتطلب الإذن' : 'Permission Needed';
+  String get openNotificationSettings => isArabic ? 'فتح إعدادات الإشعارات' : 'Open Notification Access';
+  String get pasteOrTestSms => isArabic ? 'لصق أو تجربة رسالة بنكية' : 'Paste / Test Bank Message';
+  String get pasteSmsShort => isArabic ? 'لصق رسالة' : 'Paste SMS';
+  String get pasteSmsHint => isArabic
+      ? 'الصق نص رسالة البنك أو إنستاباي هنا...'
+      : 'Paste bank SMS or wallet alert text here...';
+  String get parseMessageAction => isArabic ? 'تحليل الرسالة' : 'Parse Message';
+  String get noTransactionDetectedInMessage => isArabic
+      ? 'لم يتم العثور على معاملة مالية صالحة في هذه الرسالة.'
+      : 'Could not detect a valid transaction in this message.';
+  String get parsedMessageApplied => isArabic
+      ? 'تم تعبئة بيانات المعاملة من الرسالة'
+      : 'Transaction details filled from message';
+  String get smartDetectionDisclosureTitle => isArabic
+      ? 'إذن قراءة إشعارات المعاملات'
+      : 'Local Notification Access';
+  String get smartDetectionDisclosureBody => isArabic
+      ? 'عند التفعيل، يقرأ سبيند وايز إشعارات البنوك والمحافظ (بما فيها إشعارات الرسائل القصيرة) محلياً على جهازك فقط لتجهيز المعاملات لتأكيدها قبل الحفظ.\n\nتتم المعالجة بدون إنترنت بالكامل ولا تغادر بياناتك هاتفك أبداً.\n\nملاحظة لأجهزة أندرويد 13+: عند التثبيت خارج المتجر، افتح معلومات التطبيق > النقاط الثلاث > السماح بالإعدادات المقيدة إذا كان الخيار معطلاً.'
+      : 'When enabled, SpendWise reads incoming bank, wallet, and SMS notifications strictly on-device to pre-fill transactions for your review before saving.\n\nAll parsing happens 100% offline—message data never leaves your phone.\n\nAndroid 13+ note: if sideloaded, open App Info > ⋮ > Allow restricted settings if the toggle is greyed out.';
+  String get enableSmartDetection => isArabic ? 'تفعيل' : 'Enable';
+  String pendingDetectedBannerTitle(int count) => isArabic
+      ? (count == 1 ? 'تم رصد معاملة مالية للمراجعة' : 'تم رصد $count معاملات للمراجعة')
+      : (count == 1 ? '1 detected transaction to confirm' : '$count detected transactions to confirm');
+  String get reviewAndConfirm => isArabic ? 'مراجعة' : 'Review';
+  String get detectedTransactionsSheetTitle => isArabic
+      ? 'المعاملات المرصودة'
+      : 'Detected Transactions';
+  String get confirmTransactionButton => isArabic ? 'تأكيد وإضافة' : 'Confirm & Save';
+  String get viewOriginalMessage => isArabic ? 'عرض نص الرسالة' : 'View original message';
+  String get clearAll => isArabic ? 'تجاهل الكل' : 'Dismiss All';
+  String get selectCategoryHint => isArabic ? 'اختر الفئة للتأكيد' : 'Select category to confirm';
+  String get transactionConfirmedNotice => isArabic
+      ? 'تم تأكيد وإضافة المعاملة بنجاح'
+      : 'Transaction confirmed & saved';
   String get sectionQuickPresets => isArabic ? 'المعاملات السريعة' : 'QUICK PRESETS';
   String get quickPresetsTileTitle => isArabic ? 'قوالب المعاملات السريعة' : 'Quick Transaction Presets';
   String get quickPresetsTileSubtitle => isArabic ? 'تخصيص قوالب المعاملات بنقرة واحدة في الرئيسية' : 'Customize 1-tap presets displayed on the dashboard';

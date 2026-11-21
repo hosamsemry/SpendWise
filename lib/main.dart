@@ -16,6 +16,7 @@ import 'package:money_tracker/core/security/presentation/pin_lock_screen.dart';
 import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/budgets/presentation/initial_cycle_setup_screen.dart';
 import 'package:money_tracker/features/onboarding/presentation/language_selection_screen.dart';
+import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,19 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     WidgetsBinding.instance.addObserver(this);
     _checkInitialSecurity();
     _reconcileLifecycle();
+    _initSmartDetection();
+  }
+
+  void _initSmartDetection() {
+    final channel = ref.read(smartDetectionChannelProvider);
+    final coordinator = ref.read(smartDetectionCoordinatorProvider);
+    channel.onAlertReceived = (alert) {
+      coordinator.ingestLiveAlert(alert);
+    };
+    channel.onSharedTextReceived = (sharedText) {
+      coordinator.ingestSharedText(sharedText);
+    };
+    coordinator.syncFromNative();
   }
 
   @override
@@ -82,6 +96,8 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
       if (!returnedFromBackground) return;
 
       _checkInitialSecurity();
+      ref.read(smartDetectionCoordinatorProvider).syncFromNative();
+      ref.invalidate(notificationAccessStatusProvider);
 
       // Reconcile cycles/reminders when returning from background only if the calendar day changed
       final today = _dayKey(DateTime.now());

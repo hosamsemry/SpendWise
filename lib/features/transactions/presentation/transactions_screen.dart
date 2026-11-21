@@ -9,6 +9,7 @@ import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/transaction_providers.dart';
+import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_banner.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'add_edit_transaction_dialog.dart';
 
@@ -405,6 +406,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ),
             ),
           ],
+
+          const PendingTransactionsBanner(
+            margin: EdgeInsets.fromLTRB(16, 12, 16, 4),
+          ),
 
           // Transactions List
           Expanded(

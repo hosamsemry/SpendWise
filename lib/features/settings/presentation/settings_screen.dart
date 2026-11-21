@@ -21,6 +21,8 @@ import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/backup/presentation/backup_providers.dart';
 import 'package:money_tracker/features/export/data/csv_export_service.dart';
 import 'package:money_tracker/features/presets/presentation/presets_management_screen.dart';
+import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_sheet.dart';
+import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -1127,6 +1129,369 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ],
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // Section: Smart Transaction Detection (NotificationListener + Share/Paste)
+            Text(
+              context.l10n.sectionSmartDetection,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: context.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Consumer(
+              builder: (context, ref, _) {
+                final enabledAsync = ref.watch(smartDetectionEnabledProvider);
+                final isEnabled = enabledAsync.asData?.value ?? false;
+                final accessAsync = ref.watch(notificationAccessStatusProvider);
+                final hasAccess = accessAsync.asData?.value ?? false;
+
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: isEnabled
+                                  ? context.primaryColor.withValues(alpha: 0.14)
+                                  : context.surfaceVariantColor,
+                              child: Icon(
+                                Icons.mark_chat_read_outlined,
+                                color: isEnabled
+                                    ? context.primaryColor
+                                    : context.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.l10n.smartDetectionTitle,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    context.l10n.smartDetectionSubtitle,
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              key: const ValueKey('smart_detection_switch'),
+                              value: isEnabled,
+                              activeTrackColor: context.primaryColor,
+                              onChanged: (val) async {
+                                if (!val) {
+                                  await ref
+                                      .read(
+                                        smartDetectionEnabledProvider.notifier,
+                                      )
+                                      .setEnabled(false);
+                                  return;
+                                }
+
+                                // Google Play Policy: Prominent disclosure before enabling Notification Access
+                                final agreed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (dlgCtx) => AlertDialog(
+                                    title: Text(
+                                      context
+                                          .l10n
+                                          .smartDetectionDisclosureTitle,
+                                    ),
+                                    content: Text(
+                                      context.l10n.smartDetectionDisclosureBody,
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        color: context.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dlgCtx, false),
+                                        child: Text(context.l10n.cancel),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            Navigator.pop(dlgCtx, true),
+                                        child: Text(
+                                          context.l10n.enableSmartDetection,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (agreed != true) return;
+                                await ref
+                                    .read(
+                                      smartDetectionEnabledProvider.notifier,
+                                    )
+                                    .setEnabled(true);
+
+                                final granted = await ref
+                                    .read(smartDetectionChannelProvider)
+                                    .isNotificationAccessEnabled();
+                                if (!granted && context.mounted) {
+                                  await ref
+                                      .read(smartDetectionChannelProvider)
+                                      .openNotificationAccessSettings();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        if (isEnabled) ...[
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    hasAccess
+                                        ? Icons.verified_user_outlined
+                                        : Icons.notifications_off_outlined,
+                                    size: 18,
+                                    color: hasAccess
+                                        ? context.incomeColor
+                                        : context.warningColor,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    hasAccess
+                                        ? context.l10n.notificationAccessGranted
+                                        : context.l10n.notificationAccessNeeded,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: hasAccess
+                                          ? context.incomeColor
+                                          : context.warningColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(smartDetectionChannelProvider)
+                                    .openNotificationAccessSettings(),
+                                child: Text(
+                                  context.l10n.openNotificationSettings,
+                                  style: const TextStyle(fontSize: 12.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const Divider(height: 20),
+                        InkWell(
+                          key: const ValueKey('paste_test_sms_tile'),
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => showPasteBankMessageDialog(context, ref),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.content_paste_go_rounded,
+                                  size: 20,
+                                  color: context.primaryColor,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    context.l10n.pasteOrTestSms,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: context.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 20),
+                        InkWell(
+                          key: const ValueKey('detection_diagnostics_tile'),
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () async {
+                            final channel = ref.read(
+                              smartDetectionChannelProvider,
+                            );
+                            final granted =
+                                await channel.isNotificationAccessEnabled();
+                            final logs = await channel.getDiagnosticLogs();
+                            if (!context.mounted) return;
+                            await showDialog<void>(
+                              context: context,
+                              builder: (dlgCtx) => AlertDialog(
+                                title: Text(
+                                  context.l10n.isArabic
+                                      ? 'تشخيص رصد الإشعارات'
+                                      : 'Detection Diagnostics',
+                                ),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Listener toggle: ${isEnabled ? "ON" : "OFF"}\nNotification Access: ${granted ? "GRANTED" : "NOT GRANTED (Grant in Special App Access > Notification access)"}',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: context.textPrimary,
+                                          ),
+                                        ),
+                                        const Divider(height: 18),
+                                        if (logs.isEmpty)
+                                          Text(
+                                            context.l10n.isArabic
+                                                ? 'لم تصل أي إشعارات إلى الخدمة حتى الآن. تأكد من تفعيل "الوصول إلى الإشعارات" من إعدادات أندرويد.'
+                                                : 'No notifications captured by the listener yet. Make sure "Notification Access" (not just Allow Notifications) is enabled in Android Settings.',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: context.textSecondary,
+                                            ),
+                                          )
+                                        else
+                                          ...logs.map((log) {
+                                            return Container(
+                                              margin: const EdgeInsets.only(
+                                                bottom: 8,
+                                              ),
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    context.surfaceVariantColor,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${log['packageName']} • ${log['status']}',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          context.primaryColor,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '${log['preview']}',
+                                                    style: TextStyle(
+                                                      fontSize: 11.5,
+                                                      color:
+                                                          context.textPrimary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                actions: [
+                                  if (logs.isNotEmpty)
+                                    TextButton(
+                                      onPressed: () async {
+                                        await channel.clearDiagnosticLogs();
+                                        if (dlgCtx.mounted) {
+                                          Navigator.pop(dlgCtx);
+                                        }
+                                      },
+                                      child: Text(context.l10n.clearAll),
+                                    ),
+                                  if (!granted)
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(dlgCtx);
+                                        channel
+                                            .openNotificationAccessSettings();
+                                      },
+                                      child: Text(
+                                        context.l10n.openNotificationSettings,
+                                      ),
+                                    ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dlgCtx),
+                                    child: Text(context.l10n.dismiss),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.bug_report_outlined,
+                                  size: 20,
+                                  color: context.textSecondary,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    context.l10n.isArabic
+                                        ? 'تشخيص رصد الإشعارات'
+                                        : 'Detection Diagnostics',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: context.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

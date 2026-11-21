@@ -13,6 +13,8 @@ import 'package:money_tracker/features/budgets/domain/category_budget.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/presets/domain/transaction_preset.dart';
+import 'package:money_tracker/features/smart_detection/domain/bank_message_parser.dart';
+import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 
 class AddEditTransactionDialog extends ConsumerStatefulWidget {
@@ -99,6 +101,95 @@ class _AddEditTransactionDialogState
     if (picked != null) {
       setState(() => _selectedDate = picked);
     }
+  }
+
+  Future<void> _pasteAndParseSms() async {
+    String initialText = '';
+    try {
+      final clip = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clip?.text != null) initialText = clip!.text!.trim();
+    } catch (_) {
+      // Ignore clipboard access denial
+    }
+
+    if (!mounted) return;
+
+    // Try parsing clipboard content directly first; if empty or unrecognized, open paste box
+    var parsed = initialText.isNotEmpty
+        ? BankMessageParser.parse(initialText)
+        : null;
+
+    if (parsed == null) {
+      final ctrl = TextEditingController(text: initialText);
+      String? errorMsg;
+      parsed = await showDialog(
+        context: context,
+        builder: (dialogCtx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: Text(context.l10n.pasteOrTestSms),
+            content: TextField(
+              controller: ctrl,
+              maxLines: 4,
+              autofocus: true,
+              style: TextStyle(color: context.textPrimary, fontSize: 13.5),
+              decoration: InputDecoration(
+                hintText: context.l10n.pasteSmsHint,
+                errorText: errorMsg,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, null),
+                child: Text(context.l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final candidate = BankMessageParser.parse(ctrl.text);
+                  if (candidate == null) {
+                    setDialogState(() {
+                      errorMsg = context.l10n.noTransactionDetectedInMessage;
+                    });
+                    return;
+                  }
+                  Navigator.pop(dialogCtx, candidate);
+                },
+                child: Text(context.l10n.parseMessageAction),
+              ),
+            ],
+          ),
+        ),
+      );
+      ctrl.dispose();
+    }
+
+    if (parsed == null || !mounted) return;
+
+    final merchantMap = await ref
+        .read(pendingTransactionRepositoryProvider)
+        .getMerchantCategoryMap();
+    final lookupKey =
+        (parsed.merchantKey ?? parsed.suggestedNote).trim().toLowerCase();
+    final learnedCatId = merchantMap[lookupKey];
+
+    if (!mounted) return;
+    setState(() {
+      _type = parsed!.type;
+      _amountController.text = parsed.amount.toFormattedString(
+        includeCurrency: false,
+      );
+      _noteController.text = parsed.suggestedNote;
+      _selectedDate = parsed.transactionDate;
+      _selectedCategoryId = learnedCatId;
+      _amountError = null;
+      _categoryError = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        content: Text(context.l10n.parsedMessageApplied),
+      ),
+    );
   }
 
   void _showQuickAddCategoryDialog(
@@ -421,16 +512,32 @@ class _AddEditTransactionDialogState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  widget.initialTransaction != null
-                      ? context.l10n.editTransaction
-                      : context.l10n.addTransaction,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
+                Expanded(
+                  child: Text(
+                    widget.initialTransaction != null
+                        ? context.l10n.editTransaction
+                        : context.l10n.addTransaction,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
                   ),
                 ),
+                if (widget.initialTransaction == null)
+                  TextButton.icon(
+                    key: const ValueKey('paste_sms_dialog_btn'),
+                    onPressed: _pasteAndParseSms,
+                    icon: const Icon(Icons.content_paste_go_rounded, size: 16),
+                    label: Text(
+                      context.l10n.pasteSmsShort,
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),

@@ -21,6 +21,7 @@ import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/savings/presentation/cycle_closeout_card.dart';
 import 'package:money_tracker/features/savings/presentation/savings_vault_card.dart';
 import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
+import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_banner.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 import 'widgets/near_limit_alert_card.dart';
@@ -153,6 +154,7 @@ class DashboardScreen extends ConsumerWidget {
                             );
                           },
                         ),
+                        const PendingTransactionsBanner(),
                         _DashboardCycleSwitcherBar(
                           formattedRange: cycle.formattedRange,
                           isHistoricalCycle: isHistoricalCycle,
