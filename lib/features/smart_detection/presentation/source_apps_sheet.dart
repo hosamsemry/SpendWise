@@ -80,7 +80,6 @@ class SourceAppsSheet extends ConsumerWidget {
                 label: app.label,
                 packageName: app.packageName,
                 detail: context.l10n.suggestedSourceAppHint(app.count),
-                preview: app.preview,
                 actions: [
                   TextButton(
                     key: ValueKey('ignore_app_${app.packageName}'),
@@ -167,7 +166,6 @@ class _AppRow extends StatelessWidget {
   final String label;
   final String packageName;
   final String? detail;
-  final String? preview;
   final List<Widget> actions;
 
   const _AppRow({
@@ -175,7 +173,6 @@ class _AppRow extends StatelessWidget {
     required this.label,
     required this.packageName,
     this.detail,
-    this.preview,
     required this.actions,
   });
 
@@ -227,19 +224,6 @@ class _AppRow extends StatelessWidget {
             Text(
               detail!,
               style: TextStyle(fontSize: 12, color: context.textSecondary),
-            ),
-          ],
-          if (preview != null && preview!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              '“${preview!}”',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: context.textSecondary,
-              ),
             ),
           ],
           Align(

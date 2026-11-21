@@ -1509,15 +1509,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                                           context.primaryColor,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    '${log['preview']}',
-                                                    style: TextStyle(
-                                                      fontSize: 11.5,
-                                                      color:
-                                                          context.textPrimary,
+                                                  // Only queued alerts keep text;
+                                                  // rejected ones store none.
+                                                  if ('${log['preview'] ?? ''}'
+                                                      .isNotEmpty) ...[
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      '${log['preview']}',
+                                                      style: TextStyle(
+                                                        fontSize: 11.5,
+                                                        color:
+                                                            context.textPrimary,
+                                                      ),
                                                     ),
-                                                  ),
+                                                  ],
                                                 ],
                                               ),
                                             );

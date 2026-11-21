@@ -10,25 +10,28 @@ class WatchedSourceApp {
   factory WatchedSourceApp.fromJson(Map<String, dynamic> json) {
     final pkg = (json['packageName'] as String?) ?? '';
     final label = (json['label'] as String?) ?? '';
-    return WatchedSourceApp(packageName: pkg, label: label.isEmpty ? pkg : label);
+    return WatchedSourceApp(
+      packageName: pkg,
+      label: label.isEmpty ? pkg : label,
+    );
   }
 }
 
 /// An unwatched app that posted financial-looking notifications, offered to
 /// the user as a possible bank/wallet source. Reported by the native listener.
+/// Deliberately carries no message text: content from apps the user has not
+/// approved is never stored.
 class SuggestedSourceApp {
   final String packageName;
   final String label;
   final int count;
   final DateTime lastSeen;
-  final String preview;
 
   const SuggestedSourceApp({
     required this.packageName,
     required this.label,
     required this.count,
     required this.lastSeen,
-    required this.preview,
   });
 
   factory SuggestedSourceApp.fromMap(Map<dynamic, dynamic> map) {
@@ -41,7 +44,6 @@ class SuggestedSourceApp {
       lastSeen: DateTime.fromMillisecondsSinceEpoch(
         (map['lastSeenMs'] as num?)?.toInt() ?? 0,
       ),
-      preview: (map['preview'] as String?) ?? '',
     );
   }
 }

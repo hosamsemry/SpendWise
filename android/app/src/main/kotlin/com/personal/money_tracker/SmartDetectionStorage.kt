@@ -17,6 +17,10 @@ object SmartDetectionStorage {
     private const val KEY_DISMISSED_SUGGESTIONS = "dismissed_source_suggestions"
     private const val KEY_SUGGESTED_APPS = "suggested_source_apps"
     private const val MAX_SUGGESTED_APPS = 20
+    private const val KEY_PREVIEWS_SCRUBBED = "privacy_previews_scrubbed_v1"
+
+    /** The only diagnostic status allowed to keep message text. */
+    const val STATUS_QUEUED = "queued"
     private const val MAX_QUEUED_ALERTS = 50
     private const val MAX_DIAGNOSTIC_LOGS = 15
     private const val SHORT_DEDUP_WINDOW_MS = 30_000L
@@ -67,9 +71,12 @@ object SmartDetectionStorage {
                 JSONArray()
             }
 
+            // Privacy: only alerts actually queued as transactions keep text.
+            // Rejected notifications (chats, OTPs, other apps) never store content.
+            val safePreview = if (status == STATUS_QUEUED) preview.take(160) else ""
             val obj = JSONObject().apply {
                 put("packageName", packageName)
-                put("preview", preview.take(160))
+                put("preview", safePreview)
                 put("status", status)
                 put("timestampMs", timestampMs)
             }
@@ -242,7 +249,6 @@ object SmartDetectionStorage {
         context: Context,
         packageName: String,
         label: String,
-        preview: String,
         timestampMs: Long
     ) {
         synchronized(lock) {
@@ -255,7 +261,6 @@ object SmartDetectionStorage {
                 put("label", label)
                 put("count", (existing?.optInt("count", 0) ?: 0) + 1)
                 put("lastSeenMs", timestampMs)
-                put("preview", preview.take(160))
             }
             suggestions.put(packageName, entry)
 
@@ -289,8 +294,7 @@ object SmartDetectionStorage {
                         "packageName" to key,
                         "label" to obj.optString("label", key),
                         "count" to obj.optInt("count", 1),
-                        "lastSeenMs" to obj.optLong("lastSeenMs", 0L),
-                        "preview" to obj.optString("preview", "")
+                        "lastSeenMs" to obj.optLong("lastSeenMs", 0L)
                     )
                 )
             }
@@ -304,6 +308,39 @@ object SmartDetectionStorage {
             JSONObject(raw)
         } catch (_: Exception) {
             JSONObject()
+        }
+    }
+
+    /**
+     * One-time cleanup of message text stored by versions before the privacy
+     * fix: drops previews of non-queued diagnostic entries and all suggestion
+     * previews. Idempotent and cheap; safe to call on every app start.
+     */
+    fun scrubSensitivePreviews(context: Context) {
+        synchronized(lock) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (prefs.getBoolean(KEY_PREVIEWS_SCRUBBED, false)) return
+
+            val logs = try {
+                JSONArray(prefs.getString(KEY_DIAGNOSTIC_LOGS, "[]") ?: "[]")
+            } catch (_: Exception) {
+                JSONArray()
+            }
+            for (i in 0 until logs.length()) {
+                val obj = logs.optJSONObject(i) ?: continue
+                if (obj.optString("status") != STATUS_QUEUED) obj.put("preview", "")
+            }
+
+            val suggestions = readSuggestions(prefs.getString(KEY_SUGGESTED_APPS, null))
+            for (key in suggestions.keys()) {
+                suggestions.optJSONObject(key)?.remove("preview")
+            }
+
+            prefs.edit()
+                .putString(KEY_DIAGNOSTIC_LOGS, logs.toString())
+                .putString(KEY_SUGGESTED_APPS, suggestions.toString())
+                .putBoolean(KEY_PREVIEWS_SCRUBBED, true)
+                .apply()
         }
     }
 }

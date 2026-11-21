@@ -33,7 +33,6 @@ SuggestedSourceApp _suggestion(String pkg, String label) => SuggestedSourceApp(
   label: label,
   count: 3,
   lastSeen: DateTime(2026, 11, 20),
-  preview: 'EGP 120 debited from your account',
 );
 
 /// Scrolls [finder] into view (the sheet scrolls once it has suggestions).

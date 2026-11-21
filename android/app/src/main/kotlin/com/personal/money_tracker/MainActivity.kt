@@ -80,6 +80,7 @@ class MainActivity : FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
         activeChannel = channel
+        SmartDetectionStorage.scrubSensitivePreviews(applicationContext)
 
         channel.setMethodCallHandler { call, result ->
             when (call.method) {

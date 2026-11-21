@@ -207,7 +207,6 @@ void main() {
             label: pkg,
             count: 1,
             lastSeen: DateTime(2026, 11, 20),
-            preview: '',
           );
       channel.suggestions = [s(_walletPkg), s('com.whatsapp'), s('com.bank')];
 

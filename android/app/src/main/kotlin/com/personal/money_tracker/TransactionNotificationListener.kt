@@ -94,7 +94,6 @@ class TransactionNotificationListener : NotificationListenerService() {
                     context = applicationContext,
                     packageName = pkg,
                     label = SourceAppPolicy.resolveAppLabel(applicationContext, pkg),
-                    preview = combined,
                     timestampMs = sbn.postTime
                 )
             }
@@ -131,7 +130,7 @@ class TransactionNotificationListener : NotificationListenerService() {
             context = applicationContext,
             packageName = pkg,
             preview = combined,
-            status = "queued",
+            status = SmartDetectionStorage.STATUS_QUEUED,
             timestampMs = sbn.postTime
         )
 
