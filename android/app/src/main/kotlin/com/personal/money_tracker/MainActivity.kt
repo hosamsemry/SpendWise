@@ -1,5 +1,145 @@
 package com.personal.money_tracker
 
+import android.content.ComponentName
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.service.notification.NotificationListenerService
+import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterFragmentActivity()
+class MainActivity : FlutterFragmentActivity() {
+
+    companion object {
+        private const val CHANNEL_NAME = "com.personal.money_tracker/smart_detection"
+
+        @Volatile
+        private var activeChannel: MethodChannel? = null
+
+        @Volatile
+        private var isForeground: Boolean = false
+
+        fun notifyLiveAlertIfActive(alertMap: Map<String, Any>): Boolean {
+            val channel = activeChannel ?: return false
+            if (!isForeground) return false
+            Handler(Looper.getMainLooper()).post {
+                channel.invokeMethod("onAlertDetected", alertMap)
+            }
+            return true
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        extractSharedTextFromIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isForeground = true
+        rebindListenerIfEnabled()
+    }
+
+    override fun onPause() {
+        isForeground = false
+        super.onPause()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val shared = extractSharedTextFromIntent(intent)
+        if (shared != null) {
+            Handler(Looper.getMainLooper()).post {
+                activeChannel?.invokeMethod("onSharedText", shared)
+            }
+        }
+    }
+
+    private fun rebindListenerIfEnabled() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val enabledPackages = NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
+            if (enabledPackages.contains(packageName)) {
+                try {
+                    NotificationListenerService.requestRebind(
+                        ComponentName(applicationContext, TransactionNotificationListener::class.java)
+                    )
+                } catch (_: Exception) {
+                    // Safe fallback
+                }
+            }
+        }
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
+        activeChannel = channel
+
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isNotificationAccessEnabled" -> {
+                    val enabledPackages = NotificationManagerCompat.getEnabledListenerPackages(applicationContext)
+                    val isGranted = enabledPackages.contains(packageName)
+                    if (isGranted) rebindListenerIfEnabled()
+                    result.success(isGranted)
+                }
+                "openNotificationAccessSettings" -> {
+                    try {
+                        val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(settingsIntent)
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error("SETTINGS_ERROR", e.message, null)
+                    }
+                }
+                "setSmartDetectionEnabled" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    SmartDetectionStorage.setEnabled(applicationContext, enabled)
+                    if (enabled) rebindListenerIfEnabled()
+                    result.success(null)
+                }
+                "consumePendingNativeAlerts" -> {
+                    val alerts = SmartDetectionStorage.consumeAlerts(applicationContext)
+                    result.success(alerts)
+                }
+                "consumeSharedText" -> {
+                    val shared = SmartDetectionStorage.consumeSharedText(applicationContext)
+                    result.success(shared)
+                }
+                "getDiagnosticLogs" -> {
+                    val logs = SmartDetectionStorage.getDiagnosticLogs(applicationContext)
+                    result.success(logs)
+                }
+                "clearDiagnosticLogs" -> {
+                    SmartDetectionStorage.clearDiagnosticLogs(applicationContext)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        activeChannel = null
+        super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    private fun extractSharedTextFromIntent(intent: Intent?): String? {
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val shared = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+            if (!shared.isNullOrEmpty()) {
+                SmartDetectionStorage.saveSharedText(applicationContext, shared)
+                return shared
+            }
+        }
+        return null
+    }
+}
