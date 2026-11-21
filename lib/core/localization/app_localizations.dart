@@ -480,6 +480,31 @@ class AppLocalizations {
   String get backupAndRestore => isArabic ? 'النسخ الاحتياطي والاستعادة' : 'Backup & Restore';
   String get createBackup => isArabic ? 'إنشاء نسخة احتياطية' : 'Create Backup';
   String get restoreBackup => isArabic ? 'استعادة من نسخة احتياطية' : 'Restore from Backup';
+  String get protectBackupTitle => isArabic ? 'حماية النسخة بكلمة مرور' : 'Protect with a password';
+  String get protectBackupSubtitle => isArabic
+      ? 'موصى به. بدون كلمة مرور يمكن لأي شخص يحصل على الملف قراءة بياناتك المالية.'
+      : 'Recommended. Without a password, anyone who gets the file can read your finances.';
+  String get backupPasswordLabel => isArabic ? 'كلمة المرور' : 'Password';
+  String get backupPasswordConfirmLabel => isArabic ? 'تأكيد كلمة المرور' : 'Confirm password';
+  String backupPasswordTooShort(int min) => isArabic
+      ? 'استخدم $min أحرف على الأقل'
+      : 'Use at least $min characters';
+  String get backupPasswordsDoNotMatch => isArabic ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
+  String get backupPasswordForgetWarning => isArabic
+      ? 'إذا نسيت كلمة المرور فلن يمكن استعادة هذه النسخة.'
+      : 'If you forget this password, this backup cannot be restored.';
+  String get backupUnprotectedWarning => isArabic
+      ? 'ستكون هذه النسخة مقروءة لأي شخص يحصل على الملف.'
+      : 'This backup will be readable by anyone who gets the file.';
+  String get exportBackupAction => isArabic ? 'تصدير' : 'Export';
+  String get encryptedBackupTitle => isArabic ? 'نسخة احتياطية محمية' : 'Protected Backup';
+  String get encryptedBackupBody => isArabic
+      ? 'أدخل كلمة المرور التي استخدمتها عند إنشاء هذه النسخة.'
+      : 'Enter the password used when this backup was created.';
+  String get wrongBackupPassword => isArabic
+      ? 'كلمة مرور خاطئة أو أن الملف تالف.'
+      : 'Wrong password, or the file is damaged.';
+  String get unlockBackupAction => isArabic ? 'فتح' : 'Unlock';
   String get restoreBackupDialogTitle => isArabic ? 'استعادة النسخة الاحتياطية؟' : 'Restore Backup?';
   String get restoreWarning => isArabic
       ? '⚠️ تحذير: الاستعادة ستستبدل جميع البيانات المالية الحالية على هذا الجهاز بمحتويات هذه النسخة. لا يمكن التراجع عن هذا الإجراء.'

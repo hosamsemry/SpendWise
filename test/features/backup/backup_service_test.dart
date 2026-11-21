@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
+import 'package:money_tracker/features/backup/data/backup_crypto.dart';
 import 'package:money_tracker/features/backup/data/backup_service.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import '../../test_helper.dart';
@@ -260,6 +261,35 @@ void main() {
           .get();
       expect({for (final k in kept) k.key: k.value},
           {'pin_failed_attempts': '7', 'pin_lockout_until': until});
+    });
+
+    test('password-protected backup round-trips and needs the password', () async {
+      await seedTestData();
+      final secured = BackupService(db, crypto: const BackupCrypto(iterations: 1000));
+      final original = await secured.createBackupData();
+      final content = await secured.encodeBackup(original, password: 'hunter2hunter2');
+
+      expect(secured.isEncryptedBackup(content), isTrue);
+      expect(content, isNot(contains('hash_1234')), reason: 'no plaintext data');
+      await expectLater(
+        secured.parseBackupContent(content),
+        throwsA(isA<BackupPasswordRequiredException>()),
+      );
+      await expectLater(
+        secured.parseBackupContent(content, password: 'wrong-password'),
+        throwsA(isA<WrongBackupPasswordException>()),
+      );
+
+      final parsed = await secured.parseBackupContent(content, password: 'hunter2hunter2');
+      expect(parsed.toFormattedJsonString(), original.toFormattedJsonString());
+    });
+
+    test('plain (unprotected) backups still parse without a password', () async {
+      await seedTestData();
+      final plain = await service.encodeBackup(await service.createBackupData());
+      expect(service.isEncryptedBackup(plain), isFalse);
+      final parsed = await service.parseBackupContent(plain);
+      expect(parsed.transactionCount, greaterThan(0));
     });
 
     test('parseBackupString rejects malformed JSON and incompatible apps', () {

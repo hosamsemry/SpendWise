@@ -18,6 +18,8 @@ import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/core/security/biometric_service.dart';
 import 'package:money_tracker/core/security/presentation/pin_lock_screen.dart';
 import 'package:money_tracker/core/security/security_service.dart';
+import 'package:money_tracker/features/backup/domain/backup_data.dart';
+import 'package:money_tracker/features/backup/presentation/backup_password_dialogs.dart';
 import 'package:money_tracker/features/backup/presentation/backup_providers.dart';
 import 'package:money_tracker/features/export/data/csv_export_service.dart';
 import 'package:money_tracker/features/presets/presentation/presets_management_screen.dart';
@@ -160,6 +162,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _createBackup() async {
+    final choice = await showExportBackupDialog(context);
+    if (choice == null || !mounted) return;
     try {
       final backupService = ref.read(backupServiceProvider);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +176,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           duration: const Duration(seconds: 1),
         ),
       );
-      final file = await backupService.exportBackupFile();
+      final file = await backupService.exportBackupFile(
+        password: choice.password,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -211,7 +217,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final jsonContent = utf8.decode(bytes);
 
       final backupService = ref.read(backupServiceProvider);
-      final backupData = backupService.parseBackupString(jsonContent);
+      final BackupData? parsed;
+      if (backupService.isEncryptedBackup(jsonContent)) {
+        if (!mounted) return;
+        parsed = await showUnlockBackupDialog(
+          context,
+          unlock: (password) => backupService.parseBackupContent(
+            jsonContent,
+            password: password,
+          ),
+        );
+      } else {
+        parsed = await backupService.parseBackupContent(jsonContent);
+      }
+      if (parsed == null) return;
+      final BackupData backupData = parsed;
 
       if (!mounted) return;
 

@@ -3,16 +3,25 @@ import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/security/security_service.dart';
+import 'package:money_tracker/features/backup/data/backup_crypto.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
+/// Thrown when an encrypted backup is parsed without a password.
+class BackupPasswordRequiredException extends BackupException {
+  const BackupPasswordRequiredException([
+    super.message = 'This backup is password protected.',
+  ]);
+}
+
 class BackupService {
   final AppDatabase db;
+  final BackupCrypto crypto;
   static const Uuid _uuid = Uuid();
 
-  BackupService(this.db);
+  BackupService(this.db, {this.crypto = const BackupCrypto()});
 
   /// Queries all tables from the database and packages them into a [BackupData] snapshot.
   Future<BackupData> createBackupData() async {
@@ -95,10 +104,31 @@ class BackupService {
     );
   }
 
+  /// Serialized file content for [backup]: encrypted with [password] when
+  /// given, otherwise plain (readable) JSON.
+  Future<String> encodeBackup(BackupData backup, {String? password}) async {
+    final json = backup.toFormattedJsonString();
+    if (password == null) return json;
+    return crypto.encrypt(json, password);
+  }
+
+  /// Whether a file's [content] needs a password to open.
+  bool isEncryptedBackup(String content) => BackupCrypto.isEncrypted(content);
+
+  /// Parses plain or encrypted backup file [content].
+  /// Throws [BackupPasswordRequiredException] if it is encrypted and no
+  /// [password] is given, and [WrongBackupPasswordException] if it is wrong.
+  Future<BackupData> parseBackupContent(String content, {String? password}) async {
+    if (!BackupCrypto.isEncrypted(content)) return parseBackupString(content);
+    if (password == null) throw const BackupPasswordRequiredException();
+    return parseBackupString(await crypto.decrypt(content, password));
+  }
+
   /// Writes [BackupData] to disk and invokes the native share sheet.
-  Future<File> exportBackupFile({BackupData? data}) async {
+  /// With a [password] the file is AES-256-GCM encrypted.
+  Future<File> exportBackupFile({BackupData? data, String? password}) async {
     final backup = data ?? await createBackupData();
-    final jsonContent = backup.toFormattedJsonString();
+    final jsonContent = await encodeBackup(backup, password: password);
 
     final dir = await getApplicationDocumentsDirectory();
     final dateStr = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(backup.metadata.createdAt);
