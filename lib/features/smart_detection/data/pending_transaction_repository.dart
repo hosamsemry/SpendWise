@@ -122,17 +122,20 @@ class PendingTransactionRepository {
 
   /// Parses [rawMessage] locally and queues it as a [PendingDetectedTransaction]
   /// unless it is non-financial or a duplicate of an already pending/handled alert.
+  /// Pass [strict] for sources that also carry personal messages (SMS apps).
   Future<PendingDetectedTransaction?> ingestMessage(
     String rawMessage, {
     String? title,
     String sourcePackage = '',
     DateTime? receivedAt,
     bool bypassDuplicateCheck = false,
+    bool strict = false,
   }) async {
     final parsed = BankMessageParser.parse(
       rawMessage,
       title: title,
       receivedAt: receivedAt,
+      strict: strict,
     );
     if (parsed == null) return null;
 
