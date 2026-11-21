@@ -379,6 +379,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         .syncSavingsBudgetForCycle(cycleId: cycle.id);
                   }
 
+                  // Budgets changed (this one and possibly Savings): fire or
+                  // re-arm 80% / over-budget alerts accordingly.
+                  await ref.read(budgetAlertServiceProvider).reevaluate(cycle);
+
                   ref.read(refreshTriggerProvider.notifier).trigger();
                   if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {

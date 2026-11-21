@@ -1,6 +1,7 @@
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
+import 'package:money_tracker/features/budgets/domain/budget_alert_service.dart';
 import 'package:money_tracker/features/budgets/domain/budget_calculation_service.dart';
 import 'package:money_tracker/features/budgets/domain/threshold_monitor.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
@@ -36,6 +37,14 @@ class TransactionService {
     required this.thresholdMonitor,
     this.calcService = const BudgetCalculationService(),
   });
+
+  BudgetAlertService get _alerts => BudgetAlertService(
+        txRepo: txRepo,
+        cycleRepo: cycleRepo,
+        categoryRepo: categoryRepo,
+        thresholdMonitor: thresholdMonitor,
+        calcService: calcService,
+      );
 
   Future<TransactionModel> add({
     required TransactionType type,
@@ -130,24 +139,8 @@ class TransactionService {
       await savingsSync.syncSavingsBudgetForCycle(cycleId: cycleId);
     }
 
-    if (thresholdKeys.isEmpty) return;
-    final categories = await categoryRepo.getAllCategories(includeInactive: true);
     for (final entry in thresholdKeys.entries) {
-      final cycle = cyclesById[entry.key]!;
-      final summary = calcService.calculateCycleSummary(
-        cycle: cycle,
-        categories: categories,
-        budgetMap: await cycleRepo.getCycleBudgets(cycle.id),
-        transactions: await txRepo.getTransactionsForCycle(cycle),
-      );
-      for (final budget in summary.categoryBudgets) {
-        if (entry.value.contains(budget.categoryId)) {
-          await thresholdMonitor.evaluateAndNotify(
-            cycleId: cycle.id,
-            budget: budget,
-          );
-        }
-      }
+      await _alerts.reevaluate(cyclesById[entry.key]!, categoryIds: entry.value);
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/budget_cycle_start_day_provider.dart';
 import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
+import 'package:money_tracker/features/budgets/domain/budget_alert_service.dart';
 import 'package:money_tracker/features/budgets/domain/budget_calculation_service.dart';
 import 'package:money_tracker/features/budgets/domain/threshold_monitor.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
@@ -51,4 +52,15 @@ final thresholdMonitorProvider = Provider<ThresholdMonitor>((ref) {
   final db = ref.watch(databaseProvider);
   final notificationService = ref.watch(notificationServiceProvider);
   return ThresholdMonitor(db: db, notificationService: notificationService);
+});
+
+/// Re-checks budget alerts after budget or spending changes.
+final budgetAlertServiceProvider = Provider<BudgetAlertService>((ref) {
+  return BudgetAlertService(
+    txRepo: ref.watch(transactionRepositoryProvider),
+    cycleRepo: ref.watch(budgetCycleRepositoryProvider),
+    categoryRepo: ref.watch(categoryRepositoryProvider),
+    thresholdMonitor: ref.watch(thresholdMonitorProvider),
+    calcService: ref.watch(budgetCalculationServiceProvider),
+  );
 });
