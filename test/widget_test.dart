@@ -285,11 +285,19 @@ void main() {
         ),
       );
 
-      final security = SecurityService(db);
+      // Inline hashing: background isolates don't complete under the fake clock.
+      final security = SecurityService(
+        db,
+        iterations: 1000,
+        runInBackground: false,
+      );
       await security.setPin('1234');
 
       final container = ProviderContainer(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          securityServiceProvider.overrideWithValue(security),
+        ],
       );
 
       await tester.pumpWidget(

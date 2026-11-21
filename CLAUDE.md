@@ -115,7 +115,12 @@ On start, and on resume from real background (paused/hidden → resumed; transie
 Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSettings`, `setSmartDetectionEnabled`, `consumePendingNativeAlerts`, `consumeSharedText`, `getDiagnosticLogs`, `clearDiagnosticLogs`.
 
 ## Security
-- PIN is stored as SHA-256 of `"$pin:money_tracker_salt_v1"` in app_settings (static salt). Biometric unlock goes through `local_auth` and requires `FlutterFragmentActivity`.
+- The PIN is stored in `app_settings.pin_hash` as a self-describing string `pbkdf2-sha256$<iterations>$<b64 salt>$<b64 hash>`:
+  - PBKDF2-HMAC-SHA256 with a random 16-byte salt per PIN, 100k iterations (`SecurityService.defaultIterations`), constant-time compare.
+  - Hashing runs in `Isolate.run`. Widget tests must inject `SecurityService(db, iterations: 1000, runInBackground: false)` via `securityServiceProvider.overrideWithValue`, because isolates never finish under the fake clock.
+  - Verification uses the iteration count stored in the hash.
+- Legacy v1 hashes (hex SHA-256 of `"$pin:money_tracker_salt_v1"`, from old installs and backups) still verify. They are re-hashed to the current format on the first successful verify, and so are hashes with fewer iterations than the current setting. Don't remove the legacy path.
+- Biometric unlock goes through `local_auth` and requires `FlutterFragmentActivity`.
 - The PIN screen has a 30-second lockout after repeated failures.
 
 ## Conventions
