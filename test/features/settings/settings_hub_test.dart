@@ -21,12 +21,18 @@ void main() {
     'settings_nav_backup': 'Backup & Export',
   };
 
-  Future<void> pumpHub(WidgetTester tester, Locale locale) async {
+  Future<AppDatabase> pumpHub(
+    WidgetTester tester,
+    Locale locale, {
+    Map<String, String> settings = const {},
+  }) async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    await db.into(db.appSettingsTable).insert(
-          AppSettingsTableCompanion.insert(key: 'budget_cycle_start_day', value: '25'),
-        );
+    for (final e in {'budget_cycle_start_day': '25', ...settings}.entries) {
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(key: e.key, value: e.value),
+          );
+    }
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(db)],
@@ -44,6 +50,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    return db;
   }
 
   testWidgets('every hub row opens its page and comes back', (tester) async {
@@ -81,5 +88,44 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(SettingsScreen), findsOneWidget);
     }
+  });
+
+  testWidgets('rows summarize the current settings', (tester) async {
+    await pumpHub(tester, const Locale('en'), settings: {
+      'primary_currency': 'SAR',
+      'theme_mode': 'dark',
+    });
+    expect(find.text('Cycle starts on day 25 · SAR (ر.س)'), findsOneWidget);
+    expect(find.text('English · Dark'), findsOneWidget);
+    expect(find.text('No PIN lock'), findsOneWidget);
+    // Smart detection and reminders are off by default.
+    expect(find.text('Off'), findsNWidgets(2));
+  });
+
+  testWidgets('calendar-month cycles and PIN + biometrics are summarized',
+      (tester) async {
+    await pumpHub(tester, const Locale('en'), settings: {
+      'budget_cycle_start_day': '1',
+      'pin_enabled': 'true',
+      'pin_hash': 'x',
+      'biometrics_enabled': 'true',
+    });
+    expect(find.text('Calendar Month · EGP (ج.م)'), findsOneWidget);
+    expect(find.text('PIN lock on · Fingerprint / face'), findsOneWidget);
+  });
+
+  testWidgets('summary refreshes after returning from a page', (tester) async {
+    final db = await pumpHub(tester, const Locale('en'));
+    expect(find.text('No PIN lock'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('settings_nav_security')));
+    await tester.pumpAndSettle();
+    // Simulate the security page enabling the PIN.
+    await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(key: 'pin_enabled', value: 'true'),
+        );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('PIN lock on'), findsOneWidget);
   });
 }

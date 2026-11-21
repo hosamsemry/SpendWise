@@ -404,6 +404,15 @@ class AppLocalizations {
   String get settingsSmartDetectionTitle => isArabic ? 'الرصد الذكي' : 'Smart Detection';
   String get settingsRemindersTitle => isArabic ? 'التذكيرات' : 'Reminders';
   String get settingsBackupExportTitle => isArabic ? 'النسخ الاحتياطي والتصدير' : 'Backup & Export';
+  String get statusOn => isArabic ? 'مفعّل' : 'On';
+  String get statusOff => isArabic ? 'متوقف' : 'Off';
+  String settingsCycleSummary(int day) =>
+      isArabic ? 'تبدأ الدورة يوم $day' : 'Cycle starts on day $day';
+  String get pinOnSummary => isArabic ? 'قفل PIN مفعّل' : 'PIN lock on';
+  String get pinOffSummary => isArabic ? 'بدون قفل PIN' : 'No PIN lock';
+  String get biometricOnSummary => isArabic ? 'البصمة / الوجه' : 'Fingerprint / face';
+  String reminderSummary(String time) =>
+      isArabic ? 'يومياً الساعة $time' : 'Daily at $time';
   String get sectionSmartDetection => isArabic ? 'رصد المعاملات الذكي' : 'SMART DETECTION';
   String get smartDetectionTitle => isArabic
       ? 'اكتشاف رسائل البنوك والمحافظ'
