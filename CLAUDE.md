@@ -78,7 +78,7 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 - Migrations go in `AppDatabase.migration.onUpgrade` with `if (from < N)` blocks. Bump `schemaVersion`, then run build_runner. `PRAGMA foreign_keys = ON` and the transaction indexes are applied in `beforeOpen`.
 - When changing the schema, also update **BackupService/BackupData** (backup = all tables) and the tests in `test/core/database/`.
 
-`app_settings` keys: `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (balance_minor, last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
+`app_settings` keys: `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (balance_minor, last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
 
 ## Core domain rules (don't break these)
 - **Money is always int minor units** (`Money.fromMinorUnits`, `inMinorUnits`). Never use doubles for amounts. Max is 999,999,999 major units. `Money.parse` accepts Arabic digits and currency symbols.
@@ -126,13 +126,27 @@ On start, and on resume from real background (paused/hidden → resumed; transie
 Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSettings`, `setSmartDetectionEnabled`, `consumePendingNativeAlerts`, `consumeSharedText`, `getDiagnosticLogs`, `clearDiagnosticLogs`, `setSourcePolicy`, `getSuggestedApps`.
 
 ## Security
-- The PIN is stored in `app_settings.pin_hash` as a self-describing string `pbkdf2-sha256$<iterations>$<b64 salt>$<b64 hash>`:
-  - PBKDF2-HMAC-SHA256 with a random 16-byte salt per PIN, 100k iterations (`SecurityService.defaultIterations`), constant-time compare.
+- **App lock is an overlay**: `MaterialApp.builder` stacks `_LockOverlay` (its own Navigator plus `PinLockScreen`) above the root Navigator whenever `isAppLockedProvider` is true. Never gate security by swapping `home`: routes, dialogs and sheets pushed earlier would stay on top. While locked, `didPopRoute` swallows the back gesture. Nothing renders until the first PIN check completes, and the app locks on `paused`/`hidden`, not only on resume.
+- **PIN hash**: `app_settings.pin_hash` is a self-describing string `pbkdf2-sha256$<iterations>$<b64 salt>$<b64 hash>`:
+  - PBKDF2-HMAC-SHA256 with a random 16-byte salt and 100k iterations (`SecurityService.defaultIterations`), compared in constant time.
   - Hashing runs in `Isolate.run`. Widget tests must inject `SecurityService(db, iterations: 1000, runInBackground: false)` via `securityServiceProvider.overrideWithValue`, because isolates never finish under the fake clock.
-  - Verification uses the iteration count stored in the hash.
-- Legacy v1 hashes (hex SHA-256 of `"$pin:money_tracker_salt_v1"`, from old installs and backups) still verify. They are re-hashed to the current format on the first successful verify, and so are hashes with fewer iterations than the current setting. Don't remove the legacy path.
+  - Legacy v1 hashes (hex SHA-256 of `"$pin:money_tracker_salt_v1"`) still verify and are re-hashed on the next successful unlock. Don't remove the legacy path.
+- **Rate limiting**: always unlock or verify through `SecurityService.attemptPin`, never raw `verifyPin`, from UI:
+  - 5 free attempts, then 30s doubling per failure, capped at 1h.
+  - Stored in `pin_failed_attempts` / `pin_lockout_until`, so it survives restarts. The remaining time is clamped against clock rollback.
+  - A correct PIN, biometric unlock or `setPin` clears it.
+  - "Change PIN" requires the current PIN first. `pinCredentialSettingKeys` lists the keys restore must keep when "keep current PIN" is chosen.
 - Biometric unlock goes through `local_auth` and requires `FlutterFragmentActivity`.
-- The PIN screen has a 30-second lockout after repeated failures.
+- **Recent-apps privacy**: Android 13+ uses `setRecentsScreenshotEnabled(false)` in `MainActivity`. Older versions draw `PrivacyCover` (`core/security/privacy_cover.dart`) whenever the app isn't resumed; the `com.personal.money_tracker/privacy` channel reports which path applies. `FLAG_SECURE` is deliberately not used, so user screenshots still work.
+- **No Android backup**: `allowBackup=false` plus `res/xml/data_extraction_rules.xml` excludes everything from cloud backup **and** device transfer (on Android 12+, `allowBackup=false` alone doesn't stop transfer).
+- **Encrypted backups**: `BackupCrypto` (`features/backup/data/backup_crypto.dart`) is a JSON envelope with `format: spendwise-encrypted-backup`:
+  - AES-256-GCM from `package:cryptography`, with the header as AAD; the key comes from PBKDF2-SHA256 (600k iterations) with a random salt. File iterations are capped at 5M.
+  - Export offers an optional password (on by default). Restore detects the envelope (`parseBackupContent`); plain backups still import.
+  - A golden v1 envelope test must keep passing.
+- **Export files**: write through `ExportFileStore` (a cache `exports/` folder, pruned after 1h, plus a one-time removal of legacy exports in documents). Never write exports to the documents folder.
+- **CSV**: free-text cells go through `_escapeText` (prefixes `= + - @ \t \r` with `'`). Never pass numeric cells through it.
+- **Detection privacy**: only alerts with status `queued` may keep message text in diagnostics (enforced in `SmartDetectionStorage.appendDiagnosticLog`). Suggestions carry no text.
+- **SQL**: use drift expressions or bound variables (e.g. `like(..., escapeChar:)`), never string-built `CustomExpression`s.
 
 ## Conventions
 - Every user-visible string is a getter in `AppLocalizations` with both `en` and `ar` text. Use `context.l10n.xxx` and never hardcode strings. Remember RTL and Arabic numerals.
