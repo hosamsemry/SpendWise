@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
@@ -22,6 +24,8 @@ class CategoryInUseException implements Exception {
 }
 
 class CategoryRepository {
+  static const String categorySelectionCountsKey = 'category_selection_counts';
+
   final AppDatabase db;
   final Uuid _uuid;
 
@@ -41,11 +45,64 @@ class CategoryRepository {
     );
   }
 
+  /// Reads the persisted map of categoryId -> selection count from `app_settings`.
+  Future<Map<String, int>> getCategorySelectionCounts() async {
+    final row = await (db.select(
+      db.appSettingsTable,
+    )..where((tbl) => tbl.key.equals(categorySelectionCountsKey)))
+        .getSingleOrNull();
+    if (row == null || row.value.isEmpty) {
+      return const {};
+    }
+
+    try {
+      final decoded = jsonDecode(row.value);
+      if (decoded is! Map) return const {};
+      final counts = <String, int>{};
+      for (final entry in decoded.entries) {
+        final key = entry.key.toString();
+        final rawVal = entry.value;
+        final count = rawVal is int
+            ? rawVal
+            : rawVal is num
+                ? rawVal.toInt()
+                : int.tryParse(rawVal.toString());
+        if (key.isNotEmpty && count != null && count > 0) {
+          counts[key] = count;
+        }
+      }
+      return counts;
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// Increments the selection counter for [categoryId] when a new transaction
+  /// is created with that category.
+  Future<void> incrementCategorySelectionCount(String categoryId) async {
+    if (categoryId.isEmpty) return;
+
+    await db.transaction(() async {
+      final counts = Map<String, int>.from(await getCategorySelectionCounts());
+      counts[categoryId] = (counts[categoryId] ?? 0) + 1;
+
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(
+              key: categorySelectionCountsKey,
+              value: jsonEncode(counts),
+            ),
+          );
+    });
+  }
+
   /// Retrieves all categories. If [includeInactive] is false, returns only active categories.
   /// If [type] is provided, filters categories by that type.
+  /// When [sortByFrequency] is true, sorts categories by selection count descending,
+  /// breaking ties alphabetically.
   Future<List<Category>> getAllCategories({
     bool includeInactive = false,
     CategoryType? type,
+    bool sortByFrequency = false,
   }) async {
     final query = db.select(db.categoriesTable);
     if (!includeInactive) {
@@ -59,7 +116,22 @@ class CategoryRepository {
     ]);
 
     final entries = await query.get();
-    return entries.map(_mapEntryToDomain).toList();
+    final categories = entries.map(_mapEntryToDomain).toList();
+    if (!sortByFrequency || categories.length <= 1) {
+      return categories;
+    }
+
+    final counts = await getCategorySelectionCounts();
+    if (counts.isEmpty) {
+      return categories;
+    }
+
+    categories.sort((a, b) {
+      final byCount = (counts[b.id] ?? 0).compareTo(counts[a.id] ?? 0);
+      if (byCount != 0) return byCount;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return categories;
   }
 
   /// Retrieves a category by [id].

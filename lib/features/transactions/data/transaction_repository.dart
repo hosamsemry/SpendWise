@@ -3,6 +3,7 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:uuid/uuid.dart';
 
@@ -77,6 +78,9 @@ class TransactionRepository {
     );
 
     await db.into(db.transactionsTable).insert(companion);
+    if (categoryId != null && categoryId.isNotEmpty) {
+      await CategoryRepository(db).incrementCategorySelectionCount(categoryId);
+    }
     final tx = await getTransactionById(id);
     return tx!;
   }

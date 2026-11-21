@@ -31,30 +31,35 @@ final currentNavigationIndexProvider =
       CurrentNavigationIndexNotifier.new,
     );
 
-/// Active categories provider (all)
+/// Active categories provider (all), ordered by selection frequency descending.
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   ref.watch(refreshTriggerProvider);
   final repo = ref.watch(categoryRepositoryProvider);
-  return repo.getAllCategories(includeInactive: false);
+  return repo.getAllCategories(
+    includeInactive: false,
+    sortByFrequency: true,
+  );
 });
 
-/// Active expense categories provider
+/// Active expense categories provider, ordered by selection frequency descending.
 final expenseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   ref.watch(refreshTriggerProvider);
   final repo = ref.watch(categoryRepositoryProvider);
   return repo.getAllCategories(
     includeInactive: false,
     type: CategoryType.expense,
+    sortByFrequency: true,
   );
 });
 
-/// Active income categories provider
+/// Active income categories provider, ordered by selection frequency descending.
 final incomeCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   ref.watch(refreshTriggerProvider);
   final repo = ref.watch(categoryRepositoryProvider);
   return repo.getAllCategories(
     includeInactive: false,
     type: CategoryType.income,
+    sortByFrequency: true,
   );
 });
 
