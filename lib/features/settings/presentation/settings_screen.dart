@@ -8,7 +8,6 @@ import 'package:money_tracker/core/providers/reminder_provider.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
 import 'package:money_tracker/features/settings/presentation/settings_providers.dart';
 import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
-import 'package:money_tracker/features/presets/presentation/presets_management_screen.dart';
 import 'package:money_tracker/features/settings/presentation/pages/backup_export_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/budget_money_settings_page.dart';
 import 'package:money_tracker/features/settings/presentation/pages/language_appearance_settings_page.dart';
@@ -80,48 +79,6 @@ class SettingsScreen extends ConsumerWidget {
     return SettingsPageScaffold(
       title: context.l10n.settingsTitle,
       children: [
-        // Section 1: Quick Presets
-        Text(
-          context.l10n.sectionQuickPresets,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.8,
-            color: context.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // Quick Presets Tile
-        Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.amber.withValues(alpha: 0.12),
-              child: const Icon(Icons.bolt_outlined, color: Colors.amber),
-            ),
-            title: Text(
-              context.l10n.quickPresetsTileTitle,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: context.textPrimary,
-              ),
-            ),
-            subtitle: Text(
-              context.l10n.quickPresetsTileSubtitle,
-              style: TextStyle(color: context.textSecondary, fontSize: 13),
-            ),
-            trailing: Icon(Icons.chevron_right, color: context.textSecondary),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PresetsManagementScreen(),
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
         Card(
           clipBehavior: Clip.antiAlias,
           child: Column(

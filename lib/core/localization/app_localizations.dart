@@ -478,9 +478,6 @@ class AppLocalizations {
   String get transactionConfirmedNotice => isArabic
       ? 'تم تأكيد وإضافة المعاملة بنجاح'
       : 'Transaction confirmed & saved';
-  String get sectionQuickPresets => isArabic ? 'المعاملات السريعة' : 'QUICK PRESETS';
-  String get quickPresetsTileTitle => isArabic ? 'قوالب المعاملات السريعة' : 'Quick Transaction Presets';
-  String get quickPresetsTileSubtitle => isArabic ? 'تخصيص قوالب المعاملات بنقرة واحدة في الرئيسية' : 'Customize 1-tap presets displayed on the dashboard';
   String get sectionBudgetCycle => isArabic ? 'دورة الميزانية' : 'BUDGET CYCLE';
   String get cycleStartDay => isArabic ? 'يوم بدء الدورة' : 'Cycle Start Day';
   String get sectionNotifications => isArabic ? 'الإشعارات والتذكيرات' : 'NOTIFICATIONS & REMINDERS';
