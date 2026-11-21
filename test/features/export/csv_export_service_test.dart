@@ -140,5 +140,71 @@ void main() {
       final plainCsv = await csvService.buildTransactionsCsv();
       expect(plainCsv.contains('ID,Date,Type,Category,Amount,Note,Created At'), isTrue);
     });
+
+    test('neutralizes formula-like text cells (CSV injection)', () async {
+      final cat = await categoryRepo.createCategory(
+        name: '=cmd|calc',
+        type: CategoryType.expense,
+      );
+      final payloads = [
+        '=HYPERLINK("http://evil.example","click")',
+        '+SUM(1,2)',
+        '-2+3',
+        '@SUM(A1)',
+        '\tTAB',
+        'Normal note',
+      ];
+      for (final note in payloads) {
+        await txRepo.addTransaction(
+          type: TransactionType.expense,
+          amount: const Money.fromMinorUnits(1000),
+          categoryId: cat.id,
+          date: DateTime(2026, 11, 1),
+          note: note,
+        );
+      }
+
+      final csv = await csvService.buildTransactionsCsv();
+      final rows = csv.split('\n').skip(1).where((l) => l.isNotEmpty).toList();
+      for (final row in rows) {
+        // Category cell is the 4th column: neutralized with a leading quote.
+        expect(row, contains(",'=cmd|calc,"));
+      }
+      expect(csv, contains('"\'=HYPERLINK(""http://evil.example"",""click"")"'));
+      expect(csv, contains("'+SUM(1"));
+      expect(csv, contains(",'-2+3,"));
+      expect(csv, contains(",'@SUM(A1),"));
+      expect(csv, contains(",Normal note,"));
+      // Amounts stay numeric.
+      expect(csv, contains(',10.00,'));
+      expect(csv, isNot(contains(",'10.00")));
+    });
+
+    test('negative numeric cells in the summary are not neutralized', () {
+      final cycle = BudgetCycle(
+        id: 'c',
+        startDate: DateTime(2026, 11, 1),
+        endDate: DateTime(2026, 11, 30),
+      );
+      final summary = CycleSummary(
+        cycle: cycle,
+        totalIncome: const Money.zero(),
+        totalBudgeted: const Money.fromMinorUnits(10000),
+        totalSpent: const Money.fromMinorUnits(30000),
+        positiveUnusedTotal: const Money.zero(),
+        netRemainingTotal: const Money.fromMinorUnits(-20000),
+        overspentCategoriesCount: 1,
+        categoryBudgets: const [
+          CategoryBudget(
+            categoryId: 'x',
+            categoryName: '-Overspent',
+            budgetedAmount: Money.fromMinorUnits(10000),
+            spentAmount: Money.fromMinorUnits(30000),
+          ),
+        ],
+      );
+      final csv = csvService.buildCycleSummaryCsv(summary);
+      expect(csv, contains("'-Overspent,100.00,300.00,-200.00,300.0%"));
+    });
   });
 }

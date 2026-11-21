@@ -13,6 +13,19 @@ class CsvExportService {
 
   CsvExportService(this.transactionRepo);
 
+  static const _formulaTriggers = {'=', '+', '-', '@', '\t', '\r'};
+
+  /// Escapes a free-text cell (category names, notes). Text that a spreadsheet
+  /// would run as a formula (CSV injection) is prefixed with `'` so Excel /
+  /// Google Sheets show it as text. Notes can come from bank SMS, so their
+  /// content is partly attacker-controlled. Never use this for numeric cells.
+  String _escapeText(String? value) {
+    if (value == null || value.isEmpty) return '';
+    final neutralized =
+        _formulaTriggers.contains(value[0]) ? "'$value" : value;
+    return _escapeCsv(neutralized);
+  }
+
   String _escapeCsv(String? value) {
     if (value == null) return '';
     if (value.contains(',') ||
@@ -47,9 +60,9 @@ class CsvExportService {
       final typeStr = tx.type.name.toUpperCase();
       final rawCat = tx.categoryName ?? (tx.isIncome ? 'Uncategorized Income' : 'Uncategorized');
       final localizedCat = categoryLocalizer != null ? categoryLocalizer(rawCat) : rawCat;
-      final catStr = _escapeCsv(localizedCat);
+      final catStr = _escapeText(localizedCat);
       final amountStr = (tx.amount.inMinorUnits / 100.0).toStringAsFixed(2);
-      final noteStr = _escapeCsv(tx.note);
+      final noteStr = _escapeText(tx.note);
       final createdStr = tx.createdAt.toIso8601String();
 
       buffer.writeln(
@@ -87,7 +100,7 @@ class CsvExportService {
     );
     for (final b in summary.categoryBudgets) {
       final localizedCat = categoryLocalizer != null ? categoryLocalizer(b.categoryName) : b.categoryName;
-      final catName = _escapeCsv(localizedCat);
+      final catName = _escapeText(localizedCat);
       final budgeted = (b.budgetedAmount.inMinorUnits / 100.0).toStringAsFixed(2);
       final spent = (b.spentAmount.inMinorUnits / 100.0).toStringAsFixed(2);
       final remaining = (b.remainingAmount.inMinorUnits / 100.0).toStringAsFixed(2);
