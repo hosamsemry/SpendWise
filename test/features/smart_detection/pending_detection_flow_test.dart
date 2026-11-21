@@ -16,6 +16,7 @@ import 'package:money_tracker/features/dashboard/presentation/dashboard_screen.d
 import 'package:money_tracker/features/smart_detection/data/pending_transaction_repository.dart';
 import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_banner.dart';
 import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_sheet.dart';
+import 'package:money_tracker/features/smart_detection/presentation/smart_detection_providers.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 import '../../test_helper.dart';
@@ -61,7 +62,12 @@ void main() {
       final setup = await createSeededDb();
       addTearDown(setup.db.close);
 
-      final repo = PendingTransactionRepository(setup.db);
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(setup.db)],
+      );
+      addTearDown(container.dispose);
+      await container.read(budgetCycleStartDayProvider.future);
+      final repo = container.read(pendingTransactionRepositoryProvider);
 
       const sampleAlert =
           'تم خصم مبلغ 515.00 جم لحظيا باستخدام (شبكة المدفوعات اللحظية) من حسابكم رقم 0140 عند كهرباء جنوب القاهرة يوم 10-29 الساعة20:32 مرجع التاجر 1613746459 للمزيد اتصل بـ 19623.';
@@ -78,7 +84,7 @@ void main() {
       expect(duplicate, isNull);
 
       // Confirm with Utilities category -> inserts transaction & learns merchant mapping
-      await repo.confirmPendingTransaction(
+      await container.read(smartDetectionCoordinatorProvider).confirmPending(
         pending: first,
         type: first.type,
         amount: first.amount,

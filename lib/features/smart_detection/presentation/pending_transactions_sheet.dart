@@ -227,8 +227,7 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
     });
 
     try {
-      final repo = ref.read(pendingTransactionRepositoryProvider);
-      await repo.confirmPendingTransaction(
+      await ref.read(smartDetectionCoordinatorProvider).confirmPending(
         pending: widget.item,
         type: _type,
         amount: parsedAmount,
@@ -238,10 +237,6 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
             ? null
             : _noteController.text.trim(),
       );
-
-      await ref
-          .read(smartDetectionCoordinatorProvider)
-          .notifyCycleSynced(widget.item.transactionDate);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

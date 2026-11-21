@@ -2,8 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
+import 'package:money_tracker/features/transactions/domain/transaction_service.dart';
 import 'cycle_providers.dart';
 import 'database_providers.dart';
+import 'savings_providers.dart';
+
+/// Use this for every transaction write so cycle, savings and threshold
+/// side effects always run. See [TransactionService].
+final transactionServiceProvider = Provider<TransactionService>((ref) {
+  return TransactionService(
+    txRepo: ref.watch(transactionRepositoryProvider),
+    cycleRepo: ref.watch(budgetCycleRepositoryProvider),
+    categoryRepo: ref.watch(categoryRepositoryProvider),
+    savingsSync: ref.watch(savingsSyncServiceProvider),
+    thresholdMonitor: ref.watch(thresholdMonitorProvider),
+    calcService: ref.watch(budgetCalculationServiceProvider),
+  );
+});
 
 class TransactionTypeFilterNotifier extends Notifier<TransactionType?> {
   @override

@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
-import 'package:money_tracker/core/providers/savings_providers.dart';
+import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/features/smart_detection/data/pending_transaction_repository.dart';
 import 'package:money_tracker/features/smart_detection/data/smart_detection_channel.dart';
 import 'package:money_tracker/features/smart_detection/domain/pending_detected_transaction.dart';
+import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 
 final pendingTransactionRepositoryProvider =
     Provider<PendingTransactionRepository>((ref) {
@@ -129,16 +131,29 @@ class SmartDetectionCoordinator {
     return item;
   }
 
-  Future<void> notifyCycleSynced(DateTime date) async {
-    final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-    final cycle = await cycleRepo.getCycleForDateOrNull(date);
-    if (cycle != null) {
-      await cycleRepo.syncCategoriesForCycle(cycle.id);
-      await ref
-          .read(savingsSyncServiceProvider)
-          .syncSavingsBudgetForCycle(cycleId: cycle.id);
-    }
+  /// Inserts the user-reviewed [pending] alert into the ledger through
+  /// [TransactionService] (cycle, savings and budget-alert side effects),
+  /// then removes it from the pending queue.
+  Future<TransactionModel> confirmPending({
+    required PendingDetectedTransaction pending,
+    required TransactionType type,
+    required Money amount,
+    required String? categoryId,
+    required DateTime date,
+    required String? note,
+  }) async {
+    final added = await ref.read(transactionServiceProvider).add(
+          type: type,
+          amount: amount,
+          categoryId: categoryId,
+          date: date,
+          note: note,
+        );
+    await ref
+        .read(pendingTransactionRepositoryProvider)
+        .markConfirmed(pending: pending, categoryId: categoryId);
     ref.read(refreshTriggerProvider.notifier).trigger();
+    return added;
   }
 }
 

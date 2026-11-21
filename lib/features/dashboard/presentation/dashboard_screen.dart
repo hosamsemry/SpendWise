@@ -4,16 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
-import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/alert_dismissal_provider.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
-import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/preset_providers.dart';
 import 'package:money_tracker/core/providers/privacy_provider.dart';
 import 'package:money_tracker/core/providers/transaction_providers.dart';
-import 'package:money_tracker/features/budgets/domain/category_budget.dart';
 import 'package:money_tracker/features/budgets/presentation/cycle_summary_screen.dart';
 import 'package:money_tracker/features/presets/domain/transaction_preset.dart';
 import 'package:money_tracker/features/presets/presentation/presets_management_screen.dart';
@@ -674,62 +671,14 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     try {
-      final txRepo = ref.read(transactionRepositoryProvider);
-      final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-      final thresholdMonitor = ref.read(thresholdMonitorProvider);
-      final calcService = ref.read(budgetCalculationServiceProvider);
-      final catRepo = ref.read(categoryRepositoryProvider);
-
-      final now = DateTime.now();
-      final addedTx = await txRepo.addTransaction(
+      final txService = ref.read(transactionServiceProvider);
+      final addedTx = await txService.add(
         type: preset.type,
         amount: preset.amount,
         categoryId: preset.categoryId,
-        date: now,
+        date: DateTime.now(),
         note: preset.note ?? '',
       );
-
-      // Evaluate budget thresholds if expense
-      if (preset.type == TransactionType.expense && preset.categoryId != null) {
-        final cycle = await cycleRepo.getCycleForDateOrNull(now);
-        if (cycle != null) {
-          final budgetMap = await cycleRepo.getCycleBudgets(cycle.id);
-          final cycleTxs = await txRepo.getTransactionsForCycle(cycle);
-          final allCategories = await catRepo.getAllCategories(
-            includeInactive: true,
-          );
-
-          final summary = calcService.calculateCycleSummary(
-            cycle: cycle,
-            categories: allCategories,
-            budgetMap: budgetMap,
-            transactions: cycleTxs,
-          );
-
-          final categoryBudget = summary.categoryBudgets.firstWhere(
-            (b) => b.categoryId == preset.categoryId,
-            orElse: () => CategoryBudget(
-              categoryId: preset.categoryId!,
-              categoryName: preset.categoryName ?? '',
-              budgetedAmount: const Money.zero(),
-              spentAmount: preset.amount,
-            ),
-          );
-
-          await thresholdMonitor.evaluateAndNotify(
-            cycleId: cycle.id,
-            budget: categoryBudget,
-          );
-        }
-      }
-
-      // Rebalance Savings if preset is income
-      if (preset.type == TransactionType.income) {
-        final cycle = await cycleRepo.getOrCreateCycleForDate(now);
-        await ref
-            .read(savingsSyncServiceProvider)
-            .syncSavingsBudgetForCycle(cycleId: cycle.id);
-      }
 
       ref.read(refreshTriggerProvider.notifier).trigger();
 
@@ -749,15 +698,7 @@ class DashboardScreen extends ConsumerWidget {
               textColor: Colors.amberAccent,
               onPressed: () async {
                 HapticFeedback.lightImpact();
-                await txRepo.deleteTransaction(addedTx.id);
-                if (preset.type == TransactionType.income) {
-                  final cycle = await cycleRepo.getCycleForDateOrNull(now);
-                  if (cycle != null) {
-                    await ref
-                        .read(savingsSyncServiceProvider)
-                        .syncSavingsBudgetForCycle(cycleId: cycle.id);
-                  }
-                }
+                await txService.delete(addedTx);
                 ref.read(refreshTriggerProvider.notifier).trigger();
               },
             ),

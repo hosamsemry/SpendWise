@@ -1,11 +1,7 @@
 import 'dart:convert';
 import 'package:money_tracker/core/database/app_database.dart';
-import 'package:money_tracker/core/money/money.dart';
-import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
 import 'package:money_tracker/features/smart_detection/domain/bank_message_parser.dart';
 import 'package:money_tracker/features/smart_detection/domain/pending_detected_transaction.dart';
-import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
-import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:uuid/uuid.dart';
 
 const String smartDetectionEnabledKey = 'smart_detection_enabled';
@@ -175,30 +171,13 @@ class PendingTransactionRepository {
     return pendingItem;
   }
 
-  /// Confirms and inserts a pending detected transaction into the real ledger,
-  /// syncs Savings Vault / cycle budgets, learns the merchant -> category mapping,
-  /// and removes the item from the pending queue.
-  Future<TransactionModel> confirmPendingTransaction({
+  /// Marks [pending] as handled after its transaction was inserted into the
+  /// ledger (via `TransactionService`): learns the merchant -> category
+  /// mapping, records the dedup signature, and removes it from the queue.
+  Future<void> markConfirmed({
     required PendingDetectedTransaction pending,
-    required TransactionType type,
-    required Money amount,
     required String? categoryId,
-    required DateTime date,
-    required String? note,
   }) async {
-    final txRepo = TransactionRepository(db);
-    final cycleRepo = BudgetCycleRepository(db);
-
-    await cycleRepo.getOrCreateCycleForDate(date);
-    final added = await txRepo.addTransaction(
-      type: type,
-      amount: amount,
-      categoryId: categoryId,
-      date: date,
-      note: note,
-    );
-
-    // Learn merchant -> category preference for future auto-suggestion
     final learnKey = pending.merchantKey ??
         (pending.note.trim().isNotEmpty ? pending.note.trim().toLowerCase() : null);
     if (learnKey != null && categoryId != null && categoryId.isNotEmpty) {
@@ -210,8 +189,6 @@ class PendingTransactionRepository {
         .where((item) => item.id != pending.id)
         .toList();
     await _savePendingTransactions(remaining);
-
-    return added;
   }
 
   /// Dismisses a single pending item (e.g., own-account transfer or ignored alert).

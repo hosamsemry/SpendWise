@@ -9,7 +9,7 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
-import 'package:money_tracker/features/budgets/domain/category_budget.dart';
+import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/presets/domain/transaction_preset.dart';
@@ -358,97 +358,26 @@ class _AddEditTransactionDialogState
     setState(() => _isSaving = true);
 
     try {
-      final txRepo = ref.read(transactionRepositoryProvider);
-      final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-      final thresholdMonitor = ref.read(thresholdMonitorProvider);
-      final calcService = ref.read(budgetCalculationServiceProvider);
+      final txService = ref.read(transactionServiceProvider);
+      final note = _noteController.text;
 
       if (widget.initialTransaction == null) {
-        // Create
-        await txRepo.addTransaction(
+        await txService.add(
           type: _type,
           amount: parsedAmount,
           categoryId: _selectedCategoryId,
           date: _selectedDate,
-          note: _noteController.text,
+          note: note,
         );
       } else {
-        // Update
-        await txRepo.updateTransaction(
+        await txService.update(
           id: widget.initialTransaction!.id,
           type: _type,
           amount: parsedAmount,
           categoryId: _selectedCategoryId,
           date: _selectedDate,
-          note: _noteController.text,
+          note: note,
         );
-      }
-
-      // Check budget thresholds if expense and cycle already exists
-      if (_type == TransactionType.expense && _selectedCategoryId != null) {
-        final cycle = await cycleRepo.getCycleForDateOrNull(_selectedDate);
-        if (cycle != null) {
-          final budgetMap = await cycleRepo.getCycleBudgets(cycle.id);
-          final cycleTxs = await txRepo.getTransactionsForCycle(cycle);
-          final allCategories = await ref
-              .read(categoryRepositoryProvider)
-              .getAllCategories(includeInactive: true);
-
-          final summary = calcService.calculateCycleSummary(
-            cycle: cycle,
-            categories: allCategories,
-            budgetMap: budgetMap,
-            transactions: cycleTxs,
-          );
-
-          final categoryBudget = summary.categoryBudgets.firstWhere(
-            (b) => b.categoryId == _selectedCategoryId,
-            orElse: () => CategoryBudget(
-              categoryId: _selectedCategoryId!,
-              categoryName: categories
-                  .firstWhere(
-                    (c) => c.id == _selectedCategoryId,
-                    orElse: () => Category(
-                      id: _selectedCategoryId!,
-                      name: '',
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                    ),
-                  )
-                  .name,
-              budgetedAmount: const Money.zero(),
-              spentAmount: parsedAmount,
-            ),
-          );
-
-          await thresholdMonitor.evaluateAndNotify(
-            cycleId: cycle.id,
-            budget: categoryBudget,
-          );
-        }
-      }
-
-      // If income was logged or edited, rebalance Savings allocation
-      final bool wasIncome = widget.initialTransaction?.isIncome == true;
-      final bool isIncome = _type == TransactionType.income;
-
-      if (wasIncome || isIncome) {
-        // Sync for current selected date cycle
-        final cycle = await cycleRepo.getOrCreateCycleForDate(_selectedDate);
-        await ref
-            .read(savingsSyncServiceProvider)
-            .syncSavingsBudgetForCycle(cycleId: cycle.id);
-
-        // If previously income and date or type changed, sync old cycle too
-        if (wasIncome && widget.initialTransaction != null) {
-          final oldDate = widget.initialTransaction!.date;
-          final oldCycle = await cycleRepo.getCycleForDateOrNull(oldDate);
-          if (oldCycle != null && oldCycle.id != cycle.id) {
-            await ref
-                .read(savingsSyncServiceProvider)
-                .syncSavingsBudgetForCycle(cycleId: oldCycle.id);
-          }
-        }
       }
 
       ref.read(refreshTriggerProvider.notifier).trigger();

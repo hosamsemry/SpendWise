@@ -65,7 +65,7 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 | Table | Notes |
 |---|---|
 | `categories` | id (uuid text), name, color (hex), icon, `default_budget_minor`, `is_active`, `type` ('expense'/'income'). UNIQUE(name NOCASE, type) |
-| `budget_cycles` | id = `"YYYY-MM-DD_YYYY-MM-DD"`, `start_date` unique, `end_date` (ISO text dates) |
+| `budget_cycles` | id = uuid (the calculator's in-memory `BudgetCycle.id` is `"start_end"`, but stored rows use UUIDs, so look cycles up by date with `getCycleForDateOrNull`), `start_date` unique, `end_date` (ISO text dates) |
 | `category_budgets` | per-cycle allocation snapshot (cycle_id, category_id) unique, `budget_amount_minor` |
 | `transactions` | type, `amount_minor` > 0, category_id (nullable, ON DELETE SET NULL), **`category_name` denormalized** so history survives category deletion, `transaction_date` 'YYYY-MM-DD', note |
 | `notification_events` | de-dupes threshold alerts: (cycle, category, 'reached_80_percent'/'over_budget') unique |
@@ -82,15 +82,17 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 - **Money is always int minor units** (`Money.fromMinorUnits`, `inMinorUnits`). Never use doubles for amounts. Max is 999,999,999 major units. `Money.parse` accepts Arabic digits and currency symbols.
 - **Currency is global static state**: `Money.applyCurrency()` sets `Money.currentCurrency`/`defaultCurrencySymbol`. It's driven by `primaryCurrencyProvider` (EGP, SAR, AED, USD, EUR, GBP, NONE = plain numbers) and the symbol is localized by language.
 - **Budget cycles**: the start day is user-chosen (1–31; it's `null` until onboarding sets it, and then the app shows `InitialCycleSetupScreen`). startDay=1 means calendar month. Otherwise a cycle runs from day N to day N−1 of the next month, **clamped** for short months and leap years. Cycles are created lazily and idempotently by `getOrCreateCycleForDate`, which snapshots each category's `defaultBudget` into `category_budgets`. Past cycles are frozen snapshots. Changing the start day calls `realignCyclesOnStartDayChange` (truncates the overlapping cycle).
-- **Savings auto-budget**: a "Savings"/"مدخرات" expense category gets budget = `max(0, totalIncome − Σ other budgets)`. Re-run `SavingsSyncService.syncSavingsBudgetForCycle` whenever income or budgets change (including the old cycle when an income tx moves cycles).
+- **Savings auto-budget**: a "Savings"/"مدخرات" expense category gets budget = `max(0, totalIncome − Σ other budgets)`. `TransactionService` re-syncs it on transaction writes, including the old cycle when income moves cycles or changes type. Budget/category edits must still call `SavingsSyncService.syncSavingsBudgetForCycle` themselves.
 - **Savings Vault**: a lifetime balance kept in app_settings. When the previous cycle ended with a surplus, `pendingCycleCloseoutProvider` offers a 1-tap sweep or a dismiss. Withdrawals have overdraft protection.
-- **Threshold alerts**: after saving an expense, compute the summary and call `ThresholdMonitor.evaluateAndNotify` (80% and >100%). Each fires once per cycle/category, recorded in `notification_events`.
+- **Threshold alerts**: `ThresholdMonitor.evaluateAndNotify` (80% and >100%) is run by `TransactionService` for every affected expense category, old and new. Each alert fires once per cycle/category and is recorded in `notification_events`. Dropping back under a threshold clears the record, so the alert can fire again.
+- **All transaction writes go through `TransactionService`** (`features/transactions/domain/transaction_service.dart`, `transactionServiceProvider`) using `add`/`update`/`delete`/`restore`. Never call `TransactionRepository` write methods from UI or other features. The service creates the cycle with the user's start day, syncs Savings and evaluates thresholds. Callers only trigger `refreshTriggerProvider`.
+- **Never construct `BudgetCycleRepository(db)` in app code**: its default calculator uses start day 25. Use `budgetCycleRepositoryProvider`, which applies the user's start day.
 - **Expense needs a category** (DB CHECK: category_id or category_name). Income category is optional.
 - Deleting a category nulls `category_id` on transactions/presets (the name is kept) and removes its budgets. The lifecycle reconcile **unarchives all categories** on each run.
 - Categories are sorted by selection frequency (`category_selection_counts`, incremented on new tx).
 
 ## State management pattern
-- Repos and services are plain `Provider`s in `core/providers/database_providers.dart` and `savings_providers.dart`. `budgetCycleRepositoryProvider` rebuilds when the start day changes.
+- Repos and services are plain `Provider`s in `core/providers/database_providers.dart`, `savings_providers.dart` and `transaction_providers.dart` (`transactionServiceProvider`). `budgetCycleRepositoryProvider` rebuilds when the start day changes.
 - Read models are `FutureProvider`s that `ref.watch(refreshTriggerProvider)`. **After any write, call `ref.read(refreshTriggerProvider.notifier).trigger()`** to refresh the UI. This is the app-wide invalidation mechanism. There are no Drift streams.
 - UI selection state: `selectedCycleProvider` (Budgets/Reports/Summary), `dashboardCycleProvider` (hero card cycle switcher, null = current), plus transaction filters (type/category/note search/date range) in `transaction_providers.dart`.
 - `isAppLockedProvider` gates the PIN screen.
@@ -109,7 +111,7 @@ On start, and on resume from real background (paused/hidden → resumed; transie
 3. Dart side: `SmartDetectionChannel` → `SmartDetectionCoordinator` → `PendingTransactionRepository.ingestMessage`.
    - Parsing uses the offline regex-based `BankMessageParser` (Arabic + English: amount, type, merchant, reference, date).
    - It dedups by signature and suggests a category from the learned merchant→category map.
-4. Pending items show in `PendingTransactionsBanner`/`Sheet`. Confirming inserts a real transaction, syncs savings and budgets, and learns the merchant mapping. Nothing is auto-inserted.
+4. Pending items show in `PendingTransactionsBanner`/`Sheet`. Confirming calls `SmartDetectionCoordinator.confirmPending`, which runs `TransactionService.add` (so alerts and savings apply as for manual entries) and then `PendingTransactionRepository.markConfirmed` (learn merchant, record dedup signature, dequeue). Nothing is auto-inserted.
 5. Native diagnostic logs (last 15) are viewable via `getDiagnosticLogs`.
 
 Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSettings`, `setSmartDetectionEnabled`, `consumePendingNativeAlerts`, `consumeSharedText`, `getDiagnosticLogs`, `clearDiagnosticLogs`.
@@ -128,5 +130,5 @@ Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSe
 - Colors must work in light **and** dark themes. Several tests assert theme-adaptive colors (`*_theme_test.dart`). Brand palette: obsidian `#0B0B0E`/`#14141B`, champagne gold `#E5C158`/`#B38A24`, velvet crimson `#7B1123`.
 - Commits follow Conventional Commits: `feat(scope): …`, `fix(scope): …`, `refactor`, `chore`. Scopes are typically the feature name. Issues are referenced as `(closes #N)`.
 - Domain services (`BudgetCalculationService`, `BudgetCycleCalculator`, `BankMessageParser`, `Money`) are pure and unit-tested. Keep logic there rather than in widgets.
-- Big screen files (settings, reports, budgets, dashboard) mix UI and some orchestration logic. Write paths with side effects live in widgets such as `add_edit_transaction_dialog.dart` and `dashboard_screen.dart`. Check those before assuming a repo method does everything.
+- Big screen files (settings, reports, budgets, dashboard) still mix UI with some orchestration, such as budget, category and savings-vault edits. Transaction writes are centralized in `TransactionService`. Check the screen before assuming a non-transaction repo method handles every side effect.
 - Add or update tests under `test/` mirroring `lib/`. Cross-feature flows are in `test/features/end_to_end_flow_test.dart`, `audit_regression_test.dart`, and `test/widget_test.dart`.

@@ -6,8 +6,6 @@ import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
-import 'package:money_tracker/core/providers/database_providers.dart';
-import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/transaction_providers.dart';
 import 'package:money_tracker/features/smart_detection/presentation/pending_transactions_banner.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
@@ -37,17 +35,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     TransactionModel tx,
   ) async {
     HapticFeedback.lightImpact();
-    final txRepo = ref.read(transactionRepositoryProvider);
-    await txRepo.deleteTransaction(tx.id);
-    if (tx.isIncome) {
-      final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-      final cycle = await cycleRepo.getCycleForDateOrNull(tx.date);
-      if (cycle != null) {
-        await ref.read(savingsSyncServiceProvider).syncSavingsBudgetForCycle(
-              cycleId: cycle.id,
-            );
-      }
-    }
+    final txService = ref.read(transactionServiceProvider);
+    await txService.delete(tx);
     ref.read(refreshTriggerProvider.notifier).trigger();
 
     if (!context.mounted) return;
@@ -62,16 +51,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           textColor: context.goldColor,
           onPressed: () async {
             HapticFeedback.lightImpact();
-            await txRepo.restoreTransaction(tx);
-            if (tx.isIncome) {
-              final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-              final cycle = await cycleRepo.getCycleForDateOrNull(tx.date);
-              if (cycle != null) {
-                await ref.read(savingsSyncServiceProvider).syncSavingsBudgetForCycle(
-                      cycleId: cycle.id,
-                    );
-              }
-            }
+            await txService.restore(tx);
             ref.read(refreshTriggerProvider.notifier).trigger();
           },
         ),
