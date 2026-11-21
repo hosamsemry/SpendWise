@@ -13,7 +13,10 @@ import '../../test_helper.dart';
 void main() {
   setUpAll(setupTestSqlite);
 
-  Future<ProviderContainer> pumpLockedApp(WidgetTester tester) async {
+  Future<ProviderContainer> pumpLockedApp(
+    WidgetTester tester, {
+    Map<String, String> extraSettings = const {},
+  }) async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     for (final e in {'app_language': 'en', 'budget_cycle_start_day': '1'}.entries) {
@@ -23,6 +26,11 @@ void main() {
     }
     final security = SecurityService(db, iterations: 1000, runInBackground: false);
     await security.setPin('1234');
+    for (final e in extraSettings.entries) {
+      await db.into(db.appSettingsTable).insertOnConflictUpdate(
+            AppSettingsTableCompanion.insert(key: e.key, value: e.value),
+          );
+    }
 
     final container = ProviderContainer(
       overrides: [
@@ -108,5 +116,18 @@ void main() {
 
     await enterPin(tester, '1234');
     expect(settings(), findsOneWidget, reason: 'Settings was not popped');
+  });
+
+  testWidgets('a lockout from before a restart is still enforced',
+      (tester) async {
+    final until = DateTime.now().add(const Duration(minutes: 5));
+    await pumpLockedApp(tester, extraSettings: {
+      pinFailedAttemptsKey: '5',
+      pinLockoutUntilKey: until.toIso8601String(),
+    });
+
+    expect(find.textContaining('Too many failed attempts'), findsOneWidget);
+    await enterPin(tester, '1234');
+    expect(pinPad(), findsOneWidget, reason: 'correct PIN ignored during lockout');
   });
 }

@@ -35,7 +35,6 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
   String? _errorMessage;
   late AnimationController _shakeController;
 
-  int _failedAttempts = 0;
   int _lockoutSeconds = 0;
   Timer? _lockoutTimer;
   bool _canUseBiometrics = false;
@@ -47,7 +46,17 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+    _restoreLockout();
     _checkBiometrics();
+  }
+
+  /// Resumes a lockout that is still running (e.g. after the app restarted).
+  Future<void> _restoreLockout() async {
+    if (widget.mode != PinMode.unlock) return;
+    final remaining = await ref
+        .read(securityServiceProvider)
+        .remainingLockout();
+    if (mounted && remaining > Duration.zero) _startLockout(remaining);
   }
 
   Future<void> _checkBiometrics() async {
@@ -75,6 +84,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         : 'Authenticate to unlock SpendWise';
     final authenticated = await bioService.authenticate(reason: reason);
     if (authenticated && mounted) {
+      await ref.read(securityServiceProvider).clearFailedAttempts();
+      if (!mounted) return;
       ref.read(isAppLockedProvider.notifier).state = false;
       widget.onUnlocked?.call();
     }
@@ -114,22 +125,18 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
   Future<void> _handleCompletedPin(String pin) async {
     if (widget.mode == PinMode.unlock) {
       final security = ref.read(securityServiceProvider);
-      final isValid = await security.verifyPin(pin);
-      if (isValid) {
-        _failedAttempts = 0;
+      final result = await security.attemptPin(pin);
+      if (!mounted) return;
+      if (result.success) {
         _lockoutTimer?.cancel();
         ref.read(isAppLockedProvider.notifier).state = false;
         widget.onUnlocked?.call();
+      } else if (result.isLockedOut) {
+        _startLockout(result.lockout);
       } else {
-        _failedAttempts++;
-        if (_failedAttempts >= 5) {
-          _startLockout();
-        } else {
-          final remaining = 5 - _failedAttempts;
-          if (mounted) {
-            _triggerError(context.l10n.incorrectPinNotice(remaining));
-          }
-        }
+        _triggerError(
+          context.l10n.incorrectPinNotice(result.attemptsBeforeLockout),
+        );
       }
     } else if (widget.mode == PinMode.create) {
       widget.onPinCreated?.call(pin);
@@ -142,11 +149,12 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     }
   }
 
-  void _startLockout() {
+  void _startLockout(Duration duration) {
     _lockoutTimer?.cancel();
+    final seconds = (duration.inMilliseconds / 1000).ceil().clamp(1, 1 << 30);
     setState(() {
-      _lockoutSeconds = 30;
-      if (mounted) _errorMessage = context.l10n.lockoutNotice(30);
+      _lockoutSeconds = seconds;
+      _errorMessage = context.l10n.lockoutNotice(seconds);
       _enteredPin = '';
     });
     _shakeController.forward(from: 0.0);
@@ -157,7 +165,6 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         if (mounted) {
           setState(() {
             _lockoutSeconds = 0;
-            _failedAttempts = 0;
             _errorMessage = null;
           });
         }

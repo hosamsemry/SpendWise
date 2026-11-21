@@ -501,9 +501,14 @@ class AppLocalizations {
   String incorrectPinNotice(int remaining) => isArabic
       ? (remaining == 1 ? 'رمز خاطئ. تبقى لك محاولة واحدة.' : 'رمز خاطئ. تبقى لك $remaining محاولات.')
       : 'Incorrect PIN. $remaining attempt${remaining == 1 ? "" : "s"} remaining.';
-  String lockoutNotice(int seconds) => isArabic
-      ? 'محاولات خاطئة كثيرة. حاول ثانية بعد $secondsث'
-      : 'Too many failed attempts. Try again in ${seconds}s';
+  String lockoutNotice(int seconds) {
+    final wait = seconds < 60
+        ? (isArabic ? '$secondsث' : '${seconds}s')
+        : '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+    return isArabic
+        ? 'محاولات خاطئة كثيرة. حاول ثانية بعد $wait'
+        : 'Too many failed attempts. Try again in $wait';
+  }
 
   // --- Category Translation ---
   String localizedCategoryName(String? name) {

@@ -241,6 +241,27 @@ void main() {
       expect(pinHashSetting.value, equals('hash_1234'));
     });
 
+    test('keepCurrentPin also keeps this device\'s PIN lockout state', () async {
+      await seedTestData();
+      final backup = await service.createBackupData();
+
+      // This device is mid-lockout; the backup knows nothing about it.
+      final until = DateTime.now().add(const Duration(minutes: 5)).toIso8601String();
+      for (final e in {'pin_failed_attempts': '7', 'pin_lockout_until': until}.entries) {
+        await db.into(db.appSettingsTable).insertOnConflictUpdate(
+          AppSettingsTableCompanion.insert(key: e.key, value: e.value),
+        );
+      }
+
+      await service.restoreFromBackup(backup, keepCurrentPin: true);
+
+      final kept = await (db.select(db.appSettingsTable)
+            ..where((tbl) => tbl.key.isIn(['pin_failed_attempts', 'pin_lockout_until'])))
+          .get();
+      expect({for (final k in kept) k.key: k.value},
+          {'pin_failed_attempts': '7', 'pin_lockout_until': until});
+    });
+
     test('parseBackupString rejects malformed JSON and incompatible apps', () {
       expect(
         () => service.parseBackupString('{"invalid": true}'),

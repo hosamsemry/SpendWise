@@ -194,4 +194,93 @@ void main() {
       expect(await securityService.isPinEnabled(), isFalse);
     });
   });
+
+  group('persistent PIN lockout', () {
+    Future<void> failTimes(SecurityService svc, int n) async {
+      for (var i = 0; i < n; i++) {
+        await svc.attemptPin('0000');
+      }
+    }
+
+    Future<void> expireLockout() => writeSetting(
+          pinLockoutUntilKey,
+          DateTime.now().subtract(const Duration(seconds: 1)).toIso8601String(),
+        );
+
+    test('lockout schedule escalates and is capped', () {
+      expect(SecurityService.lockoutForFailures(4), Duration.zero);
+      expect(SecurityService.lockoutForFailures(5), const Duration(seconds: 30));
+      expect(SecurityService.lockoutForFailures(6), const Duration(seconds: 60));
+      expect(SecurityService.lockoutForFailures(8), const Duration(minutes: 4));
+      expect(SecurityService.lockoutForFailures(12), const Duration(hours: 1));
+      expect(SecurityService.lockoutForFailures(500), const Duration(hours: 1));
+    });
+
+    test('counts down remaining attempts, then locks out', () async {
+      await securityService.setPin('1234');
+      final first = await securityService.attemptPin('0000');
+      expect(first.success, isFalse);
+      expect(first.attemptsBeforeLockout, 4);
+      expect(first.isLockedOut, isFalse);
+
+      await failTimes(securityService, 3);
+      final fifth = await securityService.attemptPin('0000');
+      expect(fifth.isLockedOut, isTrue);
+      expect(fifth.lockout, const Duration(seconds: 30));
+    });
+
+    test('a running lockout refuses even the correct PIN', () async {
+      await securityService.setPin('1234');
+      await failTimes(securityService, 5);
+      final result = await securityService.attemptPin('1234');
+      expect(result.success, isFalse);
+      expect(result.isLockedOut, isTrue);
+    });
+
+    test('lockout survives an app restart (new service instance)', () async {
+      await securityService.setPin('1234');
+      await failTimes(securityService, 5);
+
+      final afterRestart = SecurityService(db, iterations: 1000);
+      expect(await afterRestart.remainingLockout(), greaterThan(Duration.zero));
+      expect((await afterRestart.attemptPin('1234')).success, isFalse);
+    });
+
+    test('failures keep escalating after a lockout expires', () async {
+      await securityService.setPin('1234');
+      await failTimes(securityService, 5);
+      await expireLockout();
+      final sixth = await securityService.attemptPin('0000');
+      expect(sixth.lockout, const Duration(seconds: 60));
+    });
+
+    test('correct PIN after expiry clears the counter', () async {
+      await securityService.setPin('1234');
+      await failTimes(securityService, 5);
+      await expireLockout();
+      expect((await securityService.attemptPin('1234')).success, isTrue);
+
+      final next = await securityService.attemptPin('0000');
+      expect(next.attemptsBeforeLockout, 4, reason: 'counter was reset');
+    });
+
+    test('setting a new PIN or clearFailedAttempts resets lockout', () async {
+      await securityService.setPin('1234');
+      await failTimes(securityService, 5);
+      await securityService.clearFailedAttempts();
+      expect(await securityService.remainingLockout(), Duration.zero);
+
+      await failTimes(securityService, 5);
+      await securityService.setPin('5678');
+      expect(await securityService.remainingLockout(), Duration.zero);
+    });
+
+    test('a lockout far in the future (clock moved back) is clamped', () async {
+      await writeSetting(
+        pinLockoutUntilKey,
+        DateTime.now().add(const Duration(days: 365)).toIso8601String(),
+      );
+      expect(await securityService.remainingLockout(), SecurityService.maxLockout);
+    });
+  });
 }

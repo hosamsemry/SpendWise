@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 import 'package:money_tracker/core/database/app_database.dart';
+import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -144,7 +145,7 @@ class BackupService {
       List<AppSettingEntry> currentPinSettings = [];
       if (keepCurrentPin) {
         final pinSettings = await (db.select(db.appSettingsTable)
-              ..where((tbl) => tbl.key.isIn(['pin_enabled', 'pin_hash'])))
+              ..where((tbl) => tbl.key.isIn(pinCredentialSettingKeys)))
             .get();
         currentPinSettings = pinSettings;
       }
@@ -336,7 +337,7 @@ class BackupService {
         final value = row['value'] as String;
 
         // Skip PIN settings if preservation was requested
-        if (keepCurrentPin && (key == 'pin_enabled' || key == 'pin_hash')) {
+        if (keepCurrentPin && pinCredentialSettingKeys.contains(key)) {
           continue;
         }
 

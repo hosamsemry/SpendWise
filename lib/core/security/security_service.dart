@@ -9,6 +9,34 @@ import 'package:money_tracker/core/providers/database_providers.dart';
 
 const String _pinEnabledKey = 'pin_enabled';
 const String _pinHashKey = 'pin_hash';
+const String pinFailedAttemptsKey = 'pin_failed_attempts';
+const String pinLockoutUntilKey = 'pin_lockout_until';
+
+/// Settings that belong to this device's PIN state and must never be taken
+/// from a backup when the user keeps their current PIN.
+const Set<String> pinCredentialSettingKeys = {
+  _pinEnabledKey,
+  _pinHashKey,
+  pinFailedAttemptsKey,
+  pinLockoutUntilKey,
+};
+
+/// Outcome of [SecurityService.attemptPin].
+class PinAttemptResult {
+  final bool success;
+
+  /// How long PIN entry is blocked from now (zero when not locked out).
+  final Duration lockout;
+
+  /// Wrong attempts left before the next lockout starts (0 once locking).
+  final int attemptsBeforeLockout;
+
+  const PinAttemptResult._(this.success, this.lockout, this.attemptsBeforeLockout);
+
+  const PinAttemptResult.success() : this._(true, Duration.zero, 0);
+
+  bool get isLockedOut => lockout > Duration.zero;
+}
 
 /// Static salt used by the original (v1) hashing scheme. Kept only so that
 /// existing installs and old backups can still be verified and upgraded.
@@ -33,6 +61,11 @@ class SecurityService {
   final bool runInBackground;
 
   static const int defaultIterations = 100000;
+
+  /// Wrong PINs allowed before lockouts start.
+  static const int freeAttempts = 5;
+  static const Duration baseLockout = Duration(seconds: 30);
+  static const Duration maxLockout = Duration(hours: 1);
   static const int _saltLength = 16;
   static const int _keyLength = 32;
 
@@ -78,6 +111,65 @@ class SecurityService {
     return ok;
   }
 
+  /// Lockout for the [failures]-th consecutive wrong PIN: none for the first
+  /// [freeAttempts], then [baseLockout] doubling per failure, capped at
+  /// [maxLockout].
+  static Duration lockoutForFailures(int failures) {
+    if (failures < freeAttempts) return Duration.zero;
+    final doublings = failures - freeAttempts;
+    if (doublings >= 7) return maxLockout; // 30s * 2^7 already exceeds 1h
+    final lockout = baseLockout * (1 << doublings);
+    return lockout > maxLockout ? maxLockout : lockout;
+  }
+
+  /// Remaining lockout, persisted across restarts. Clamped to [maxLockout]
+  /// so moving the device clock backwards cannot extend it indefinitely.
+  Future<Duration> remainingLockout() async {
+    final raw = await _getSetting(pinLockoutUntilKey);
+    final until = raw == null ? null : DateTime.tryParse(raw);
+    if (until == null) return Duration.zero;
+    final remaining = until.difference(DateTime.now());
+    if (remaining <= Duration.zero) return Duration.zero;
+    return remaining > maxLockout ? maxLockout : remaining;
+  }
+
+  /// Rate-limited PIN check for unlocking. While a lockout is active the PIN
+  /// is not even evaluated. Failures persist in `app_settings`, so restarting
+  /// the app does not reset them; a correct PIN clears them.
+  Future<PinAttemptResult> attemptPin(String pin) async {
+    final pending = await remainingLockout();
+    if (pending > Duration.zero) {
+      return PinAttemptResult._(false, pending, 0);
+    }
+
+    if (await verifyPin(pin)) {
+      await clearFailedAttempts();
+      return const PinAttemptResult.success();
+    }
+
+    final failures =
+        (int.tryParse(await _getSetting(pinFailedAttemptsKey) ?? '') ?? 0) + 1;
+    final lockout = lockoutForFailures(failures);
+    await db.transaction(() async {
+      await _setSetting(pinFailedAttemptsKey, '$failures');
+      if (lockout > Duration.zero) {
+        await _setSetting(
+          pinLockoutUntilKey,
+          DateTime.now().add(lockout).toIso8601String(),
+        );
+      }
+    });
+    final left = failures >= freeAttempts ? 0 : freeAttempts - failures;
+    return PinAttemptResult._(false, lockout, left);
+  }
+
+  /// Resets the failure counter, e.g. after a successful biometric unlock.
+  Future<void> clearFailedAttempts() async {
+    await (db.delete(db.appSettingsTable)
+          ..where((tbl) => tbl.key.isIn([pinFailedAttemptsKey, pinLockoutUntilKey])))
+        .go();
+  }
+
   /// Sets a new PIN and enables PIN lock.
   Future<void> setPin(String pin) async {
     final hashed = await _hashNewPin(pin);
@@ -85,6 +177,7 @@ class SecurityService {
       await _setSetting(_pinHashKey, hashed);
       await _setSetting(_pinEnabledKey, 'true');
     });
+    await clearFailedAttempts();
   }
 
   /// Disables PIN lock if [currentPin] is verified.
