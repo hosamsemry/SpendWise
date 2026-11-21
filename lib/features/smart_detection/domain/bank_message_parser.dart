@@ -140,7 +140,7 @@ class BankMessageParser {
 
     // 5. Extract transaction timestamp (falls back to receivedAt / now)
     final now = receivedAt ?? DateTime.now();
-    final transactionDate = _extractDateTime(normalized, fallback: now);
+    final when = _extractDateTime(normalized, fallback: now);
 
     // 6. Extract merchant / payee / clean descriptive note
     final merchant = _extractMerchant(trimmed, normalized);
@@ -156,7 +156,8 @@ class BankMessageParser {
       suggestedNote: suggestedNote,
       merchantKey: merchant?.toLowerCase(),
       referenceId: referenceId,
-      transactionDate: transactionDate,
+      transactionDate: when.date,
+      hasExplicitTime: when.hasTime,
       rawMessage: trimmed,
     );
   }
@@ -281,7 +282,7 @@ class BankMessageParser {
     return 'Bank debit';
   }
 
-  static DateTime _extractDateTime(
+  static ({DateTime date, bool hasTime}) _extractDateTime(
     String normalized, {
     required DateTime fallback,
   }) {
@@ -333,6 +334,7 @@ class BankMessageParser {
 
     int hour = fallback.hour;
     int minute = fallback.minute;
+    var hasTime = false;
 
     // Extract time: "الساعة08:58" or "at 03:49 PM" or "20:32" (require standalone AM/PM/ص/م so words like مرجع don't match م)
     final timeMatch = RegExp(
@@ -351,6 +353,7 @@ class BankMessageParser {
           parsedMinute <= 59) {
         hour = parsedHour;
         minute = parsedMinute;
+        hasTime = true;
         if (period == 'PM' || period == 'م') {
           if (hour < 12) hour += 12;
         } else if (period == 'AM' || period == 'ص') {
@@ -367,9 +370,16 @@ class BankMessageParser {
       if (year == null && candidate.difference(fallback).inDays > 7) {
         candidate = DateTime(resolvedYear - 1, month, day, hour, minute);
       }
-      return candidate;
+      return (date: candidate, hasTime: hasTime);
     }
 
-    return fallback;
+    if (hasTime) {
+      // Time stated but no date: same day as received, at the stated time.
+      return (
+        date: DateTime(fallback.year, fallback.month, fallback.day, hour, minute),
+        hasTime: true,
+      );
+    }
+    return (date: fallback, hasTime: false);
   }
 }
