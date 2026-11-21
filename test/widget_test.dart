@@ -311,11 +311,11 @@ void main() {
       // App starts locked
       expect(find.text('Enter App PIN'), findsOneWidget);
 
-      // Unlock it
-      await tester.tap(find.text('1'));
-      await tester.tap(find.text('2'));
-      await tester.tap(find.text('3'));
-      await tester.tap(find.text('4'));
+      // Unlock it (the app is built underneath the lock overlay, so only
+      // tap digits that are actually visible on the PIN pad)
+      for (final digit in ['1', '2', '3', '4']) {
+        await tester.tap(find.text(digit).hitTestable());
+      }
       await tester.pumpAndSettle();
 
       // Verify app is now unlocked

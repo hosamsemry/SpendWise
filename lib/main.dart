@@ -47,6 +47,10 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
   bool _wasInBackground = false;
   DateTime? _lastReconciledDay;
 
+  /// False until the first PIN check completes, so no app content can render
+  /// before we know whether the app must start locked.
+  bool _securityChecked = false;
+
   static DateTime _dayKey(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   @override
@@ -77,17 +81,31 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
   }
 
   Future<void> _checkInitialSecurity() async {
-    final security = ref.read(securityServiceProvider);
-    final hasPin = await security.isPinEnabled();
-    if (hasPin) {
-      ref.read(isAppLockedProvider.notifier).state = true;
+    try {
+      final hasPin = await ref.read(securityServiceProvider).isPinEnabled();
+      if (hasPin && mounted) {
+        ref.read(isAppLockedProvider.notifier).state = true;
+      }
+    } finally {
+      if (mounted && !_securityChecked) {
+        setState(() => _securityChecked = true);
+      }
     }
   }
+
+  /// While locked, swallow the system back gesture so it cannot pop the
+  /// (hidden) screens underneath the lock overlay. Registered before
+  /// [WidgetsApp], so this observer is consulted first.
+  @override
+  Future<bool> didPopRoute() async => ref.read(isAppLockedProvider);
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _wasInBackground = true;
+      // Lock while going to the background, so the first frame after
+      // returning is already the lock screen.
+      _checkInitialSecurity();
     } else if (state == AppLifecycleState.resumed) {
       final returnedFromBackground = _wasInBackground;
       _wasInBackground = false;
@@ -167,14 +185,18 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
         Locale('en'),
         Locale('ar'),
       ],
-      home: isLocked
-          ? PinLockScreen(
-              mode: PinMode.unlock,
-              onUnlocked: () {
-                ref.read(isAppLockedProvider.notifier).state = false;
-              },
-            )
-          : languageAsync.when(
+      // The lock is drawn above the root Navigator (not swapped into `home`),
+      // so routes, dialogs and sheets opened before locking stay covered.
+      builder: (context, child) => Stack(
+        fit: StackFit.expand,
+        children: [
+          ?child,
+          if (!_securityChecked)
+            ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+          if (isLocked) const _LockOverlay(),
+        ],
+      ),
+      home: languageAsync.when(
               data: (locale) {
                 if (locale == null) {
                   return const LanguageSelectionScreen();
@@ -201,6 +223,28 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
               ),
               error: (err, stack) => const LanguageSelectionScreen(),
             ),
+    );
+  }
+}
+
+/// Full-screen PIN prompt shown above every route while the app is locked.
+/// It has its own Navigator so it works without the app's (covered) one.
+class _LockOverlay extends ConsumerWidget {
+  const _LockOverlay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return HeroControllerScope.none(
+      child: Navigator(
+        onGenerateRoute: (_) => MaterialPageRoute<void>(
+          builder: (_) => PinLockScreen(
+            mode: PinMode.unlock,
+            onUnlocked: () {
+              ref.read(isAppLockedProvider.notifier).state = false;
+            },
+          ),
+        ),
+      ),
     );
   }
 }
