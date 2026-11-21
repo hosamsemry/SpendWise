@@ -106,6 +106,15 @@ class MainActivity : FlutterFragmentActivity() {
                     if (enabled) rebindListenerIfEnabled()
                     result.success(null)
                 }
+                "setSourcePolicy" -> {
+                    val watched = call.argument<List<String>>("watched") ?: emptyList()
+                    val dismissed = call.argument<List<String>>("dismissed") ?: emptyList()
+                    SmartDetectionStorage.setSourcePolicy(applicationContext, watched, dismissed)
+                    result.success(null)
+                }
+                "getSuggestedApps" -> {
+                    result.success(SmartDetectionStorage.getSuggestedApps(applicationContext))
+                }
                 "consumePendingNativeAlerts" -> {
                     val alerts = SmartDetectionStorage.consumeAlerts(applicationContext)
                     result.success(alerts)

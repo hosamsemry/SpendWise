@@ -13,6 +13,10 @@ object SmartDetectionStorage {
     private const val KEY_LAST_SIGNATURE = "last_alert_signature"
     private const val KEY_LAST_SIGNATURE_TS = "last_alert_signature_ts"
     private const val KEY_DIAGNOSTIC_LOGS = "detection_diagnostic_logs"
+    private const val KEY_WATCHED_APPS = "watched_source_apps"
+    private const val KEY_DISMISSED_SUGGESTIONS = "dismissed_source_suggestions"
+    private const val KEY_SUGGESTED_APPS = "suggested_source_apps"
+    private const val MAX_SUGGESTED_APPS = 20
     private const val MAX_QUEUED_ALERTS = 50
     private const val MAX_DIAGNOSTIC_LOGS = 15
     private const val SHORT_DEDUP_WINDOW_MS = 30_000L
@@ -121,7 +125,8 @@ object SmartDetectionStorage {
         packageName: String,
         title: String,
         text: String,
-        timestampMs: Long
+        timestampMs: Long,
+        sourceKind: String
     ): Map<String, Any>? {
         synchronized(lock) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -147,6 +152,7 @@ object SmartDetectionStorage {
                 put("title", title)
                 put("text", text)
                 put("timestampMs", timestampMs)
+                put("sourceKind", sourceKind)
             }
 
             val updated = JSONArray()
@@ -166,7 +172,8 @@ object SmartDetectionStorage {
                 "packageName" to packageName,
                 "title" to title,
                 "text" to text,
-                "timestampMs" to timestampMs
+                "timestampMs" to timestampMs,
+                "sourceKind" to sourceKind
             )
         }
     }
@@ -188,7 +195,10 @@ object SmartDetectionStorage {
                             "packageName" to obj.optString("packageName", ""),
                             "title" to obj.optString("title", ""),
                             "text" to obj.optString("text", ""),
-                            "timestampMs" to obj.optLong("timestampMs", 0L)
+                            "timestampMs" to obj.optLong("timestampMs", 0L),
+                            // Alerts queued before source gating existed have no kind:
+                            // the Dart side treats a missing kind strictly.
+                            "sourceKind" to obj.optString("sourceKind", "")
                         )
                     )
                 }
@@ -196,6 +206,104 @@ object SmartDetectionStorage {
                 // Ignore malformed JSON
             }
             return result
+        }
+    }
+
+    // --- Source app policy (mirrored from Flutter's app_settings) ---
+
+    /** Replaces the watched-app and dismissed-suggestion lists pushed from Flutter. */
+    fun setSourcePolicy(context: Context, watched: List<String>, dismissed: List<String>) {
+        synchronized(lock) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val suggestions = readSuggestions(prefs.getString(KEY_SUGGESTED_APPS, null))
+            for (pkg in watched + dismissed) suggestions.remove(pkg)
+            prefs.edit()
+                .putStringSet(KEY_WATCHED_APPS, watched.toSet())
+                .putStringSet(KEY_DISMISSED_SUGGESTIONS, dismissed.toSet())
+                .putString(KEY_SUGGESTED_APPS, suggestions.toString())
+                .apply()
+        }
+    }
+
+    fun isWatchedApp(context: Context, packageName: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_WATCHED_APPS, emptySet())?.contains(packageName) == true
+    }
+
+    private fun isDismissedSuggestion(prefs: android.content.SharedPreferences, packageName: String): Boolean {
+        return prefs.getStringSet(KEY_DISMISSED_SUGGESTIONS, emptySet())?.contains(packageName) == true
+    }
+
+    /**
+     * Records that an unwatched app posted a financial-looking notification so
+     * the user can choose to watch it. Ignored for dismissed apps.
+     */
+    fun recordSuggestedApp(
+        context: Context,
+        packageName: String,
+        label: String,
+        preview: String,
+        timestampMs: Long
+    ) {
+        synchronized(lock) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (isDismissedSuggestion(prefs, packageName)) return
+
+            val suggestions = readSuggestions(prefs.getString(KEY_SUGGESTED_APPS, null))
+            val existing = suggestions.optJSONObject(packageName)
+            val entry = JSONObject().apply {
+                put("label", label)
+                put("count", (existing?.optInt("count", 0) ?: 0) + 1)
+                put("lastSeenMs", timestampMs)
+                put("preview", preview.take(160))
+            }
+            suggestions.put(packageName, entry)
+
+            // Keep only the most recently seen apps
+            if (suggestions.length() > MAX_SUGGESTED_APPS) {
+                var oldestKey: String? = null
+                var oldestTs = Long.MAX_VALUE
+                for (key in suggestions.keys()) {
+                    val ts = suggestions.optJSONObject(key)?.optLong("lastSeenMs", 0L) ?: 0L
+                    if (ts < oldestTs) {
+                        oldestTs = ts
+                        oldestKey = key
+                    }
+                }
+                oldestKey?.let { suggestions.remove(it) }
+            }
+
+            prefs.edit().putString(KEY_SUGGESTED_APPS, suggestions.toString()).apply()
+        }
+    }
+
+    fun getSuggestedApps(context: Context): List<Map<String, Any>> {
+        synchronized(lock) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val suggestions = readSuggestions(prefs.getString(KEY_SUGGESTED_APPS, null))
+            val result = mutableListOf<Map<String, Any>>()
+            for (key in suggestions.keys()) {
+                val obj = suggestions.optJSONObject(key) ?: continue
+                result.add(
+                    mapOf(
+                        "packageName" to key,
+                        "label" to obj.optString("label", key),
+                        "count" to obj.optInt("count", 1),
+                        "lastSeenMs" to obj.optLong("lastSeenMs", 0L),
+                        "preview" to obj.optString("preview", "")
+                    )
+                )
+            }
+            return result.sortedByDescending { it["lastSeenMs"] as Long }
+        }
+    }
+
+    private fun readSuggestions(raw: String?): JSONObject {
+        if (raw.isNullOrEmpty()) return JSONObject()
+        return try {
+            JSONObject(raw)
+        } catch (_: Exception) {
+            JSONObject()
         }
     }
 }

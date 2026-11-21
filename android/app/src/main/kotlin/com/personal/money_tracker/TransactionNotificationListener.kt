@@ -76,12 +76,33 @@ class TransactionNotificationListener : NotificationListenerService() {
             return
         }
 
-        if (!looksLikeFinancialAlert(combined)) {
+        val looksFinancial = looksLikeFinancialAlert(combined)
+        val sourceKind = SourceAppPolicy.classify(applicationContext, pkg)
+
+        val rejection: String? = when {
+            !looksFinancial -> "ignored_non_financial"
+            sourceKind == SourceAppPolicy.SourceKind.OTHER -> "ignored_unwatched_app"
+            sourceKind == SourceAppPolicy.SourceKind.SMS &&
+                !SourceAppPolicy.passesStrictCheck(combined) -> "ignored_sms_not_bank"
+            else -> null
+        }
+
+        if (rejection != null) {
+            if (rejection == "ignored_unwatched_app") {
+                // Let the user discover and opt in to their bank/wallet app.
+                SmartDetectionStorage.recordSuggestedApp(
+                    context = applicationContext,
+                    packageName = pkg,
+                    label = SourceAppPolicy.resolveAppLabel(applicationContext, pkg),
+                    preview = combined,
+                    timestampMs = sbn.postTime
+                )
+            }
             SmartDetectionStorage.appendDiagnosticLog(
                 context = applicationContext,
                 packageName = pkg,
                 preview = combined,
-                status = "ignored_non_financial",
+                status = rejection,
                 timestampMs = sbn.postTime
             )
             return
@@ -92,7 +113,8 @@ class TransactionNotificationListener : NotificationListenerService() {
             packageName = pkg,
             title = title,
             text = bodyText,
-            timestampMs = sbn.postTime
+            timestampMs = sbn.postTime,
+            sourceKind = sourceKind.wireName
         )
         if (alertMap == null) {
             SmartDetectionStorage.appendDiagnosticLog(
