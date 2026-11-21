@@ -123,24 +123,32 @@ void main() {
 
       // Category Management is NO LONGER in Settings screen
       expect(find.text('Category Management'), findsNothing);
-      expect(find.text('QUICK PRESETS'), findsOneWidget);
-      expect(find.text('Quick Transaction Presets'), findsOneWidget);
+
+      // Settings is a short hub; each group opens its own page.
+      Future<void> openGroup(String key) async {
+        await tester.tap(find.byKey(ValueKey(key)));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> back() async {
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+      }
+
+      await openGroup('settings_nav_language_appearance');
       expect(find.text('LANGUAGE'), findsOneWidget);
       expect(find.text('APPEARANCE'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
+      await back();
 
-      // Verify Budget Cycle section is visible
+      await openGroup('settings_nav_budget_money');
       expect(find.text('BUDGET CYCLE'), findsOneWidget);
       expect(find.text('Cycle Start Day'), findsOneWidget);
+      await back();
 
-      // Scroll down to verify Notifications & Reminders section
-      await tester.scrollUntilVisible(
-        find.text('Daily Evening Reminder'),
-        100,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('NOTIFICATIONS & REMINDERS'), findsOneWidget);
+      await openGroup('settings_nav_reminders');
       expect(find.text('Daily Evening Reminder'), findsOneWidget);
+      await back();
 
       await db.close();
     },

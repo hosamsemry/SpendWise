@@ -10,7 +10,7 @@ import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/presets/data/preset_repository.dart';
-import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
+import 'package:money_tracker/features/settings/presentation/pages/budget_money_settings_page.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/main.dart';
@@ -86,12 +86,14 @@ void main() {
       expect(find.text('500.00 / 3,000.00'), findsOneWidget);
       expect(find.text('-500.00', skipOffstage: false), findsWidgets);
 
-      // 3. Open Settings via Dashboard AppBar gear icon
+      // 3. Open Settings via Dashboard AppBar gear icon > Budget & Money
       await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('settings_nav_budget_money')));
       await tester.pumpAndSettle();
 
       final settingsScrollable = find.descendant(
-        of: find.byType(SettingsScreen),
+        of: find.byType(BudgetMoneySettingsPage),
         matching: find.byType(Scrollable),
       );
 
@@ -131,7 +133,9 @@ void main() {
           .getSingle();
       expect(savedSar.value, 'SAR');
 
-      // Pop back to Dashboard
+      // Pop back to Dashboard (sub-page, then Settings hub)
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
 
@@ -145,14 +149,16 @@ void main() {
       expect(find.text('500.00 / 3,000.00'), findsOneWidget);
       expect(find.text('-500.00', skipOffstage: false), findsWidgets);
 
-      // 5. Open Settings and select "None / Plain Numbers"
+      // 5. Open Settings > Budget & Money and select "None / Plain Numbers"
       await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('settings_nav_budget_money')));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('currency_chip_NONE')),
         50,
         scrollable: find.descendant(
-          of: find.byType(SettingsScreen),
+          of: find.byType(BudgetMoneySettingsPage),
           matching: find.byType(Scrollable),
         ),
       );
@@ -161,7 +167,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('currency_chip_NONE')));
       await tester.pumpAndSettle();
 
-      // Pop back to Dashboard
+      // Pop back to Dashboard (sub-page, then Settings hub)
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
 

@@ -7,7 +7,7 @@ import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/security/security_service.dart';
-import 'package:money_tracker/features/settings/presentation/settings_screen.dart';
+import 'package:money_tracker/features/settings/presentation/pages/security_settings_page.dart';
 import '../../test_helper.dart';
 
 void main() {
@@ -38,7 +38,7 @@ void main() {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: SettingsScreen(),
+          home: SecuritySettingsPage(),
         ),
       ),
     );
