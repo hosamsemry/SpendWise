@@ -600,7 +600,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           .read(savingsSyncServiceProvider)
                           .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
                     }
+                    // Realigning can move or delete cycles: drop any stale
+                    // selections pointing at them.
                     ref.read(selectedCycleProvider.notifier).select(null);
+                    ref.read(dashboardCycleProvider.notifier).select(null);
                     ref.read(refreshTriggerProvider.notifier).trigger();
                     if (mounted) {
                       messenger.showSnackBar(

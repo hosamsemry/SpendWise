@@ -59,21 +59,6 @@ class BudgetCycleRepository {
       }
     }
 
-    // 3. Fallback: check if calculator-computed cycle startDate matches
-    final computedCycle = calculator.getCycleForDate(date);
-    final startDateStr = computedCycle.startDateString;
-
-    for (final existing in allExisting) {
-      final start = BudgetCycleCalculator.parseDate(existing.startDate);
-      if (BudgetCycleCalculator.formatDate(start) == startDateStr) {
-        return BudgetCycle(
-          id: existing.id,
-          startDate: start,
-          endDate: BudgetCycleCalculator.parseDate(existing.endDate),
-        );
-      }
-    }
-
     return null;
   }
 
@@ -87,163 +72,168 @@ class BudgetCycleRepository {
       return existingCycle;
     }
 
-    final computedCycle = calculator.getCycleForDate(date);
-    final startDateStr = computedCycle.startDateString;
+    final target = DateTime(date.year, date.month, date.day);
+    final computed = calculator.getCycleForDate(date);
 
-    // Cycle does not exist: create it in a transaction
     return db.transaction(() async {
-      // Double check inside transaction for race-condition idempotency
-      final check = await (db.select(db.budgetCyclesTable)
-            ..where((tbl) =>
-                tbl.startDate.isSmallerOrEqualValue(startDateStr) &
-                tbl.endDate.isBiggerOrEqualValue(startDateStr))
-            ..orderBy([(tbl) => OrderingTerm.desc(tbl.startDate)])
-            ..limit(1))
-          .get();
-      if (check.isNotEmpty) {
-        return BudgetCycle(
-          id: check.first.id,
-          startDate: BudgetCycleCalculator.parseDate(check.first.startDate),
-          endDate: BudgetCycleCalculator.parseDate(check.first.endDate),
-        );
+      final all = await db.select(db.budgetCyclesTable).get();
+
+      // Re-check inside the transaction for race-condition idempotency.
+      for (final row in all) {
+        final cycle = _toDomain(row);
+        if (cycle.contains(target)) return cycle;
       }
 
-      final now = DateTime.now().toIso8601String();
-      final cycleId = _uuid.v4();
-
-      await db
-          .into(db.budgetCyclesTable)
-          .insert(
-            BudgetCyclesTableCompanion.insert(
-              id: cycleId,
-              startDate: startDateStr,
-              endDate: computedCycle.endDateString,
-              createdAt: now,
-            ),
-          );
-
-      // Snapshot active expense categories' default allocations
-      final activeCategories =
-          await (db.select(db.categoriesTable)..where(
-                (tbl) => tbl.isActive.equals(true) & tbl.type.equals('expense'),
-              ))
-              .get();
-
-      for (final cat in activeCategories) {
-        await db
-            .into(db.categoryBudgetsTable)
-            .insert(
-              CategoryBudgetsTableCompanion.insert(
-                id: _uuid.v4(),
-                cycleId: cycleId,
-                categoryId: cat.id,
-                budgetAmountMinor: cat.defaultBudgetMinor,
-                createdAt: now,
-                updatedAt: now,
-              ),
-            );
+      // Never overlap recorded cycles (e.g. one truncated by a start-day
+      // change): shrink the computed range to the gap around [target].
+      var start = computed.startDate;
+      var end = computed.endDate;
+      for (final row in all) {
+        final cycle = _toDomain(row);
+        if (cycle.endDate.isBefore(target) && !cycle.endDate.isBefore(start)) {
+          start = _addDays(cycle.endDate, 1);
+        }
+        if (cycle.startDate.isAfter(target) && !cycle.startDate.isAfter(end)) {
+          end = _addDays(cycle.startDate, -1);
+        }
       }
 
-      return BudgetCycle(
-        id: cycleId,
-        startDate: computedCycle.startDate,
-        endDate: computedCycle.endDate,
-      );
+      return _insertCycle(start, end);
     });
   }
 
-  /// Realigns cycles when the user updates their cycle start day in settings.
-  ///
-  /// Prevents date overlaps between the historical cycle and the newly initiated cycle:
-  /// 1. Computes the new current cycle for today with [newStartDay].
-  /// 2. If an existing recorded cycle overlaps with the new cycle's start date
-  ///    (i.e. `startDate < newStartDate && endDate >= newStartDate`), its `endDate`
-  ///    is cleanly truncated to the day immediately preceding `newStartDate`.
-  /// 3. Ensures the new current cycle exists and snapshots active category allocations.
-  Future<BudgetCycle> realignCyclesOnStartDayChange(int newStartDay) async {
-    final newCalculator = BudgetCycleCalculator(startDay: newStartDay);
-    final now = DateTime.now();
-    final newCycle = newCalculator.getCycleForDate(now);
-    final newStartStr = newCycle.startDateString;
-    final newEndStr = newCycle.endDateString;
+  static DateTime _addDays(DateTime d, int days) =>
+      DateTime(d.year, d.month, d.day + days);
 
-    return db.transaction(() async {
-      // 1. Find any existing cycle that overlaps with newStartStr
-      final allExisting = await (db.select(db.budgetCyclesTable)
-            ..orderBy([(tbl) => OrderingTerm.desc(tbl.startDate)]))
-          .get();
+  static BudgetCycle _toDomain(BudgetCycleEntry row) {
+    final start = BudgetCycleCalculator.parseDate(row.startDate);
+    final end = BudgetCycleCalculator.parseDate(row.endDate);
+    return BudgetCycle(
+      id: row.id,
+      startDate: start,
+      endDate: end,
+    );
+  }
 
-      for (final cycle in allExisting) {
-        final cycleStart = BudgetCycleCalculator.parseDate(cycle.startDate);
-        final cycleEnd = BudgetCycleCalculator.parseDate(cycle.endDate);
-        final newStart = BudgetCycleCalculator.parseDate(newStartStr);
-
-        if (cycleStart.isBefore(newStart) && !cycleEnd.isBefore(newStart)) {
-          final truncatedEnd = DateTime(newStart.year, newStart.month, newStart.day - 1);
-          final truncatedEndStr = BudgetCycleCalculator.formatDate(truncatedEnd);
-
-          await (db.update(db.budgetCyclesTable)..where((tbl) => tbl.id.equals(cycle.id)))
-              .write(BudgetCyclesTableCompanion(
-            endDate: Value(truncatedEndStr),
-          ));
-        }
-      }
-
-      // 2. Check if a cycle with newStartStr already exists
-      final existingNew = await (db.select(db.budgetCyclesTable)
-            ..where((tbl) => tbl.startDate.equals(newStartStr)))
-          .getSingleOrNull();
-
-      if (existingNew != null) {
-        if (existingNew.endDate != newEndStr) {
-          await (db.update(db.budgetCyclesTable)..where((tbl) => tbl.id.equals(existingNew.id)))
-              .write(BudgetCyclesTableCompanion(
-            endDate: Value(newEndStr),
-          ));
-        }
-        return BudgetCycle(
-          id: existingNew.id,
-          startDate: BudgetCycleCalculator.parseDate(existingNew.startDate),
-          endDate: BudgetCycleCalculator.parseDate(newEndStr),
+  /// Inserts a cycle row and its budget snapshot: [budgetsMinor]
+  /// (categoryId -> amount) when given, otherwise each active expense
+  /// category's default allocation. Must run inside a transaction.
+  Future<BudgetCycle> _insertCycle(
+    DateTime start,
+    DateTime end, {
+    Map<String, int>? budgetsMinor,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final cycleId = _uuid.v4();
+    await db.into(db.budgetCyclesTable).insert(
+          BudgetCyclesTableCompanion.insert(
+            id: cycleId,
+            startDate: BudgetCycleCalculator.formatDate(start),
+            endDate: BudgetCycleCalculator.formatDate(end),
+            createdAt: now,
+          ),
         );
-      }
 
-      // 3. Otherwise create the new cycle
-      final cycleId = _uuid.v4();
-      final nowIso = DateTime.now().toIso8601String();
+    final Map<String, int> snapshot;
+    if (budgetsMinor != null) {
+      snapshot = budgetsMinor;
+    } else {
+      final activeCategories = await (db.select(db.categoriesTable)
+            ..where(
+              (tbl) => tbl.isActive.equals(true) & tbl.type.equals('expense'),
+            ))
+          .get();
+      snapshot = {for (final c in activeCategories) c.id: c.defaultBudgetMinor};
+    }
 
-      await db.into(db.budgetCyclesTable).insert(
-            BudgetCyclesTableCompanion.insert(
-              id: cycleId,
-              startDate: newStartStr,
-              endDate: newEndStr,
-              createdAt: nowIso,
+    for (final entry in snapshot.entries) {
+      await db.into(db.categoryBudgetsTable).insert(
+            CategoryBudgetsTableCompanion.insert(
+              id: _uuid.v4(),
+              cycleId: cycleId,
+              categoryId: entry.key,
+              budgetAmountMinor: entry.value,
+              createdAt: now,
+              updatedAt: now,
             ),
           );
+    }
 
-      final activeCategories = await (db.select(db.categoriesTable)
-            ..where((tbl) => tbl.isActive.equals(true) & tbl.type.equals('expense')))
-          .get();
+    return BudgetCycle(id: cycleId, startDate: start, endDate: end);
+  }
 
-      for (final cat in activeCategories) {
-        await db.into(db.categoryBudgetsTable).insert(
-              CategoryBudgetsTableCompanion.insert(
-                id: _uuid.v4(),
-                cycleId: cycleId,
-                categoryId: cat.id,
-                budgetAmountMinor: cat.defaultBudgetMinor,
-                createdAt: nowIso,
-                updatedAt: nowIso,
-              ),
-            );
+  /// Realigns recorded cycles when the user changes their cycle start day,
+  /// so cycles never overlap and today's cycle follows the new schedule.
+  ///
+  /// With the new current cycle N = [S, E] (for [today], default now):
+  /// 1. Cycles entirely before S are kept untouched (frozen history).
+  /// 2. A cycle that started before S and runs into it is truncated to S-1.
+  /// 3. A cycle starting inside N (typically the old current cycle) is moved
+  ///    onto N, keeping its id, budgets and alert history. If none exists,
+  ///    N is created with the budgets of the cycle that was current before
+  ///    the change (falling back to category defaults).
+  /// 4. Any other cycle starting on/after S (future cycles laid out with the
+  ///    old start day) is deleted with its budgets and alert events; it is
+  ///    recreated on the new schedule when needed. Transactions are keyed by
+  ///    date, so none are lost.
+  Future<BudgetCycle> realignCyclesOnStartDayChange(
+    int newStartDay, {
+    DateTime? today,
+  }) async {
+    final now = today ?? DateTime.now();
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final newCycle = BudgetCycleCalculator(startDay: newStartDay).getCycleForDate(now);
+    final s = newCycle.startDate;
+    final e = newCycle.endDate;
+
+    return db.transaction(() async {
+      final cycles = (await db.select(db.budgetCyclesTable).get())
+          .map(_toDomain)
+          .toList()
+        ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+      final previousCurrent =
+          cycles.where((c) => c.contains(todayDate)).firstOrNull;
+      final carriedBudgets = previousCurrent == null
+          ? null
+          : (await getCycleBudgets(previousCurrent.id))
+              .map((k, v) => MapEntry(k, v.inMinorUnits));
+
+      BudgetCycle? reused;
+      for (final cycle in cycles) {
+        if (cycle.startDate.isBefore(s)) {
+          if (!cycle.endDate.isBefore(s)) {
+            await _setRange(cycle.id, cycle.startDate, _addDays(s, -1));
+          }
+        } else if (reused == null && !cycle.startDate.isAfter(e)) {
+          await _setRange(cycle.id, s, e);
+          reused = BudgetCycle(id: cycle.id, startDate: s, endDate: e);
+        } else {
+          await _deleteCycle(cycle.id);
+        }
       }
 
-      return BudgetCycle(
-        id: cycleId,
-        startDate: newCycle.startDate,
-        endDate: newCycle.endDate,
-      );
+      return reused ?? await _insertCycle(s, e, budgetsMinor: carriedBudgets);
     });
+  }
+
+  Future<void> _setRange(String cycleId, DateTime start, DateTime end) async {
+    await (db.update(db.budgetCyclesTable)..where((tbl) => tbl.id.equals(cycleId)))
+        .write(BudgetCyclesTableCompanion(
+      startDate: Value(BudgetCycleCalculator.formatDate(start)),
+      endDate: Value(BudgetCycleCalculator.formatDate(end)),
+    ));
+  }
+
+  Future<void> _deleteCycle(String cycleId) async {
+    await (db.delete(db.notificationEventsTable)
+          ..where((tbl) => tbl.cycleId.equals(cycleId)))
+        .go();
+    await (db.delete(db.categoryBudgetsTable)
+          ..where((tbl) => tbl.cycleId.equals(cycleId)))
+        .go();
+    await (db.delete(db.budgetCyclesTable)..where((tbl) => tbl.id.equals(cycleId)))
+        .go();
   }
 
   /// Retrieves all recorded budget cycles, sorted newest first.
