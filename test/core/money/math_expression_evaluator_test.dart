@@ -75,4 +75,17 @@ void main() {
     expect(MathExpressionEvaluator.tryEvaluate('1.234,5*2')?.inMinorUnits, 246900);
     expect(MathExpressionEvaluator.tryEvaluate('12,3456+1'), isNull);
   });
+
+  test('uses exact arithmetic and rounds once, half away from zero', () {
+    int? minor(String e) => MathExpressionEvaluator.tryEvaluate(e)?.inMinorUnits;
+    expect(minor('2.675*1'), 268, reason: 'float would give 2.67');
+    expect(minor('1.005*1'), 101, reason: 'float would give 1.00');
+    expect(minor('0.1+0.2'), 30);
+    expect(minor('100/3'), 3333);
+    expect(minor('200/3'), 6667);
+    expect(minor('100/3*3'), 10000, reason: 'no intermediate rounding');
+    expect(minor('0.004+0'), isNull, reason: 'rounds to zero -> invalid');
+    expect(minor('999999999+0.01'), isNull, reason: 'over the limit');
+    expect(minor('999999998+1'), 99999999900);
+  });
 }

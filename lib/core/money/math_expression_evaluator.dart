@@ -42,15 +42,14 @@ class MathExpressionEvaluator {
       if (rpn == null || rpn.isEmpty) return null;
 
       final result = _evaluateRpn(rpn);
-      if (result == null || result <= 0 || result.isNaN || result.isInfinite) {
+      if (result == null) return null;
+
+      // Round once, at the end, to whole minor units (half away from zero).
+      final minor = result.toMinorUnitsRounded();
+      if (minor <= BigInt.zero || minor > BigInt.from(Money.maxMinorUnits)) {
         return null;
       }
-
-      if (result > Money.maxMajorUnits) {
-        return null;
-      }
-
-      return Money.fromMajorUnits(result);
+      return Money.fromMinorUnits(minor.toInt());
     } catch (_) {
       return null;
     }
@@ -156,36 +155,29 @@ class MathExpressionEvaluator {
     return output;
   }
 
-  static double? _evaluateRpn(List<String> rpn) {
-    final stack = <double>[];
+  /// Evaluates with exact rational arithmetic, so `2.675 * 1` is exactly
+  /// 2.675 (and rounds to 2.68) instead of binary floating point's 2.67499...
+  static _Rational? _evaluateRpn(List<String> rpn) {
+    final stack = <_Rational>[];
 
     for (final token in rpn) {
       if (token == '+' || token == '-' || token == '*' || token == '/') {
         if (stack.length < 2) return null;
         final b = stack.removeLast();
         final a = stack.removeLast();
-
-        double res;
         switch (token) {
           case '+':
-            res = a + b;
-            break;
+            stack.add(a + b);
           case '-':
-            res = a - b;
-            break;
+            stack.add(a - b);
           case '*':
-            res = a * b;
-            break;
+            stack.add(a * b);
           case '/':
-            if (b == 0) return null;
-            res = a / b;
-            break;
-          default:
-            return null;
+            if (b.isZero) return null;
+            stack.add(a / b);
         }
-        stack.add(res);
       } else {
-        final val = double.tryParse(token);
+        final val = _Rational.tryParseDecimal(token);
         if (val == null) return null;
         stack.add(val);
       }
@@ -193,5 +185,43 @@ class MathExpressionEvaluator {
 
     if (stack.length != 1) return null;
     return stack.single;
+  }
+}
+
+/// Minimal exact fraction (numerator / positive denominator) for the
+/// calculator. Not normalized: values stay small for typed expressions.
+class _Rational {
+  final BigInt num;
+  final BigInt den;
+
+  _Rational(BigInt n, BigInt d)
+      : num = d.isNegative ? -n : n,
+        den = d.abs();
+
+  /// Parses `123`, `123.45` exactly (no floating point).
+  static _Rational? tryParseDecimal(String s) {
+    final m = RegExp(r'^(\d+)(?:\.(\d+))?$').firstMatch(s);
+    if (m == null) return null;
+    final frac = m.group(2) ?? '';
+    return _Rational(
+      BigInt.parse('${m.group(1)}$frac'),
+      BigInt.from(10).pow(frac.length),
+    );
+  }
+
+  bool get isZero => num == BigInt.zero;
+
+  _Rational operator +(_Rational o) => _Rational(num * o.den + o.num * den, den * o.den);
+  _Rational operator -(_Rational o) => _Rational(num * o.den - o.num * den, den * o.den);
+  _Rational operator *(_Rational o) => _Rational(num * o.num, den * o.den);
+  _Rational operator /(_Rational o) => _Rational(num * o.den, den * o.num);
+
+  /// Value * 100 rounded half away from zero.
+  BigInt toMinorUnitsRounded() {
+    final scaled = num * BigInt.from(100);
+    final q = scaled ~/ den;
+    final r = (scaled - q * den).abs();
+    if (r * BigInt.two >= den) return scaled.isNegative ? q - BigInt.one : q + BigInt.one;
+    return q;
   }
 }
