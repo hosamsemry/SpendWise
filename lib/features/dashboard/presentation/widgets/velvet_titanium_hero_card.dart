@@ -146,7 +146,11 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
 
     final paceGaugeProgressColor = isDark
         ? const Color(0xFFE5C158)
-        : AppColors.primary;
+        : AppColors.gold;
+
+    final daysLeftTextColor = isDark
+        ? textPrimary
+        : AppColors.gold;
 
     // Cycle days calculations
     final totalCycleDays = math.max(
@@ -443,7 +447,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                             daysRemaining: daysRemaining,
                             progressColor: paceGaugeProgressColor,
                             trackColor: paceGaugeTrackColor,
-                            textColor: textPrimary,
+                            textColor: daysLeftTextColor,
                             subtextColor: textSecondary,
                           ),
                         ],

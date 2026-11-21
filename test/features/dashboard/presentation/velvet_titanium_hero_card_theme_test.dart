@@ -87,11 +87,12 @@ void main() {
     final headerLabelWidget = tester.widget<Text>(headerLabelFinder);
     expect(headerLabelWidget.style?.color, AppColors.textSecondary);
 
-    // Days remaining text in the pace ring gauge should be deep obsidian
+    // Days remaining text in the pace ring gauge uses brand gold to stand apart from black currency figures
     final daysRemainingFinder = find.text('15');
     expect(daysRemainingFinder, findsOneWidget);
     final daysRemainingWidget = tester.widget<Text>(daysRemainingFinder);
-    expect(daysRemainingWidget.style?.color, AppColors.textPrimary);
+    expect(daysRemainingWidget.style?.color, AppColors.gold);
+    expect(daysRemainingWidget.style?.color, isNot(remainingTextWidget.style?.color));
   });
 
   testWidgets('Dark mode maintains Velvet Titanium obsidian surface and luminous text', (tester) async {
