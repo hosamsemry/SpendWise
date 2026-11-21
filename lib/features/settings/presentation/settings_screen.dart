@@ -33,6 +33,24 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  /// Changing an existing PIN first requires the current one (rate limited
+  /// like unlocking), so whoever holds an unlocked phone cannot replace it.
+  Future<void> _changePin() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => PinLockScreen(
+          mode: PinMode.unlock,
+          onCancel: () => Navigator.pop(ctx),
+          onUnlocked: () {
+            Navigator.pop(ctx);
+            if (mounted) _handlePinToggle(true);
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _handlePinToggle(bool enable) async {
     final security = ref.read(securityServiceProvider);
     if (enable) {
@@ -1110,8 +1128,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             children: [
                               TextButton.icon(
                                 icon: const Icon(Icons.pin_outlined, size: 18),
+                                key: const ValueKey('change_pin_button'),
                                 label: Text(context.l10n.changePin),
-                                onPressed: () => _handlePinToggle(true),
+                                onPressed: _changePin,
                               ),
                               TextButton.icon(
                                 icon: Icon(
