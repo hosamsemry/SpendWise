@@ -40,7 +40,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     ref.read(refreshTriggerProvider.notifier).trigger();
 
     if (!context.mounted) return;
-    final name = tx.categoryName ?? (tx.isIncome ? context.l10n.income : context.l10n.expense);
+    final name = (tx.categoryName != null && tx.categoryName!.isNotEmpty)
+        ? context.l10n.localizedCategoryName(tx.categoryName)
+        : (tx.isIncome ? context.l10n.income : context.l10n.expense);
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
