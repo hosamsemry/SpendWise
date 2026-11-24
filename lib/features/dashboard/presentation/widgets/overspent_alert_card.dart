@@ -174,7 +174,9 @@ class OverspentAlertCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  context.l10n.overAmount(overBy),
+                                  b.isOverspent
+                                      ? context.l10n.overAmount(overBy)
+                                      : context.l10n.limitReachedBadge,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,

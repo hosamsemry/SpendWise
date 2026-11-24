@@ -122,7 +122,7 @@ class DashboardScreen extends ConsumerWidget {
                   error: (err, _) => Text('${context.l10n.error}: $err'),
                   data: (summary) {
                     final overspentBudgets = summary.categoryBudgets
-                        .where((b) => b.isOverspent)
+                        .where((b) => b.isAtOrOverLimit)
                         .toList()
                       ..sort(
                         (a, b) => a.remainingAmount.compareTo(b.remainingAmount),
@@ -420,9 +420,9 @@ class DashboardScreen extends ConsumerWidget {
                                       final sortedBudgets =
                                           [...summary.categoryBudgets]
                                             ..sort((a, b) {
-                                              if (a.isOverspent !=
-                                                  b.isOverspent) {
-                                                return a.isOverspent ? -1 : 1;
+                                              if (a.isAtOrOverLimit !=
+                                                  b.isAtOrOverLimit) {
+                                                return a.isAtOrOverLimit ? -1 : 1;
                                               }
                                               if (a.isNearLimit !=
                                                   b.isNearLimit) {
@@ -440,7 +440,7 @@ class DashboardScreen extends ConsumerWidget {
                                               );
                                             });
                                       return sortedBudgets.take(4).map((b) {
-                                        final isOver = b.isOverspent;
+                                        final isOver = b.isAtOrOverLimit;
                                         final pct = b.usagePercentage;
                                         final hasBudget =
                                             b.budgetedAmount.inMinorUnits > 0;

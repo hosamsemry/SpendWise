@@ -130,9 +130,9 @@ class AppLocalizations {
   String get quickPresets => isArabic ? 'المعاملات السريعة' : 'QUICK PRESETS';
   String overspentAlert(int count) => isArabic
       ? (count == 1
-          ? 'فئة واحدة تجاوزت الميزانية! راجع ميزانياتك.'
-          : '$count فئات تجاوزت الميزانية! راجع ميزانياتك.')
-      : '$count ${count == 1 ? "category is" : "categories are"} over budget! Review your category allocations.';
+          ? 'فئة واحدة استنفدت أو تجاوزت الميزانية! راجع ميزانياتك.'
+          : '$count فئات استنفدت أو تجاوزت الميزانية! راجع ميزانياتك.')
+      : '$count ${count == 1 ? "category has" : "categories have"} reached or exceeded the budget! Review your category allocations.';
   String nearLimitAlert(int count) => isArabic
       ? (count == 1
           ? 'فئة واحدة تقترب من حد الميزانية (≥ 80%).'
@@ -352,6 +352,7 @@ class AppLocalizations {
   String pctOfTotalExpenses(String pct) => isArabic ? '$pct% من إجمالي المصروفات' : '$pct% of total expenses';
   String get totalActualSpent => isArabic ? 'إجمالي المنصرف الفعلي' : 'Total Actual Spent';
   String overAmount(String amt) => isArabic ? '$amt تجاوز' : '$amt Over';
+  String get limitReachedBadge => isArabic ? 'تم الاستنفاد 100%' : '100% Used';
   String underAmount(String amt) => isArabic ? '$amt متبقٍ' : '$amt Under';
   String budgetPrefix(String amt) => isArabic ? 'الميزانية: $amt' : 'Budget: $amt';
   String actualPrefix(String amt) => isArabic ? 'الفعلي: $amt' : 'Actual: $amt';
@@ -709,6 +710,10 @@ class AppLocalizations {
   String budgetExceededNotificationBody(String cat, String amt) => isArabic
       ? 'لقد تجاوزت ميزانية $cat بمقدار $amt.'
       : 'You have exceeded your budget for $cat by $amt.';
+  String get budgetLimitReachedNotificationTitle => isArabic ? 'تم استنفاد الميزانية!' : 'Budget Limit Reached!';
+  String budgetLimitReachedNotificationBody(String cat) => isArabic
+      ? 'لقد استهلكت ميزانية $cat بالكامل (100%).'
+      : 'You have used 100% of your budget for $cat.';
   String get budgetWarningNotificationTitle => isArabic ? 'تحذير الميزانية (80%)' : 'Budget Warning (80%)';
   String budgetWarningNotificationBody(String cat, String pct) => isArabic
       ? 'وصلت فئة $cat إلى $pct% من ميزانيتها.'

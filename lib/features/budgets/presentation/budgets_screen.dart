@@ -763,7 +763,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
             final hasBudget = b.budgetedAmount.inMinorUnits > 0;
 
             Color statusColor;
-            if (isOverspent) {
+            if (b.isAtOrOverLimit) {
               statusColor = context.overspentColor;
             } else if (b.isNearLimit) {
               statusColor = context.warningColor;

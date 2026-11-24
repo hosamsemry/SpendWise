@@ -28,17 +28,21 @@ class ThresholdMonitor {
     final l10n = AppLocalizations(Locale(code.startsWith('ar') ? 'ar' : 'en'));
     final localizedCat = l10n.localizedCategoryName(budget.categoryName);
 
-    // 1. Check Over Budget (remaining < 0)
-    if (budget.isOverspent) {
+    // 1. Check limit reached or over budget (remaining <= 0)
+    if (budget.isAtOrOverLimit) {
       await _checkAndRecord(
         cycleId: cycleId,
         categoryId: budget.categoryId,
         eventType: 'over_budget',
-        title: l10n.budgetExceededNotificationTitle,
-        body: l10n.budgetExceededNotificationBody(
-          localizedCat,
-          (-budget.remainingAmount).toFormattedString(currencySymbol: l10n.currencySymbol),
-        ),
+        title: budget.isOverspent
+            ? l10n.budgetExceededNotificationTitle
+            : l10n.budgetLimitReachedNotificationTitle,
+        body: budget.isOverspent
+            ? l10n.budgetExceededNotificationBody(
+                localizedCat,
+                (-budget.remainingAmount).toFormattedString(currencySymbol: l10n.currencySymbol),
+              )
+            : l10n.budgetLimitReachedNotificationBody(localizedCat),
       );
       return;
     } else {

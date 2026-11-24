@@ -32,11 +32,18 @@ class CategoryBudget {
     return (spentAmount.inMinorUnits / budgetedAmount.inMinorUnits) * 100.0;
   }
 
-  /// True if spending has reached or exceeded 80% of budget, but has not yet exceeded 100%.
+  /// True if a positive budget has been used up exactly (100%, nothing remaining).
+  bool get isLimitReached =>
+      budgetedAmount.inMinorUnits > 0 && remainingAmount.inMinorUnits == 0;
+
+  /// True if the budget is fully used or exceeded — the alert-worthy state.
+  bool get isAtOrOverLimit => isOverspent || isLimitReached;
+
+  /// True if spending has reached 80% of budget but is still below 100%.
   bool get isNearLimit {
     final pct = usagePercentage;
     if (pct == null) return false;
-    return pct >= 80.0 && pct <= 100.0;
+    return pct >= 80.0 && pct < 100.0;
   }
 
   @override
