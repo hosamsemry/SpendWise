@@ -102,8 +102,8 @@ class _InitialCycleSetupScreenState
         color: isSelected ? context.primaryColor : Colors.transparent,
       ),
       child: isSelected
-          ? const Center(
-              child: Icon(Icons.check, size: 16, color: Colors.white),
+          ? Center(
+              child: Icon(Icons.check, size: 16, color: context.onPrimaryColor),
             )
           : null,
     );
@@ -579,7 +579,7 @@ class _InitialCycleSetupScreenState
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.primaryColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: context.onPrimaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -590,12 +590,12 @@ class _InitialCycleSetupScreenState
                     ? null
                     : _handleConfirm,
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: context.onPrimaryColor,
                         ),
                       )
                     : Text(

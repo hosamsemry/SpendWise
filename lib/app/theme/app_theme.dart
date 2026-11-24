@@ -785,6 +785,9 @@ extension ThemeContextExt on BuildContext {
   Color get borderColor => isDark ? AppColorsDark.border : AppColors.border;
 
   Color get primaryColor => isDark ? AppColorsDark.primary : AppColors.primary;
+  /// Text/icon color on a [primaryColor] background: white on light-mode ink,
+  /// black on dark-mode gold (white on gold fails contrast).
+  Color get onPrimaryColor => isDark ? Colors.black : Colors.white;
   Color get primaryLightColor =>
       isDark ? AppColorsDark.primaryLight : AppColors.primaryLight;
 

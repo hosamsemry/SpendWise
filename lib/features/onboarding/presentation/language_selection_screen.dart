@@ -110,10 +110,10 @@ class _LanguageSelectionScreenState
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: context.onPrimaryColor,
                     disabledBackgroundColor:
                         context.primaryColor.withValues(alpha: 0.3),
-                    disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
+                    disabledForegroundColor: context.onPrimaryColor.withValues(alpha: 0.6),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -122,13 +122,13 @@ class _LanguageSelectionScreenState
                   ),
                   onPressed: isSelected && !_isSaving ? _handleConfirm : null,
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(context.onPrimaryColor),
                           ),
                         )
                       : Text(
@@ -208,7 +208,7 @@ class _LanguageSelectionScreenState
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: isChosen ? Colors.white : context.textPrimary,
+                  color: isChosen ? context.onPrimaryColor : context.textPrimary,
                 ),
               ),
             ),
@@ -239,10 +239,10 @@ class _LanguageSelectionScreenState
                 color: isChosen ? context.primaryColor : Colors.transparent,
               ),
               child: isChosen
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
                       size: 16,
-                      color: Colors.white,
+                      color: context.onPrimaryColor,
                     )
                   : null,
             ),

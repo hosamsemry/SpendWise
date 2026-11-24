@@ -681,11 +681,13 @@ class _AddEditTransactionDialogState
                     : Colors.white,
               ),
               child: _isSaving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: _type == TransactionType.expense
+                            ? context.onPrimaryColor
+                            : Colors.white,
                         strokeWidth: 2,
                       ),
                     )

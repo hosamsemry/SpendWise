@@ -499,7 +499,7 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
                   label: Text(context.l10n.confirmTransactionButton),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: context.onPrimaryColor,
                   ),
                 ),
               ),
