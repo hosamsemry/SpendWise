@@ -13,7 +13,7 @@ Project context for Claude Code. Keep this updated when architecture changes.
 ## Commands
 ```bash
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # after editing any Drift table / AppDatabase
+dart run build_runner build --delete-conflicting-outputs --force-jit   # after editing any Drift table / AppDatabase (AOT mode fails on this toolchain)
 flutter test                                               # full suite (~40 test files)
 flutter test test/features/smart_detection/                # single folder/file
 flutter analyze
@@ -35,7 +35,7 @@ lib/
   main.dart                     App root: ProviderScope, lifecycle observer, gating (lock → language → cycle setup → shell)
   app/                          MainNavigationShell (IndexedStack, 4 tabs), FloatingDockNavBar, theme/app_theme.dart (light+dark)
   core/
-    database/                   AppDatabase (schemaVersion 4), tables/*, connection (money_tracker.sqlite in app docs dir)
+    database/                   AppDatabase (schemaVersion 5), tables/*, connection (money_tracker.sqlite in app docs dir)
                                 app_database.g.dart is GENERATED, never hand-edit
     date/                       BudgetCycle value object + BudgetCycleCalculator (pure)
     money/                      Money (int minor units) + AppCurrency enum, MathExpressionEvaluator (calculator in amount fields)
@@ -44,6 +44,8 @@ lib/
     providers/                  All shared Riverpod providers (db, repos, cycles, transactions, savings, currency, theme, language…)
     security/                   SecurityService (PIN), BiometricService, PinLockScreen
   features/<name>/{data,domain,presentation}/
+    bills/        Recurring bills & subscriptions (confirm-first, see below): BillSchedule (pure dates), RecurringBillRepository,
+                  BillService, LocalBillReminderScheduler, BillsScreen (from the Budgets app bar), DueBillsCard (dashboard)
     backup/       JSON full-DB export/import (BackupService, BackupData), optional keep-current-PIN on restore
     budgets/      BudgetCycleRepository, BudgetCalculationService (pure), ThresholdMonitor, CycleSummary/CategoryBudget,
                   BudgetsScreen (envelope manager), CycleSummaryScreen, InitialCycleSetupScreen (onboarding: start day + currency)
@@ -79,6 +81,8 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 | `notification_events` | de-dupes threshold alerts: (cycle, category, 'reached_80_percent'/'over_budget') unique |
 | `app_settings` | **key/value store used for nearly all prefs and small state** (see keys below) |
 | `transaction_presets` | quick-log shortcuts, display_order |
+| `recurring_bills` | title, type, category_id (SET NULL) + denormalized category_name, amount_minor (estimate if `is_variable`), frequency ('weekly'/'monthly'/'yearly'/'every_cycle'), `anchor_date` (first due date; sets the repeating day), `remind_days_before` (null = off), is_active |
+| `bill_occurrences` | handled due dates: (bill_id, due_date) unique, status 'paid'/'skipped', `transaction_id` (ON DELETE CASCADE, so deleting the payment makes the date unpaid again). Due dates without a row are unpaid |
 
 - Dates are stored as ISO strings with ASCII digits. Use `BudgetCycleCalculator.formatDate/parseDate`, which normalize Arabic/Persian digits.
 - Migrations go in `AppDatabase.migration.onUpgrade` with `if (from < N)` blocks. Bump `schemaVersion`, then run build_runner. `PRAGMA foreign_keys = ON` and the transaction indexes are applied in `beforeOpen`.
@@ -97,9 +101,10 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
   - Changing the start day calls `realignCyclesOnStartDayChange`. It keeps earlier cycles, truncates the one that straddles the new start, moves a cycle starting inside the new current cycle onto it (keeping its budgets), and deletes future cycles laid out on the old schedule. Transactions are keyed by date, so none are lost.
   - Its optional `today:` parameter exists for tests.
 - **Savings auto-budget**: a "Savings"/"مدخرات" expense category gets budget = `max(0, totalIncome − Σ other budgets)`. `TransactionService` re-syncs it on transaction writes, including the old cycle when income moves cycles or changes type. Budget/category edits must still call `SavingsSyncService.syncSavingsBudgetForCycle` themselves.
-- **Daily safe-to-spend** (`todaySpendingSummaryProvider`) excludes the Savings envelope (`isSavingsCategoryName`). The hero card's net remaining still includes it.
+- **Daily safe-to-spend** (`todaySpendingSummaryProvider`) excludes the Savings envelope (`isSavingsCategoryName`) and subtracts `committedBills`: unpaid expense bills due by the cycle end, overdue ones included (`BillSchedule.committedUntil`). The hero card's net remaining still includes both.
 - **Savings Vault**: a lifetime balance kept in app_settings. `sweepSurplus`/`undoSweep` are idempotent per cycle and return whether anything changed; balance changes happen inside a transaction. When the previous cycle ended with a surplus, `pendingCycleCloseoutProvider` offers a 1-tap sweep or a dismiss. Withdrawals have overdraft protection.
 - **Threshold alerts**: `BudgetAlertService.reevaluate(cycle, categoryIds?)` wraps `ThresholdMonitor.evaluateAndNotify` (80% and >100%). `TransactionService` calls it for every affected expense category, old and new; budget edits call it for the whole cycle. Call it after anything that changes budgets or spending. Each alert fires once per cycle/category and is recorded in `notification_events`. Dropping back under a threshold clears the record, so the alert can fire again.
+- **Recurring bills are confirm-first**: nothing is logged automatically. All bill writes go through `BillService` (`billServiceProvider`): `pay` logs via `TransactionService.add` (note = bill title, date = today) then records the occurrence; a variable bill's paid amount becomes its new estimate. Undo of a payment = `undoPay` (deletes the transaction; the FK cascade clears the occurrence). Resuming a paused bill auto-skips the dates missed while paused. Monthly/yearly dates clamp like cycles; "every cycle" follows the user's start day. Overdue dates are only looked at 366 days back. Each write reschedules reminders (one notification per bill, ids 30000–38999, `billReminderNotificationId`). UI callbacks that outlive their widget (snackbar Undo) must use `ProviderScope.containerOf`, not the widget's `ref`.
 - **All transaction writes go through `TransactionService`** (`features/transactions/domain/transaction_service.dart`, `transactionServiceProvider`) using `add`/`update`/`delete`/`restore`. Never call `TransactionRepository` write methods from UI or other features. The service creates the cycle with the user's start day, syncs Savings and evaluates thresholds. Callers only trigger `refreshTriggerProvider`.
 - **Never construct `BudgetCycleRepository(db)` in app code**: its default calculator uses start day 25. Use `budgetCycleRepositoryProvider`, which applies the user's start day.
 - **Expense needs a category** (DB CHECK: category_id or category_name). Income category is optional.
@@ -116,7 +121,7 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 On start, and on resume from real background (paused/hidden → resumed; transient `inactive` is ignored):
 1. Re-check the PIN lock.
 2. Run `smartDetectionCoordinator.syncFromNative()` and refresh notification-access status.
-3. Run `_reconcileLifecycle()` (only once per calendar day on resume): seed default categories (by language), unarchive categories, get/create the current cycle, sync categories into it, sync the savings budget, schedule the 25th reminder, then trigger a refresh. This step is skipped entirely until the cycle start day is configured.
+3. Run `_reconcileLifecycle()` (only once per calendar day on resume): seed default categories (by language), unarchive categories, get/create the current cycle, sync categories into it, sync the savings budget, schedule the cycle-start reminder, reschedule bill reminders, then trigger a refresh. This step is skipped entirely until the cycle start day is configured.
 
 ## Smart detection (Android only, confirm-first)
 1. `TransactionNotificationListener` (needs notification-access permission) drops the app's own and ongoing notifications and OTP/declined/failed messages. It then **gates by source app** (`SourceAppPolicy`, generic, with no hardcoded bank list):

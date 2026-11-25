@@ -8,7 +8,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-339%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-366%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-PBKDF2%20%2B%20AES--256--GCM%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -51,6 +51,13 @@
 - **Proactive Threshold Alerts**: Local Android notifications when a category reaches 80% and 100% of its budget. Alerts are re-checked whenever a budget is edited, and fire again if spending drops back under a threshold and crosses it later.
 - **Reminders**: An optional daily evening reminder to log the day's spending, and a reminder on your cycle start day.
 
+### 🧾 Bills & Subscriptions
+- **Recurring Bills and Income**: Rent, subscriptions, phone and internet, or your salary, repeating weekly, monthly, yearly, or **every cycle** on your payday.
+- **Confirm-First**: Bills due this week appear on the dashboard with **Paid** and **Skip**. Nothing is logged without your tap, and every payment can be undone.
+- **Variable Amounts**: Electricity or mobile bills ask for the amount when you pay, pre-filled with last time's.
+- **Safe to Spend After Bills**: Unpaid bills due before the cycle ends are set aside from your daily safe-to-spend, so money already promised is never shown as free.
+- **Reminders**: A notification on the due date or 1, 3 or 7 days before, plus a monthly total of what your bills cost.
+
 ### 📩 Smart Bank Message Detection (Android)
 - **Confirm-First**: Bank SMS and banking-app notifications become pending transactions you confirm or dismiss. Nothing is added without your tap.
 - **Egypt & GCC Banks**: An offline parser reads Arabic and English messages from InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and mobile wallets: amount, type, merchant, reference and date.
@@ -87,7 +94,7 @@ SpendWise is structured following **Clean Architecture** and **Domain-Driven Des
 lib/
 ├── app/                  # Main navigation shell, route scaffolding, and theme system
 ├── core/                 # Shared foundation across all feature modules
-│   ├── database/         # SQLite tables, connection layer, and Drift migrations (v1-v4)
+│   ├── database/         # SQLite tables, connection layer, and Drift migrations (v1-v5)
 │   ├── date/             # BudgetCycle value object and cyclic calendar calculation engine
 │   ├── localization/     # Bilingual AppLocalizations dictionary (English & Arabic RTL)
 │   ├── money/            # Exact Money value object and BODMAS math expression parser
@@ -96,6 +103,7 @@ lib/
 │   └── security/         # PBKDF2 PIN hashing, lockout, biometrics and app-switcher privacy cover
 └── features/             # Independent, domain-isolated feature slices
     ├── backup/           # JSON database export/import and schema validation
+    ├── bills/            # Recurring bills & subscriptions, reminders, and the due-soon card
     ├── budgets/          # Category budget tracking, cycle summaries, and threshold monitoring
     ├── categories/       # Category domain model, icon/color customization, and starter seeds
     ├── dashboard/        # Dashboard overview, cycle progress, and 1-tap preset bar
