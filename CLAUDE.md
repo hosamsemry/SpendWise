@@ -6,7 +6,7 @@ Project context for Claude Code. Keep this updated when architecture changes.
 **SpendWise** is an offline-first personal finance + **cycle budgeting** app for Android, built with Flutter. It has one user, no backend and no telemetry, and all data stays in local SQLite. It's bilingual (English / Arabic with RTL). The target market is Egypt/GCC: EGP is the default currency, and the bank SMS parser covers InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and wallets.
 
 - Dart package: `money_tracker` · App label: `SpendWise` · App ID (Android applicationId / iOS bundle id): `com.spendwise.app`, permanent once on Google Play. Before 2026-11-25 it was `com.personal.money_tracker`; that is a separate app on devices, so moving over means backup → install → restore.
-- Version is in `pubspec.yaml` (currently `2.0.0+4`). Dart SDK `^3.10.4`.
+- Version is in `pubspec.yaml` (currently `2.1.0+5`). Dart SDK `^3.10.4`.
 - `money_tracker_app_spec.md` is the original product spec. The app has since grown past it (Arabic, multi-currency, savings vault, smart detection), so **the code is the source of truth**.
 - `README.md` is the public, marketing-style overview.
 
