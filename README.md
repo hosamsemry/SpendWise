@@ -8,7 +8,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-165%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-339-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-PBKDF2%20%2B%20AES--256--GCM%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -35,7 +35,8 @@
 
 ### 💰 Exact Financial Precision
 - **Zero Floating-Point Drift**: All monetary operations use minor units (piastres / cents) as 64-bit integers, completely eliminating IEEE-754 precision bugs.
-- **Embedded Calculator**: Dynamic mathematical expression evaluator (`BODMAS` / `PEMDAS`) built right into transaction input fields.
+- **Embedded Calculator**: Mathematical expression evaluator (`BODMAS` / `PEMDAS`) built right into amount fields, using exact rational arithmetic and rounding only once.
+- **Unambiguous Amount Parsing**: `1,250` is one thousand two hundred fifty and `12,5` is twelve and a half. Input that could mean either is rejected instead of guessed.
 - **Bilingual Numerals**: Native support for Western Arabic (`0-9`), Eastern Arabic (`٠-٩`), and Persian (`۰-۹`) numerals and separators.
 
 ### 🏦 Dynamic Savings Vault
@@ -44,18 +45,37 @@
 - **Manual Deposits & Withdrawals**: Track manual contributions and emergency withdrawals with overdraft protection.
 
 ### ⚡ Speed & Daily Workflow
+- **Daily Safe-to-Spend**: The dashboard shows how much you can spend today to finish the cycle on budget, with a pace gauge that warns when you are spending faster than planned. The Savings envelope is left out so it is never treated as spending money.
 - **1-Tap Quick Presets**: Pin frequent expenses and income sources (e.g., "Coffee", "Salary", "Metro") for rapid 1-tap logging directly from the dashboard.
 - **Instant SnackBar Undo**: Deleted transactions and preset logs can be instantly restored in a single tap.
-- **Proactive Threshold Alerts**: Real-time local Android notifications when category spending hits 80% and 100% of budgeted limits.
+- **Proactive Threshold Alerts**: Local Android notifications when a category reaches 80% and 100% of its budget. Alerts are re-checked whenever a budget is edited, and fire again if spending drops back under a threshold and crosses it later.
+- **Reminders**: An optional daily evening reminder to log the day's spending, and a reminder on your cycle start day.
+
+### 📩 Smart Bank Message Detection (Android)
+- **Confirm-First**: Bank SMS and banking-app notifications become pending transactions you confirm or dismiss. Nothing is added without your tap.
+- **Egypt & GCC Banks**: An offline parser reads Arabic and English messages from InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and mobile wallets: amount, type, merchant, reference and date.
+- **You Choose the Sources**: Only apps you approve are read normally. SMS must pass a strict check (a currency amount plus a card, account or reference marker), and chat, email and shopping apps are never read. Apps that look financial are suggested for you to approve or ignore.
+- **Learns Your Categories**: Confirmed merchants are remembered and suggested next time, and duplicate messages are detected by reference number or amount, day and merchant.
+- **Share or Paste**: Share an SMS to SpendWise or paste it in by hand. No message text is stored beyond the pending queue.
+
+### 📊 Insights
+- **Cash Flow**: Income vs. expenses across the last six cycles.
+- **Category Breakdown**: An animated donut chart of where the money went.
+- **Cycle Over Cycle**: Compare each category against the previous cycle. All charts are drawn by the app, with no chart library.
 
 ### 🌍 Comprehensive Localization (العربية / English)
 - Complete bilingual UI with right-to-left (RTL) support and locale-aware typography.
-- Dynamic currency formatting (`EGP` in English, `ج.م` in Arabic).
+- Multi-currency: EGP, SAR, AED, USD, EUR, GBP, or plain numbers, with the symbol localized (`EGP` in English, `ج.م` in Arabic).
 - Pre-seeded starter categories customized by selected language.
 
 ### 💾 Open Data Portability
 - **Password-Protected Backups**: Full database snapshot export and restore, encrypted with AES-256-GCM (PBKDF2-derived key) when you set a password, with schema validation and PIN preservation options.
+- **Backup Reminder**: Settings shows when you last backed up and nudges you when a backup is overdue.
 - **CSV Spreadsheets**: Export clean transaction ledgers and category cycle breakdowns formatted for spreadsheet analysis (Excel, Google Sheets).
+
+### 🎛️ Look & Settings
+- **Light & Dark Themes**: A clean "paper & ink" light mode and an obsidian-and-gold dark mode, following the system or set by hand.
+- **Settings at a Glance**: A short settings hub where each row shows its current value (cycle start and currency, language and theme, lock, smart detection, reminders, last backup), with details on focused sub-pages.
 
 ---
 
@@ -73,7 +93,7 @@ lib/
 │   ├── money/            # Exact Money value object and BODMAS math expression parser
 │   ├── notifications/    # Local notification service and periodic cycle alarms
 │   ├── providers/        # Core Riverpod state management and lifecycle hooks
-│   └── security/         # SHA-256 PIN security and biometric authentication service
+│   └── security/         # PBKDF2 PIN hashing, lockout, biometrics and app-switcher privacy cover
 └── features/             # Independent, domain-isolated feature slices
     ├── backup/           # JSON database export/import and schema validation
     ├── budgets/          # Category budget tracking, cycle summaries, and threshold monitoring
@@ -84,7 +104,8 @@ lib/
     ├── presets/          # User-defined transaction shortcuts with category cascades
     ├── reports/          # Month-over-Month Cash Flow comparisons and category distribution
     ├── savings/          # Savings vault repository, surplus closeout, and income rebalancing
-    ├── settings/         # App preferences, security toggles, and data export
+    ├── settings/         # Settings hub with live summaries and grouped sub-pages
+    ├── smart_detection/  # Bank SMS / notification parsing and the confirm-first queue
     └── transactions/     # Transaction ledger, date-grouped filtering, and add/edit modals
 ```
 
@@ -92,7 +113,7 @@ lib/
 - **Framework**: [Flutter](https://flutter.dev) (Material 3)
 - **State Management**: [Riverpod](https://riverpod.dev) (`flutter_riverpod`)
 - **Database & Persistence**: [Drift](https://drift.simonbinder.eu) (SQLite) with `sqlite3_flutter_libs`
-- **Security**: [crypto](https://pub.dev/packages/crypto) (SHA-256) & [local_auth](https://pub.dev/packages/local_auth)
+- **Security**: [crypto](https://pub.dev/packages/crypto) (PBKDF2-HMAC-SHA256), [cryptography](https://pub.dev/packages/cryptography) (AES-256-GCM backups) & [local_auth](https://pub.dev/packages/local_auth)
 - **Notifications**: [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)
 - **Internationalization**: [intl](https://pub.dev/packages/intl) & `flutter_localizations`
 
@@ -166,19 +187,25 @@ flutter build apk --release --obfuscate --split-debug-info=build/symbols
 ```bash
 flutter build apk --release --target-platform android-arm64 --split-per-abi --obfuscate --split-debug-info=build/symbols
 ```
-*Output: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (~22.7 MB)*
+*Output: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (~23 MB)*
 
 ---
 
 ## 🎨 Brand Identity
 
-The official **SpendWise "Vault Monogram & Velvet Titanium"** brand identity features an authentic circular bank safe tumbler lock seamlessly integrating the **'S'** monogram in brushed Champagne Gold and dark titanium with a subtle Velvet Crimson ruby center core—symbolizing private offline wealth protection and precision cyclic budgeting.
+<img src="assets/images/logo_emblem.png" alt="SpendWise emblem" width="96"/>
 
-- **Obsidian Matte Black**: `#0B0B0E` (Vault Foundation & Elevated Titanium Surfaces `#14141B`)
-- **Champagne Gold**: `#E5C158` / `#B38A24` (Primary Brand Accent & Pace Ring Gauge)
-- **Velvet Crimson & Porcelain White**: `#7B1123` (Ruby Core & Ambient Hero Mesh) / `#F8FAFC` (Clarity & Readability)
+The **"S handle"** mark joins the app's two big ideas. The thin gold rim, with a notch at the top for the start of each budget cycle, comes from a dial. The S inside is drawn as the handle of a vault door, with a round grip at each end and a crimson jewel at its hub. It is drawn from flat shapes only, so it stays legible at 24 px and works in a single colour.
 
-The logo is optically aligned across all standard and adaptive Android icon densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) and provides instant native launch branding with zero white splash flicker.
+- **Obsidian**: `#0B0B0E` (icon background) / `#14141B` (elevated surfaces)
+- **Champagne Gold**: `#E5C158` / `#B38A24` (mark, accents and pace gauge)
+- **Velvet Crimson**: `#7B1123`, lifted to `#A0182F` for the jewel so it reads on black
+
+The launcher icon is an Android adaptive icon with a monochrome layer for Android 13+ themed icons. Every icon, splash and logo PNG is rendered from the SVG sources in [`tool/branding/`](tool/branding/):
+
+```bash
+python3 tool/branding/render.py   # needs Google Chrome and ImageMagick
+```
 
 ---
 
