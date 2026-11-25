@@ -150,7 +150,7 @@ void main() {
 
       expect(backup.metadata.appName, equals('SpendWise'));
       expect(backup.metadata.version, equals(1));
-      expect(backup.metadata.schemaVersion, equals(4));
+      expect(backup.metadata.schemaVersion, equals(5));
 
       expect(backup.categoryCount, equals(2));
       expect(backup.budgetCycleCount, equals(1));

@@ -332,6 +332,100 @@ class AppLocalizations {
   String get enterAmountGreaterThanZero => isArabic ? 'أدخل مبلغاً صالحاً أكبر من صفر' : 'Enter a valid amount greater than 0';
   String deletedPresetNotice(String title) => isArabic ? 'تم حذف القالب "$title"' : 'Deleted preset "$title"';
 
+  // --- Bills & Subscriptions ---
+  String get billsTitle => isArabic ? 'الفواتير والاشتراكات' : 'Bills & Subscriptions';
+  String get addBill => isArabic ? 'إضافة فاتورة' : 'Add bill';
+  String get newBill => isArabic ? 'فاتورة جديدة' : 'New bill';
+  String get editBill => isArabic ? 'تعديل الفاتورة' : 'Edit bill';
+  String get noBillsYet => isArabic ? 'لا توجد فواتير بعد' : 'No bills yet';
+  String get billsEmptyDescription => isArabic
+      ? 'أضف الإيجار والاشتراكات وفواتير الهاتف والإنترنت أو راتبك. سيذكّرك سبيند وايز قبل موعد كل منها ويحجز مبلغها من المبلغ الآمن للإنفاق اليومي.'
+      : 'Add rent, subscriptions, phone and internet, or your salary. SpendWise reminds you before each one is due and sets the money aside in your daily safe-to-spend.';
+  String get addFirstBill => isArabic ? 'أضف أول فاتورة' : 'Add your first bill';
+  String get monthlyBills => isArabic ? 'الفواتير شهرياً' : 'Bills per month';
+  String get dueThisCycle => isArabic ? 'متبقٍ في هذه الدورة' : 'Still due this cycle';
+  String billsSetAsideNote(String amount) => isArabic
+      ? 'المبلغ الآمن للإنفاق اليومي يحجز بالفعل $amount للفواتير المستحقة قبل نهاية الدورة.'
+      : 'Daily safe-to-spend already sets aside $amount for bills due before the cycle ends.';
+  String get needsAttention => isArabic ? 'تحتاج إلى إجراء' : 'Needs attention';
+  String get allBills => isArabic ? 'كل الفواتير' : 'All bills';
+  String get billPaused => isArabic ? 'متوقفة' : 'Paused';
+  String get pauseBill => isArabic ? 'إيقاف مؤقت' : 'Pause';
+  String get resumeBill => isArabic ? 'استئناف' : 'Resume';
+  String nextDueOn(String date) => isArabic ? 'التالي: $date' : 'Next: $date';
+  String approxAmount(String amount) => isArabic ? 'حوالي $amount' : 'about $amount';
+  String get billsDueSoon => isArabic ? 'فواتير مستحقة قريباً' : 'Bills due soon';
+  String get seeAllBills => isArabic ? 'كل الفواتير' : 'All bills';
+  String get markBillPaid => isArabic ? 'تم الدفع' : 'Paid';
+  String get markBillReceived => isArabic ? 'تم الاستلام' : 'Received';
+  String get skipBill => isArabic ? 'تخطي' : 'Skip';
+  String billPaidNotice(String title) => isArabic ? 'تم تسجيل "$title"' : 'Logged "$title"';
+  String billSkippedNotice(String title) => isArabic ? 'تم تخطي "$title" هذه المرة' : 'Skipped "$title" this time';
+  String billDeletedNotice(String title) => isArabic ? 'تم حذف "$title"' : 'Deleted "$title"';
+  String deleteBillTitle(String title) => isArabic ? 'حذف "$title"؟' : 'Delete "$title"?';
+  String get deleteBillBody => isArabic
+      ? 'ستبقى المدفوعات المسجلة بالفعل في معاملاتك.'
+      : 'Payments already logged stay in your transactions.';
+  String get billCategoryMissing => isArabic
+      ? 'تم حذف فئة هذه الفاتورة. اختر فئة جديدة لتتمكن من دفعها.'
+      : "This bill's category was deleted. Choose a new category to pay it.";
+  String payBillTitle(String title) => isArabic ? 'دفع "$title"' : 'Pay "$title"';
+  String receiveBillTitle(String title) => isArabic ? 'استلام "$title"' : 'Receive "$title"';
+  String get billDueDateLabel => isArabic ? 'تاريخ الاستحقاق' : 'Due date';
+  String get billPaidOnLabel => isArabic ? 'تاريخ الدفع' : 'Date paid';
+  String get billTitleLabel => isArabic ? 'الاسم' : 'Name';
+  String get billTitleHint => isArabic ? 'مثل: الإيجار، نتفليكس، الراتب' : 'e.g. Rent, Netflix, Salary';
+  String get variableAmountLabel => isArabic ? 'المبلغ يتغير كل مرة' : 'Amount changes each time';
+  String get variableAmountHint => isArabic
+      ? 'ستدخل المبلغ عند الدفع. يُستخدم هذا المبلغ كتقدير حتى ذلك الحين.'
+      : "You'll enter the amount when you pay. Until then this one is used as an estimate.";
+  String get repeatsLabel => isArabic ? 'التكرار' : 'Repeats';
+  String get frequencyWeekly => isArabic ? 'أسبوعياً' : 'Weekly';
+  String get frequencyMonthly => isArabic ? 'شهرياً' : 'Monthly';
+  String get frequencyYearly => isArabic ? 'سنوياً' : 'Yearly';
+  String get frequencyEveryCycle => isArabic ? 'كل دورة (يوم القبض)' : 'Every cycle (payday)';
+  String get nextDueDateLabel => isArabic ? 'تاريخ الاستحقاق القادم' : 'Next due date';
+  String everyCycleHint(int day) => isArabic
+      ? 'في يوم بداية دورتك (اليوم $day من كل شهر)'
+      : 'On your cycle start day (day $day of each month)';
+  String get reminderLabel => isArabic ? 'التذكير' : 'Reminder';
+  String reminderOption(int? daysBefore) {
+    if (daysBefore == null) return isArabic ? 'بدون تذكير' : 'No reminder';
+    if (daysBefore == 0) return isArabic ? 'في يوم الاستحقاق' : 'On the due date';
+    if (daysBefore == 1) return isArabic ? 'قبلها بيوم' : '1 day before';
+    if (daysBefore == 7) return isArabic ? 'قبلها بأسبوع' : '1 week before';
+    return isArabic ? 'قبلها بـ $daysBefore أيام' : '$daysBefore days before';
+  }
+  String billDueLabel(int days) {
+    if (days < 0) {
+      final n = -days;
+      if (isArabic) return n == 1 ? 'متأخرة يوماً واحداً' : 'متأخرة $n أيام';
+      return n == 1 ? 'Overdue by 1 day' : 'Overdue by $n days';
+    }
+    if (days == 0) return isArabic ? 'مستحقة اليوم' : 'Due today';
+    if (days == 1) return isArabic ? 'مستحقة غداً' : 'Due tomorrow';
+    return isArabic ? 'مستحقة خلال $days أيام' : 'Due in $days days';
+  }
+  String get billHistory => isArabic ? 'السجل' : 'History';
+  String get billNoHistory => isArabic ? 'لم يتم دفع أو تخطي أي موعد بعد.' : 'Nothing paid or skipped yet.';
+  String get billSkipped => isArabic ? 'تم التخطي' : 'Skipped';
+  String billReminderTitle(String title) => isArabic ? 'قادم: $title' : 'Coming up: $title';
+  String billReminderBody(
+    String amount,
+    int days, {
+    bool isIncome = false,
+    bool isVariable = false,
+  }) {
+    final shown = isVariable ? approxAmount(amount) : amount;
+    final when = switch (days) {
+      0 => isArabic ? 'اليوم' : 'today',
+      1 => isArabic ? 'غداً' : 'tomorrow',
+      _ => isArabic ? 'خلال $days أيام' : 'in $days days',
+    };
+    if (isIncome) return isArabic ? 'متوقع $when: $shown' : '$shown expected $when';
+    return isArabic ? 'مستحق $when: $shown' : '$shown due $when';
+  }
+
   // --- Reports & Analytics ---
   String get reportsAndAnalysis => isArabic ? 'التقارير والتحليلات' : 'Reports & Analysis';
   String get reportCycleLabel => isArabic ? 'دورة التقرير:' : 'Report Cycle:';

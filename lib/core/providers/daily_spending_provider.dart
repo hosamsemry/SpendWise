@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/money/money.dart';
+import 'package:money_tracker/core/providers/bill_providers.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
@@ -14,6 +15,10 @@ class DailySpendingSummary {
   final Money overDailyPaceAmount;
   final Money remainingToday;
 
+  /// Unpaid expense bills due before the cycle ends (overdue included),
+  /// already taken out of [dailyPace].
+  final Money committedBills;
+
   const DailySpendingSummary({
     required this.totalSpentToday,
     required this.transactionCountToday,
@@ -22,6 +27,7 @@ class DailySpendingSummary {
     this.isOverDailyPace = false,
     this.overDailyPaceAmount = const Money.zero(),
     this.remainingToday = const Money.zero(),
+    this.committedBills = const Money.zero(),
   });
 }
 
@@ -47,6 +53,8 @@ final todaySpendingSummaryProvider =
   final cycleRepo = ref.watch(budgetCycleRepositoryProvider);
   final calcService = ref.watch(budgetCalculationServiceProvider);
   final catRepo = ref.watch(categoryRepositoryProvider);
+  final billRepo = ref.watch(recurringBillRepositoryProvider);
+  final billSchedule = ref.watch(billScheduleProvider);
 
   final now = DateTime.now();
   final todayDate = DateTime(now.year, now.month, now.day);
@@ -100,6 +108,15 @@ final todaySpendingSummaryProvider =
     spendableRemainingMinor += budget.remainingAmount.inMinorUnits;
   }
 
+  // Money promised to bills due before the cycle ends is not free to spend.
+  final committedBills = billSchedule.committedUntil(
+    bills: await billRepo.getAllBills(),
+    handled: await billRepo.getHandledDueDates(),
+    today: todayDate,
+    cycleEnd: cycle.endDate,
+  );
+  spendableRemainingMinor -= committedBills.inMinorUnits;
+
   if (spendableRemainingMinor > 0) {
     dailyPace = Money.fromMinorUnits(spendableRemainingMinor ~/ daysRemaining);
   } else {
@@ -135,6 +152,7 @@ final todaySpendingSummaryProvider =
     isOverDailyPace: isOverDailyPace,
     overDailyPaceAmount: overDailyPaceAmount,
     remainingToday: remainingToday,
+    committedBills: committedBills,
   );
 });
 

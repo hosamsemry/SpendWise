@@ -39,6 +39,8 @@ class BackupService {
     final presets = await db.select(db.transactionPresetsTable).get();
     final appSettings = await db.select(db.appSettingsTable).get();
     final notifications = await db.select(db.notificationEventsTable).get();
+    final bills = await db.select(db.recurringBillsTable).get();
+    final billOccurrences = await db.select(db.billOccurrencesTable).get();
 
     final metadata = BackupMetadata(
       version: 1,
@@ -107,6 +109,30 @@ class BackupService {
         'categoryId': n.categoryId,
         'eventType': n.eventType,
         'createdAt': n.createdAt,
+      }).toList(),
+      recurringBills: bills.map((b) => {
+        'id': b.id,
+        'title': b.title,
+        'type': b.type,
+        'categoryId': b.categoryId,
+        'categoryName': b.categoryName,
+        'amountMinor': b.amountMinor,
+        'isVariable': b.isVariable,
+        'frequency': b.frequency,
+        'anchorDate': b.anchorDate,
+        'remindDaysBefore': b.remindDaysBefore,
+        'isActive': b.isActive,
+        'note': b.note,
+        'createdAt': b.createdAt,
+        'updatedAt': b.updatedAt,
+      }).toList(),
+      billOccurrences: billOccurrences.map((o) => {
+        'id': o.id,
+        'billId': o.billId,
+        'dueDate': o.dueDate,
+        'status': o.status,
+        'transactionId': o.transactionId,
+        'createdAt': o.createdAt,
       }).toList(),
     );
   }
@@ -213,6 +239,8 @@ class BackupService {
           .getSingleOrNull();
 
       // 2. Clear all tables in reverse foreign key dependency order
+      await db.delete(db.billOccurrencesTable).go();
+      await db.delete(db.recurringBillsTable).go();
       await db.delete(db.notificationEventsTable).go();
       await db.delete(db.transactionsTable).go();
       await db.delete(db.categoryBudgetsTable).go();
@@ -288,6 +316,7 @@ class BackupService {
       }
 
       // 6. Insert transactions
+      final restoredTransactionIds = <String>{};
       for (final row in backup.transactions) {
         final nowIso = DateTime.now().toIso8601String();
         final rawCatId = row['categoryId'] as String?;
@@ -308,6 +337,7 @@ class BackupService {
             updatedAt: row['updatedAt'] as String? ?? nowIso,
           ),
         );
+        restoredTransactionIds.add(row['id'] as String);
       }
 
       // 7. Insert presets
@@ -353,7 +383,55 @@ class BackupService {
         );
       }
 
-      // 9. Insert app settings
+      // 9. Insert recurring bills and their paid / skipped due dates
+      final restoredBillIds = <String>{};
+      for (final row in backup.recurringBills) {
+        final nowIso = DateTime.now().toIso8601String();
+        final rawCatId = row['categoryId'] as String?;
+        final validCatId =
+            (rawCatId != null && restoredCategoryIds.contains(rawCatId))
+                ? rawCatId
+                : null;
+        final id = row['id'] as String;
+        await db.into(db.recurringBillsTable).insert(
+          RecurringBillsTableCompanion.insert(
+            id: id,
+            title: row['title'] as String,
+            type: row['type'] as String? ?? 'expense',
+            categoryId: Value(validCatId),
+            categoryName: Value(row['categoryName'] as String?),
+            amountMinor: row['amountMinor'] as int,
+            isVariable: Value(row['isVariable'] as bool? ?? false),
+            frequency: row['frequency'] as String? ?? 'monthly',
+            anchorDate: row['anchorDate'] as String,
+            remindDaysBefore: Value(row['remindDaysBefore'] as int?),
+            isActive: Value(row['isActive'] as bool? ?? true),
+            note: Value(row['note'] as String?),
+            createdAt: row['createdAt'] as String? ?? nowIso,
+            updatedAt: row['updatedAt'] as String? ?? nowIso,
+          ),
+        );
+        restoredBillIds.add(id);
+      }
+      for (final row in backup.billOccurrences) {
+        final billId = row['billId'] as String;
+        final txId = row['transactionId'] as String?;
+        if (!restoredBillIds.contains(billId)) continue;
+        // A payment whose transaction is gone is no longer paid.
+        if (txId != null && !restoredTransactionIds.contains(txId)) continue;
+        await db.into(db.billOccurrencesTable).insert(
+          BillOccurrencesTableCompanion.insert(
+            id: row['id'] as String,
+            billId: billId,
+            dueDate: row['dueDate'] as String,
+            status: row['status'] as String? ?? 'paid',
+            transactionId: Value(txId),
+            createdAt: row['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+
+      // 10. Insert app settings
       final restoredSettingKeys = <String>{};
       for (final row in backup.appSettings) {
         final key = row['key'] as String;
