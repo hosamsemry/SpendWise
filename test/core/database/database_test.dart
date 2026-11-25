@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' as drift;
+import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
@@ -394,5 +395,53 @@ void main() {
         );
       },
     );
+  });
+
+  test('upgrading a version 4 database adds the bill tables and keeps data', () async {
+    final dir = await Directory.systemTemp.createTemp('spendwise_migration');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/money_tracker.sqlite');
+
+    // Build a v4 database: today's schema minus the v5 tables.
+    final v4 = AppDatabase(NativeDatabase(file));
+    await v4.into(v4.categoriesTable).insert(
+          CategoriesTableCompanion.insert(
+            id: 'cat-1',
+            name: 'Housing',
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+          ),
+        );
+    await v4.customStatement('DROP TABLE bill_occurrences');
+    await v4.customStatement('DROP TABLE recurring_bills');
+    await v4.customStatement('PRAGMA user_version = 4');
+    await v4.close();
+
+    final upgraded = AppDatabase(NativeDatabase(file));
+    addTearDown(upgraded.close);
+    expect((await upgraded.select(upgraded.categoriesTable).get()).single.name, 'Housing');
+    await upgraded.into(upgraded.recurringBillsTable).insert(
+          RecurringBillsTableCompanion.insert(
+            id: 'bill-1',
+            title: 'Rent',
+            type: 'expense',
+            categoryId: const drift.Value('cat-1'),
+            amountMinor: 800000,
+            frequency: 'monthly',
+            anchorDate: '2026-01-01',
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+          ),
+        );
+    await upgraded.into(upgraded.billOccurrencesTable).insert(
+          BillOccurrencesTableCompanion.insert(
+            id: 'occ-1',
+            billId: 'bill-1',
+            dueDate: '2026-01-01',
+            status: 'skipped',
+            createdAt: '2026-01-01',
+          ),
+        );
+    expect(await upgraded.select(upgraded.billOccurrencesTable).get(), hasLength(1));
   });
 }

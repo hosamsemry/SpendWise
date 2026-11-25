@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 import 'connection/connection.dart';
 import 'tables/app_settings_table.dart';
+import 'tables/bill_occurrences_table.dart';
 import 'tables/budget_cycles_table.dart';
 import 'tables/categories_table.dart';
 import 'tables/category_budgets_table.dart';
 import 'tables/notification_events_table.dart';
+import 'tables/recurring_bills_table.dart';
 import 'tables/transaction_presets_table.dart';
 import 'tables/transactions_table.dart';
 
@@ -19,13 +21,15 @@ part 'app_database.g.dart';
     NotificationEventsTable,
     AppSettingsTable,
     TransactionPresetsTable,
+    RecurringBillsTable,
+    BillOccurrencesTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +61,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.createTable(appSettingsTable);
         await m.createTable(transactionPresetsTable);
+      }
+      if (from < 5) {
+        await m.createTable(recurringBillsTable);
+        await m.createTable(billOccurrencesTable);
       }
     },
   );
