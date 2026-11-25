@@ -5,8 +5,8 @@ Project context for Claude Code. Keep this updated when architecture changes.
 ## What it is
 **SpendWise** is an offline-first personal finance + **cycle budgeting** app for Android, built with Flutter. It has one user, no backend and no telemetry, and all data stays in local SQLite. It's bilingual (English / Arabic with RTL). The target market is Egypt/GCC: EGP is the default currency, and the bank SMS parser covers InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and wallets.
 
-- Dart package: `money_tracker` · App label: `SpendWise` · Android id: `com.personal.money_tracker`
-- Version is in `pubspec.yaml` (currently `1.0.1+2`). Dart SDK `^3.10.4`.
+- Dart package: `money_tracker` · App label: `SpendWise` · App ID (Android applicationId / iOS bundle id): `com.spendwise.app`, permanent once on Google Play. Before 2026-11-25 it was `com.personal.money_tracker`; that is a separate app on devices, so moving over means backup → install → restore.
+- Version is in `pubspec.yaml` (currently `2.0.0+4`). Dart SDK `^3.10.4`.
 - `money_tracker_app_spec.md` is the original product spec. The app has since grown past it (Arabic, multi-currency, savings vault, smart detection), so **the code is the source of truth**.
 - `README.md` is the public, marketing-style overview.
 
@@ -60,7 +60,7 @@ lib/
                   Shared widgets: SettingsPageScaffold, SettingsNavTile, BackupNudgeCard
     smart_detection/ Bank SMS/notification parsing → pending confirm-first queue (see below)
     transactions/ TransactionModel, TransactionRepository, TransactionsScreen (filters), AddEditTransactionDialog
-android/app/src/main/kotlin/com/personal/money_tracker/
+android/app/src/main/kotlin/com/spendwise/app/
     MainActivity.kt                       FlutterFragmentActivity (needed for local_auth), MethodChannel, ACTION_SEND handling
     TransactionNotificationListener.kt    NotificationListenerService: OTP/declined filter → source-app gate → keyword/strict filter
     SourceAppPolicy.kt                    Classifies the posting app (watched / SMS / other) + native strict check
@@ -124,7 +124,7 @@ On start, and on resume from real background (paused/hidden → resumed; transie
    - **SMS** (the device's default SMS app plus Google/Samsung/AOSP messaging): must also pass the **strict check**, meaning a currency-tied amount **and** an account/instrument marker (card, account, ref, balance, IPN/InstaPay, wallet, POS/ATM, بطاقة/حساب/مرجع/رصيد/محفظة…).
    - **other** (chat, email, shopping, news…): never queued. If the text looks financial, the app is recorded as a **suggestion** that the user can watch or ignore.
    - Each queued alert carries `sourceKind` (`watched`/`sms`). Rejected notifications are dropped silently: there is **no diagnostic log**. It was removed on purpose, and `purgeLegacyDiagnostics` deletes old data. Don't reintroduce one.
-   - If the app is in the foreground, the alert is pushed live via MethodChannel `com.personal.money_tracker/smart_detection` (`onAlertDetected`).
+   - If the app is in the foreground, the alert is pushed live via MethodChannel `com.spendwise.app/smart_detection` (`onAlertDetected`).
    - Otherwise it's queued in `SmartDetectionStorage` (max 50, with a 30s dedup window).
 2. ACTION_SEND text/plain (sharing an SMS to the app) arrives via `onSharedText` / `consumeSharedText`. Users can also paste an SMS manually.
 3. Dart side: `SmartDetectionChannel` → `SmartDetectionCoordinator` → `PendingTransactionRepository.ingestMessage`.
