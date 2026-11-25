@@ -399,7 +399,7 @@ class AppLocalizations {
   String get disablePin => isArabic ? 'تعطيل رمز PIN' : 'Disable PIN';
   String get pinEnabledSuccess => isArabic ? 'تم تفعيل قفل PIN بنجاح!' : 'PIN Lock enabled successfully!';
   String get pinDisabledSuccess => isArabic ? 'تم تعطيل قفل PIN.' : 'PIN Lock disabled.';
-  String get settingsBudgetMoneyTitle => isArabic ? 'الميزانية والعملة' : 'Budget & Money';
+  String get settingsBudgetMoneyTitle => isArabic ? 'الدورة والعملة' : 'Cycle & Currency';
   String get settingsLanguageAppearanceTitle => isArabic ? 'اللغة والمظهر' : 'Language & Appearance';
   String get settingsPrivacySecurityTitle => isArabic ? 'الخصوصية والأمان' : 'Privacy & Security';
   String get settingsSmartDetectionTitle => isArabic ? 'الرصد الذكي' : 'Smart Detection';

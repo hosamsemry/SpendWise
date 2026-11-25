@@ -25,7 +25,7 @@ void main() {
       ));
 
   const groups = {
-    'settings_nav_budget_money': 'Budget & Money',
+    'settings_nav_budget_money': 'Cycle & Currency',
     'settings_nav_language_appearance': 'Language & Appearance',
     'settings_nav_security': 'Privacy & Security',
     'settings_nav_smart_detection': 'Smart Detection',
