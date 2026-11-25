@@ -1,4 +1,4 @@
-package com.personal.money_tracker
+package com.spendwise.app
 
 import android.app.Notification
 import android.app.NotificationChannel

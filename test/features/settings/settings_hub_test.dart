@@ -18,7 +18,7 @@ void main() {
   setUpAll(setupTestSqlite);
   setUp(() => PackageInfo.setMockInitialValues(
         appName: 'SpendWise',
-        packageName: 'com.personal.money_tracker',
+        packageName: 'com.spendwise.app',
         version: '1.0.2',
         buildNumber: '3',
         buildSignature: '',
@@ -218,7 +218,7 @@ void main() {
       (tester) async {
     PackageInfo.setMockInitialValues(
       appName: 'SpendWise',
-      packageName: 'com.personal.money_tracker',
+      packageName: 'com.spendwise.app',
       version: '1.0.2',
       buildNumber: '2003', // split-per-ABI build number on device
       buildSignature: '',

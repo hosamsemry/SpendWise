@@ -1,4 +1,4 @@
-package com.personal.money_tracker
+package com.spendwise.app
 
 import android.content.ComponentName
 import android.content.Intent
@@ -16,8 +16,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterFragmentActivity() {
 
     companion object {
-        private const val CHANNEL_NAME = "com.personal.money_tracker/smart_detection"
-        private const val PRIVACY_CHANNEL_NAME = "com.personal.money_tracker/privacy"
+        private const val CHANNEL_NAME = "com.spendwise.app/smart_detection"
+        private const val PRIVACY_CHANNEL_NAME = "com.spendwise.app/privacy"
 
         @Volatile
         private var activeChannel: MethodChannel? = null

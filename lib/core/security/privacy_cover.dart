@@ -7,7 +7,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 /// Bridge to the native privacy helpers in `MainActivity`.
 class PrivacyChannel {
   static const MethodChannel _channel = MethodChannel(
-    'com.personal.money_tracker/privacy',
+    'com.spendwise.app/privacy',
   );
 
   const PrivacyChannel._();

@@ -1,4 +1,4 @@
-package com.personal.money_tracker
+package com.spendwise.app
 
 import android.content.Context
 import org.json.JSONArray
