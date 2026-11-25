@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
@@ -105,7 +106,12 @@ void main() {
       final now = DateTime.now();
       final lastMonthDate = DateTime(now.year, now.month - 1, 15);
 
-      final cycleRepo = BudgetCycleRepository(db);
+      // Match the start day saved above (the repository defaults to 25),
+      // otherwise these cycles disagree with the dashboard's on some dates.
+      final cycleRepo = BudgetCycleRepository(
+        db,
+        calculator: const BudgetCycleCalculator(startDay: 1),
+      );
       final prevCycle = await cycleRepo.getOrCreateCycleForDate(lastMonthDate);
       final currentCycle = await cycleRepo.getOrCreateCycleForDate(now);
 
@@ -179,7 +185,15 @@ void main() {
 
       // Now showing historical cycle summary
       expect(find.text('PAST BUDGET CYCLE'), findsOneWidget);
-      expect(find.text(prevCycle.formattedRange), findsOneWidget);
+      // The savings closeout card also names the previous cycle (it ended with
+      // a 600.00 surplus), so check the range inside the switcher bar.
+      expect(
+        find.descendant(
+          of: switcherFinder,
+          matching: find.text(prevCycle.formattedRange),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('+600.00 EGP'), findsOneWidget);
       expect(find.text('400.00 EGP'), findsOneWidget);
       expect(find.text('AVG / DAY'), findsOneWidget);
