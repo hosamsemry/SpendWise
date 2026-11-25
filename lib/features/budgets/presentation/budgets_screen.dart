@@ -8,6 +8,7 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
+import 'package:money_tracker/features/bills/presentation/bills_screen.dart';
 import 'package:money_tracker/features/budgets/domain/category_budget.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
@@ -556,6 +557,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
       appBar: AppBar(
         title: Text(context.l10n.navBudgets),
         actions: [
+          IconButton(
+            key: const ValueKey('budgets_open_bills'),
+            icon: const Icon(Icons.receipt_long_rounded),
+            tooltip: context.l10n.billsTitle,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BillsScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.add_rounded),
             tooltip: context.l10n.addCategory,

@@ -227,6 +227,11 @@ class _BackupExportSettingsPageState
                             context.l10n.quickPresets,
                             '${backupData.presetCount}',
                           ),
+                          const Divider(height: 12),
+                          _buildPreviewRow(
+                            context.l10n.billsTitle,
+                            '${backupData.billCount}',
+                          ),
                         ],
                       ),
                     ),
