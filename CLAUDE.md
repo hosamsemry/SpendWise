@@ -1,11 +1,12 @@
-# CLAUDE.md — SpendWise (money_tracker)
+# CLAUDE.md — Paydial (money_tracker)
 
 Project context for Claude Code. Keep this updated when architecture changes.
 
 ## What it is
-**SpendWise** is an offline-first personal finance + **cycle budgeting** app for Android, built with Flutter. It has one user, no backend and no telemetry, and all data stays in local SQLite. It's bilingual (English / Arabic with RTL). The target market is Egypt/GCC: EGP is the default currency, and the bank SMS parser covers InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and wallets.
+**Paydial** (Arabic «باي دايل», formerly SpendWise) is an offline-first personal finance + **cycle budgeting** app for Android, built with Flutter. It has one user, no backend and no telemetry, and all data stays in local SQLite. It's bilingual (English / Arabic with RTL). The target market is Egypt/GCC: EGP is the default currency, and the bank SMS parser covers InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and wallets.
 
-- Dart package: `money_tracker` · App label: `SpendWise` · App ID (Android applicationId / iOS bundle id): `com.spendwise.app`, permanent once on Google Play. Before 2026-11-25 it was `com.personal.money_tracker`; that is a separate app on devices, so moving over means backup → install → restore.
+- Dart package: `money_tracker` · App label: `Paydial` · App ID (Android applicationId / iOS bundle id): `com.paydial.app`, permanent once on Google Play. Earlier IDs were `com.spendwise.app` (until 2026-11-28, app called SpendWise) and `com.personal.money_tracker` (until 2026-11-25). Each is a separate app on devices, so moving over means backup → install → restore.
+- **Old names that must stay**: backups from SpendWise/money_tracker must keep restoring (`compatibleAppNames` in `backup_data.dart`), the encrypted-backup format id stays `spendwise-encrypted-backup` (golden test), and `ExportFileStore`'s legacy cleanup still matches `SpendWise_*`/`spendwise_*` files. The keystore file/alias keep their `spendwise` names (renaming them changes nothing for users).
 - Version is in `pubspec.yaml` (currently `2.1.0+5`). Dart SDK `^3.10.4`.
 - `money_tracker_app_spec.md` is the original product spec. The app has since grown past it (Arabic, multi-currency, savings vault, smart detection), so **the code is the source of truth**.
 - `README.md` is the public, marketing-style overview.
@@ -23,8 +24,8 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 - **Release signing**: `android/app/build.gradle.kts` reads `android/key.properties` (gitignored; keys `storePassword`, `keyPassword`, `keyAlias`, `storeFile`). The keystore is `~/keystores/spendwise-release.jks` (alias `spendwise`, cert SHA-256 `59:D7:2A:CC:…:44:13`) and lives outside the repo. If `key.properties` is missing, release builds fail on purpose. They never fall back to debug signing. Losing the keystore means future APKs can't update existing installs.
 - **Always build releases the same way** (split arm64, command above). `--split-per-abi` sets versionCode = ABI offset + build number (arm64 → 2000 + n, armv7 → 1000 + n, x86_64 → 4000 + n), while a universal `flutter build apk` uses n alone. Installing a universal build over a split one is a downgrade, and Android just says "App not installed". Bump `version:` in `pubspec.yaml` for every release you install over an older one.
 - **Settings UX rules**: keep the hub short. New options go on the matching sub-page, and the hub row's summary in `settings_screen.dart` should show the new value. No developer or troubleshooting tools in the UI. Hub providers pause while a sub-page covers the hub and resume mid-frame on return, so **don't chain hub FutureProviders on each other** (that throws "setState during build"); combine independent providers in the widget instead.
-- **Branding**: the "S handle" mark is vector source in `tool/branding/mark.svg` (+ `mark_mono.svg` for the themed-icon layer). `python3 tool/branding/render.py` (needs Chrome + ImageMagick) regenerates every launcher mipmap (foreground, monochrome, legacy), the splash `launch_image`s and `assets/images/*`. Edit the SVGs and re-render; never hand-edit the PNGs.
-- `*.apk` files are gitignored. `SpendWise*.apk` in the root are local build outputs.
+- **Branding**: the Paydial mark (a P whose bowl is a dial, needle at 1:30, notched rim) is vector source in `tool/branding/mark.svg` (+ `mark_mono.svg` for the themed-icon layer). `python3 tool/branding/render.py` (needs Chrome + ImageMagick) regenerates every launcher mipmap (foreground, monochrome, legacy), the splash `launch_image`s and `assets/images/*`. Edit the SVGs and re-render; never hand-edit the PNGs.
+- `*.apk` files are gitignored. `Paydial*.apk` / `SpendWise*.apk` in the root are local build outputs.
 
 ## Stack
 Flutter (Material 3) · **Riverpod 3** (`flutter_riverpod`, using `Notifier`/`AsyncNotifier`/`FutureProvider`, no codegen) · **Drift** (SQLite, `sqlite3_flutter_libs`) · `flutter_local_notifications` + `timezone` · `local_auth` (biometrics) · `crypto` (SHA-256 PIN) · `share_plus`, `file_picker`, `path_provider` · `intl` · `uuid`. Font: Outfit (static weights 400–800 in `assets/fonts`).
@@ -35,7 +36,7 @@ lib/
   main.dart                     App root: ProviderScope, lifecycle observer, gating (lock → language → cycle setup → shell)
   app/                          MainNavigationShell (IndexedStack, 4 tabs), FloatingDockNavBar, theme/app_theme.dart (light+dark)
   core/
-    database/                   AppDatabase (schemaVersion 5), tables/*, connection (money_tracker.sqlite in app docs dir)
+    database/                   AppDatabase (schemaVersion 6), tables/*, connection (money_tracker.sqlite in app docs dir)
                                 app_database.g.dart is GENERATED, never hand-edit
     date/                       BudgetCycle value object + BudgetCycleCalculator (pure)
     money/                      Money (int minor units) + AppCurrency enum, MathExpressionEvaluator (calculator in amount fields)
@@ -50,19 +51,20 @@ lib/
     budgets/      BudgetCycleRepository, BudgetCalculationService (pure), ThresholdMonitor, CycleSummary/CategoryBudget,
                   BudgetsScreen (envelope manager), CycleSummaryScreen, InitialCycleSetupScreen (onboarding: start day + currency)
     categories/   Category model (expense|income), CategoryRepository (seeding, archive, delete, selection-frequency sort)
-    dashboard/    DashboardScreen, hero card (velvet_titanium_hero_card), near-limit / overspent alert cards, cycle switcher
+    dashboard/    DashboardScreen, hero card (balance_hero_card), near-limit / overspent alert cards, cycle switcher
     export/       CsvExportService (UTF-8 BOM for Excel, localized headers/categories)
     onboarding/   LanguageSelectionScreen
     presets/      1-tap transaction presets (TransactionPreset, PresetRepository, management screen)
     reports/      "Insights" tab: cash-flow bar chart, animated category donut chart, cycle-over-cycle (hand-drawn, no chart lib)
-    savings/      SavingsVaultRepository, SavingsSyncService, cycle closeout (surplus sweep) card, vault dialog
+    savings/      SavingsVaultRepository (movement ledger), SavingsGoalRepository, SavingsGoalService, SavingsPlanner (pure),
+                  SavingsSyncService, cycle closeout card (sweep split), GoalsScreen (from the dashboard vault card)
     settings/     SettingsScreen = short hub (reached from the dashboard header, not a nav tab): backup nudge,
                   rows with live summaries (settings_providers.dart), each opening presentation/pages/*:
                   budget_money, language_appearance, security, smart_detection, reminders, backup_export, about.
                   Shared widgets: SettingsPageScaffold, SettingsNavTile, BackupNudgeCard
     smart_detection/ Bank SMS/notification parsing → pending confirm-first queue (see below)
     transactions/ TransactionModel, TransactionRepository, TransactionsScreen (filters), AddEditTransactionDialog
-android/app/src/main/kotlin/com/spendwise/app/
+android/app/src/main/kotlin/com/paydial/app/
     MainActivity.kt                       FlutterFragmentActivity (needed for local_auth), MethodChannel, ACTION_SEND handling
     TransactionNotificationListener.kt    NotificationListenerService: OTP/declined filter → source-app gate → keyword/strict filter
     SourceAppPolicy.kt                    Classifies the posting app (watched / SMS / other) + native strict check
@@ -82,6 +84,8 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 | `app_settings` | **key/value store used for nearly all prefs and small state** (see keys below) |
 | `transaction_presets` | quick-log shortcuts, display_order |
 | `recurring_bills` | title, type, category_id (SET NULL) + denormalized category_name, amount_minor (estimate if `is_variable`), frequency ('weekly'/'monthly'/'yearly'/'every_cycle'), `anchor_date` (first due date; sets the repeating day), `remind_days_before` (null = off), is_active |
+| `savings_goals` | name, icon key, `target_minor`, `target_date` (nullable), `monthly_plan_minor` (nullable; what the closeout sweep gives it), `priority` (fill order, lower first), `achieved_at` (set the first time the balance reaches the target) |
+| `savings_movements` | **the vault ledger**: signed `amount_minor`, kind ('opening'/'sweep'/'deposit'/'withdraw'/'transfer'), `goal_id` (null = Unassigned; ON DELETE SET NULL, so deleting a goal returns its money to Unassigned), `group_id` (one action's rows, undone together; sweeps use `sweep:<cycleId>`), `cycle_id` for sweeps |
 | `bill_occurrences` | handled due dates: (bill_id, due_date) unique, status 'paid'/'skipped', `transaction_id` (ON DELETE CASCADE, so deleting the payment makes the date unpaid again). Due dates without a row are unpaid |
 
 - Dates are stored as ISO strings with ASCII digits. Use `BudgetCycleCalculator.formatDate/parseDate`, which normalize Arabic/Persian digits.
@@ -89,7 +93,7 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
 - When changing the schema, also update **BackupService/BackupData** (backup = all tables) and the tests in `test/core/database/`.
 - **Restore is verbatim**: never substitute defaults for saved budgets, because past cycles are frozen snapshots. `syncCategoriesForCycle` only *adds* rows for missing categories and never changes existing budgets, including zeros.
 
-`app_settings` keys: `last_backup_at` (device-local, kept on restore), `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (balance_minor, last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
+`app_settings` keys: `last_backup_at` (device-local, kept on restore), `app_language`, `theme_mode`, `primary_currency`, `budget_cycle_start_day`, `pin_enabled`, `pin_hash`, `pin_failed_attempts`, `pin_lockout_until`, `biometrics_enabled`, `daily_reminder_enabled`, `daily_reminder_time`, `category_selection_counts` (JSON map), `savings_vault_*` (last_swept_cycle_id, last_sweep_amount_minor, last_swept_at, swept_cycles, dismissed_cycles), `smart_detection_enabled`, `smart_detection_pending_json`, `smart_detection_seen_refs_json`, `smart_detection_merchant_categories_json`, `smart_detection_watched_apps_json` (list of {packageName,label}), `smart_detection_dismissed_apps_json` (list of package names).
 
 ## Core domain rules (don't break these)
 - **Money is always int minor units** (`Money.fromMinorUnits`, `inMinorUnits`). Never use doubles for amounts. Max is 999,999,999 major units. `Money.parse` accepts Arabic digits and currency symbols.
@@ -102,7 +106,8 @@ Nav tabs (index order): 0 Dashboard, 1 Transactions, 2 Budgets, 3 Insights (Repo
   - Its optional `today:` parameter exists for tests.
 - **Savings auto-budget**: a "Savings"/"مدخرات" expense category gets budget = `max(0, totalIncome − Σ other budgets)`. `TransactionService` re-syncs it on transaction writes, including the old cycle when income moves cycles or changes type. Budget/category edits must still call `SavingsSyncService.syncSavingsBudgetForCycle` themselves.
 - **Daily safe-to-spend** (`todaySpendingSummaryProvider`) excludes the Savings envelope (`isSavingsCategoryName`) and subtracts `committedBills`: unpaid expense bills due by the cycle end, overdue ones included (`BillSchedule.committedUntil`). The hero card's net remaining still includes both.
-- **Savings Vault**: a lifetime balance kept in app_settings. `sweepSurplus`/`undoSweep` are idempotent per cycle and return whether anything changed; balance changes happen inside a transaction. When the previous cycle ended with a surplus, `pendingCycleCloseoutProvider` offers a 1-tap sweep or a dismiss. Withdrawals have overdraft protection.
+- **Savings Vault**: the balance is the sum of `savings_movements` (since schema 6; the old `savings_vault_balance_minor` setting is converted to an 'opening' movement by the migration **and** when restoring an older backup, via `migrateLegacyVaultBalance`). Buckets are goals plus Unassigned (goal id null); no bucket may go below zero (withdraw/transfer throw `StateError`, undo returns false). `sweepSurplus`/`undoSweep` are idempotent per cycle (swept ids stay in app_settings) and run in a transaction. When the previous cycle ended with a surplus, `pendingCycleCloseoutProvider` offers a sweep or a dismiss.
+- **Savings goals**: all goal/vault money writes go through `SavingsGoalService` (`savingsGoalServiceProvider`), which marks a goal achieved the first time it reaches its target and returns `newlyAchieved` (celebrated in the UI; passing it to `undo`/`undoSweep` reverts it). The closeout's default split is `SavingsPlanner.splitSurplus`: monthly plans in priority order, never overfilling, rest to Unassigned; the user can edit it before sweeping. **Taking money out of savings never writes a transaction or touches the cycle budget.** Forecasts: `averagePerCycle` = sweeps + deposits − withdrawals over the last 3 cycles (transfers are not new saving), `requiredPerCycle` = remaining / closeouts left before the target date, on track if average ≥ required.
 - **Threshold alerts**: `BudgetAlertService.reevaluate(cycle, categoryIds?)` wraps `ThresholdMonitor.evaluateAndNotify` (80% and >100%). `TransactionService` calls it for every affected expense category, old and new; budget edits call it for the whole cycle. Call it after anything that changes budgets or spending. Each alert fires once per cycle/category and is recorded in `notification_events`. Dropping back under a threshold clears the record, so the alert can fire again.
 - **Recurring bills are confirm-first**: nothing is logged automatically. All bill writes go through `BillService` (`billServiceProvider`): `pay` logs via `TransactionService.add` (note = bill title, date = today) then records the occurrence; a variable bill's paid amount becomes its new estimate. Undo of a payment = `undoPay` (deletes the transaction; the FK cascade clears the occurrence). Resuming a paused bill auto-skips the dates missed while paused. Monthly/yearly dates clamp like cycles; "every cycle" follows the user's start day. Overdue dates are only looked at 366 days back. Each write reschedules reminders (one notification per bill, ids 30000–38999, `billReminderNotificationId`). UI callbacks that outlive their widget (snackbar Undo) must use `ProviderScope.containerOf`, not the widget's `ref`.
 - **All transaction writes go through `TransactionService`** (`features/transactions/domain/transaction_service.dart`, `transactionServiceProvider`) using `add`/`update`/`delete`/`restore`. Never call `TransactionRepository` write methods from UI or other features. The service creates the cycle with the user's start day, syncs Savings and evaluates thresholds. Callers only trigger `refreshTriggerProvider`.
@@ -129,7 +134,7 @@ On start, and on resume from real background (paused/hidden → resumed; transie
    - **SMS** (the device's default SMS app plus Google/Samsung/AOSP messaging): must also pass the **strict check**, meaning a currency-tied amount **and** an account/instrument marker (card, account, ref, balance, IPN/InstaPay, wallet, POS/ATM, بطاقة/حساب/مرجع/رصيد/محفظة…).
    - **other** (chat, email, shopping, news…): never queued. If the text looks financial, the app is recorded as a **suggestion** that the user can watch or ignore.
    - Each queued alert carries `sourceKind` (`watched`/`sms`). Rejected notifications are dropped silently: there is **no diagnostic log**. It was removed on purpose, and `purgeLegacyDiagnostics` deletes old data. Don't reintroduce one.
-   - If the app is in the foreground, the alert is pushed live via MethodChannel `com.spendwise.app/smart_detection` (`onAlertDetected`).
+   - If the app is in the foreground, the alert is pushed live via MethodChannel `com.paydial.app/smart_detection` (`onAlertDetected`).
    - Otherwise it's queued in `SmartDetectionStorage` (max 50, with a 30s dedup window).
 2. ACTION_SEND text/plain (sharing an SMS to the app) arrives via `onSharedText` / `consumeSharedText`. Users can also paste an SMS manually.
 3. Dart side: `SmartDetectionChannel` → `SmartDetectionCoordinator` → `PendingTransactionRepository.ingestMessage`.
@@ -154,7 +159,7 @@ Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSe
   - A correct PIN, biometric unlock or `setPin` clears it.
   - "Change PIN" requires the current PIN first. `pinCredentialSettingKeys` lists the keys restore must keep when "keep current PIN" is chosen.
 - Biometric unlock goes through `local_auth` and requires `FlutterFragmentActivity`.
-- **Recent-apps privacy**: Android 13+ uses `setRecentsScreenshotEnabled(false)` in `MainActivity`. Older versions draw `PrivacyCover` (`core/security/privacy_cover.dart`) whenever the app isn't resumed; the `com.personal.money_tracker/privacy` channel reports which path applies. `FLAG_SECURE` is deliberately not used, so user screenshots still work.
+- **Recent-apps privacy**: Android 13+ uses `setRecentsScreenshotEnabled(false)` in `MainActivity`. Older versions draw `PrivacyCover` (`core/security/privacy_cover.dart`) whenever the app isn't resumed; the `com.paydial.app/privacy` channel reports which path applies. `FLAG_SECURE` is deliberately not used, so user screenshots still work.
 - **No Android backup**: `allowBackup=false` plus `res/xml/data_extraction_rules.xml` excludes everything from cloud backup **and** device transfer (on Android 12+, `allowBackup=false` alone doesn't stop transfer).
 - **Encrypted backups**: `BackupCrypto` (`features/backup/data/backup_crypto.dart`) is a JSON envelope with `format: spendwise-encrypted-backup`:
   - AES-256-GCM from `package:cryptography`, with the header as AAD; the key comes from PBKDF2-SHA256 (600k iterations) with a random salt. File iterations are capped at 5M.
@@ -167,7 +172,7 @@ Method channel methods: `isNotificationAccessEnabled`, `openNotificationAccessSe
 
 ## Conventions
 - Every user-visible string is a getter in `AppLocalizations` with both `en` and `ar` text. Use `context.l10n.xxx` and never hardcode strings. Remember RTL and Arabic numerals.
-- Colors must work in light **and** dark themes. Several tests assert theme-adaptive colors (`*_theme_test.dart`). Brand palette: obsidian `#0B0B0E`/`#14141B`, champagne gold `#E5C158`/`#B38A24`, velvet crimson `#7B1123`.
+- Colors must work in light **and** dark themes. Several tests assert theme-adaptive colors (`*_theme_test.dart`). Theme is "Pine" (`app/theme/app_theme.dart`): one builder (`AppTheme._build`) makes both modes from `AppColors`/`AppColorsDark`, so add new component styling there once. Single accent pine `#0F6B5C`/`#66D1B9` (also income); brick = overspent, amber = warning, steel blue = savings (`context.savingsColor`); neutral surfaces with hairline borders, no gradients, glows or purple. Use `context.xxxColor` getters (incl. `onPrimaryColor`, `onOverspentColor`, `onSavingsColor` for text on filled colours) and `context.chartPalette` for category charts; never hardcode `Color(0x…)`/`Colors.*` in widgets.
 - Commits follow Conventional Commits: `feat(scope): …`, `fix(scope): …`, `refactor`, `chore`. Scopes are typically the feature name. Issues are referenced as `(closes #N)`.
 - **Split work into focused commits by concern** (e.g. parser + tests, native Android, Dart data layer, UI + l10n, docs). Never put all changed files in one commit.
 - Domain services (`BudgetCalculationService`, `BudgetCycleCalculator`, `BankMessageParser`, `Money`) are pure and unit-tested. Keep logic there rather than in widgets.

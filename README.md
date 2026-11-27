@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/images/logo.png" alt="SpendWise Logo" width="380"/>
+<img src="assets/images/logo.png" alt="Paydial Logo" width="380"/>
 
 ### **Private, Offline-First Personal Finance & Cycle Budgeting for Mobile**
 
@@ -8,13 +8,13 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-366%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-391%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-PBKDF2%20%2B%20AES--256--GCM%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-**SpendWise** is a privacy-centric personal finance management application engineered for modern budgeting habits. Unlike conventional trackers tied to standard calendar months, SpendWise aligns directly with real-world income schedules (such as 25th-of-the-month paydays) with automated month-end clamping, exact integer financial arithmetic, dynamic surplus sweeping, and bank-grade biometric protection.
+**Paydial** is a privacy-centric personal finance management application engineered for modern budgeting habits. Unlike conventional trackers tied to standard calendar months, Paydial aligns directly with real-world income schedules (such as 25th-of-the-month paydays) with automated month-end clamping, exact integer financial arithmetic, dynamic surplus sweeping, and bank-grade biometric protection.
 
 </div>
 
@@ -39,10 +39,13 @@
 - **Unambiguous Amount Parsing**: `1,250` is one thousand two hundred fifty and `12,5` is twelve and a half. Input that could mean either is rejected instead of guessed.
 - **Bilingual Numerals**: Native support for Western Arabic (`0-9`), Eastern Arabic (`٠-٩`), and Persian (`۰-۹`) numerals and separators.
 
-### 🏦 Dynamic Savings Vault
-- **Surplus Sweeping**: Automatically calculates leftover funds at the end of each cycle and offers a 1-tap sweep into a persistent Savings Vault with soft undo.
+### 🏦 Savings Vault & Goals
+- **Savings Goals**: Split your vault into goals like Eid, a car or an emergency fund, each with a target, an optional date and a plan per cycle. Whatever isn't given to a goal stays Unassigned.
+- **Surplus Sweeping**: At the end of each cycle, Paydial offers to sweep what's left into the vault. Goals get their monthly plan first, in the order you drag them into, and the rest goes to Unassigned. You can change the split before sweeping, and undo it.
+- **On Track or Behind**: Each goal shows its progress, what it needs per cycle to hit its date, and when you'll reach it at your recent pace.
+- **Full History**: Every amount added, taken out or moved is recorded, with Undo, and nothing can go below zero.
+- **Outside Your Budget**: Spending saved money doesn't count against the current cycle, because it was saved in earlier ones.
 - **Unallocated Income Rebalancing**: Automatically allocates unbudgeted income straight to your Savings category.
-- **Manual Deposits & Withdrawals**: Track manual contributions and emergency withdrawals with overdraft protection.
 
 ### ⚡ Speed & Daily Workflow
 - **Daily Safe-to-Spend**: The dashboard shows how much you can spend today to finish the cycle on budget, with a pace gauge that warns when you are spending faster than planned. The Savings envelope is left out so it is never treated as spending money.
@@ -63,7 +66,7 @@
 - **Egypt & GCC Banks**: An offline parser reads Arabic and English messages from InstaPay/IPN, CIB, NBE, Banque Misr, AAIB, QNB and mobile wallets: amount, type, merchant, reference and date.
 - **You Choose the Sources**: Only apps you approve are read normally. SMS must pass a strict check (a currency amount plus a card, account or reference marker), and chat, email and shopping apps are never read. Apps that look financial are suggested for you to approve or ignore.
 - **Learns Your Categories**: Confirmed merchants are remembered and suggested next time, and duplicate messages are detected by reference number or amount, day and merchant.
-- **Share or Paste**: Share an SMS to SpendWise or paste it in by hand. No message text is stored beyond the pending queue.
+- **Share or Paste**: Share an SMS to Paydial or paste it in by hand. No message text is stored beyond the pending queue.
 
 ### 📊 Insights
 - **Cash Flow**: Income vs. expenses across the last six cycles.
@@ -81,20 +84,20 @@
 - **CSV Spreadsheets**: Export clean transaction ledgers and category cycle breakdowns formatted for spreadsheet analysis (Excel, Google Sheets).
 
 ### 🎛️ Look & Settings
-- **Light & Dark Themes**: A clean "paper & ink" light mode and an obsidian-and-gold dark mode, following the system or set by hand.
+- **Light & Dark Themes**: Quiet neutral surfaces with a single pine accent, in a soft off-white light mode and a soft charcoal dark mode, following the system or set by hand.
 - **Settings at a Glance**: A short settings hub where each row shows its current value (cycle start and currency, language and theme, lock, smart detection, reminders, last backup), with details on focused sub-pages.
 
 ---
 
 ## 🏗️ Architecture & Technology Stack
 
-SpendWise is structured following **Clean Architecture** and **Domain-Driven Design (DDD)** principles:
+Paydial is structured following **Clean Architecture** and **Domain-Driven Design (DDD)** principles:
 
 ```text
 lib/
 ├── app/                  # Main navigation shell, route scaffolding, and theme system
 ├── core/                 # Shared foundation across all feature modules
-│   ├── database/         # SQLite tables, connection layer, and Drift migrations (v1-v5)
+│   ├── database/         # SQLite tables, connection layer, and Drift migrations (v1-v6)
 │   ├── date/             # BudgetCycle value object and cyclic calendar calculation engine
 │   ├── localization/     # Bilingual AppLocalizations dictionary (English & Arabic RTL)
 │   ├── money/            # Exact Money value object and BODMAS math expression parser
@@ -111,7 +114,7 @@ lib/
     ├── onboarding/       # Language selection, welcome tour, and initial cycle wizard
     ├── presets/          # User-defined transaction shortcuts with category cascades
     ├── reports/          # Month-over-Month Cash Flow comparisons and category distribution
-    ├── savings/          # Savings vault repository, surplus closeout, and income rebalancing
+    ├── savings/          # Savings vault ledger, goals, surplus closeout split, and income rebalancing
     ├── settings/         # Settings hub with live summaries and grouped sub-pages
     ├── smart_detection/  # Bank SMS / notification parsing and the confirm-first queue
     └── transactions/     # Transaction ledger, date-grouped filtering, and add/edit modals
@@ -162,7 +165,7 @@ lib/
 
 ## 🧪 Testing & Quality Assurance
 
-SpendWise includes a comprehensive automated test suite covering unit math, database integrity, edge cases, cycle transitions, and end-to-end user workflows:
+Paydial includes a comprehensive automated test suite covering unit math, database integrity, edge cases, cycle transitions, and end-to-end user workflows:
 
 ```bash
 # Run all unit, widget, and integration tests
@@ -201,13 +204,13 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 
 ## 🎨 Brand Identity
 
-<img src="assets/images/logo_emblem.png" alt="SpendWise emblem" width="96"/>
+<img src="assets/images/logo_emblem.png" alt="Paydial emblem" width="96"/>
 
-The **"S handle"** mark joins the app's two big ideas. The thin gold rim, with a notch at the top for the start of each budget cycle, comes from a dial. The S inside is drawn as the handle of a vault door, with a round grip at each end and a crimson jewel at its hub. It is drawn from flat shapes only, so it stays legible at 24 px and works in a single colour.
+The **Paydial** mark is a "P" whose bowl is a dial. Its gauge needle sits at half past one, creeping toward payday, and the notch at the top of the thin outer rim marks the start of each budget cycle. It is drawn from flat shapes only, so it stays legible at 24 px and works in a single colour. The Arabic name is «باي دايل».
 
-- **Obsidian**: `#0B0B0E` (icon background) / `#14141B` (elevated surfaces)
-- **Champagne Gold**: `#E5C158` / `#B38A24` (mark, accents and pace gauge)
-- **Velvet Crimson**: `#7B1123`, lifted to `#A0182F` for the jewel so it reads on black
+- **Pine**: `#0F6B5C` light / `#66D1B9` dark (the one accent: buttons, selection, income, cycle progress); `#0D5A4E` icon tile
+- **Neutrals**: off-white `#F6F6F3` / white cards in light mode, charcoal `#1A1D20` / `#23272B` in dark mode, near-black `#15171A` ink
+- **Meaning colours**: brick `#BF3A2C` for overspending, amber `#9E5700` for warnings, steel blue `#2D5F8A` for savings. No purple, no gradients or glows
 
 The launcher icon is an Android adaptive icon with a monochrome layer for Android 13+ themed icons. Every icon, splash and logo PNG is rendered from the SVG sources in [`tool/branding/`](tool/branding/):
 
