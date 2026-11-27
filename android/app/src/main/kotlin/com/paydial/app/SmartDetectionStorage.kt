@@ -1,4 +1,4 @@
-package com.spendwise.app
+package com.paydial.app
 
 import android.content.Context
 import org.json.JSONArray
@@ -6,7 +6,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 object SmartDetectionStorage {
-    private const val PREFS_NAME = "spendwise_smart_detection"
+    private const val PREFS_NAME = "paydial_smart_detection"
     private const val KEY_ENABLED = "smart_detection_enabled"
     private const val KEY_PENDING_ALERTS = "pending_native_alerts"
     private const val KEY_SHARED_TEXT = "pending_shared_text"

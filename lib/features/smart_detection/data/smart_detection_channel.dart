@@ -56,7 +56,7 @@ class RawNativeAlert {
 /// Platform channel bridge to Android's NotificationListenerService & ACTION_SEND Share intent.
 class SmartDetectionChannel {
   static const MethodChannel _channel = MethodChannel(
-    'com.spendwise.app/smart_detection',
+    'com.paydial.app/smart_detection',
   );
 
   void Function(RawNativeAlert alert)? onAlertReceived;

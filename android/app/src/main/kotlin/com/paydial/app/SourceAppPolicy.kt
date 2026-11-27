@@ -1,4 +1,4 @@
-package com.spendwise.app
+package com.paydial.app
 
 import android.content.Context
 import android.provider.Telephony

@@ -1,4 +1,4 @@
-package com.spendwise.app
+package com.paydial.app
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -160,7 +160,7 @@ class TransactionNotificationListener : NotificationListenerService() {
                 DETECTION_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifications when SpendWise detects a bank or wallet alert for review"
+                description = "Notifications when Paydial detects a bank or wallet alert for review"
             }
             manager.createNotificationChannel(channel)
         }
@@ -180,7 +180,7 @@ class TransactionNotificationListener : NotificationListenerService() {
         val notifTitle = if (isArabicText) {
             "سبيند وايز • تم رصد معاملة مالية"
         } else {
-            "SpendWise • Transaction Detected"
+            "Paydial • Transaction Detected"
         }
         val preview = if (title.isNotEmpty() && !bodyText.contains(title)) {
             "$title: $bodyText"
