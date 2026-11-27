@@ -574,7 +574,7 @@ class AppLocalizations {
   String get themeModeLabel => isArabic ? 'وضع السمة' : 'Theme Mode';
   String get themeLight => isArabic ? 'فاتح' : 'Light';
   String get themeDark => isArabic ? 'داكن' : 'Dark';
-  String get themeSystem => isArabic ? 'تلقائي (حسب النظام)' : 'System';
+  String get themeSystem => isArabic ? 'تلقائي' : 'System';
   String get sectionCurrency => isArabic ? 'العملة' : 'CURRENCY';
   String get primaryCurrencyLabel => isArabic ? 'العملة الأساسية' : 'Primary Currency';
   String get primaryCurrencySubtitle => isArabic
