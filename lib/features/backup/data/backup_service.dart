@@ -47,7 +47,7 @@ class BackupService {
     final metadata = BackupMetadata(
       version: 1,
       schemaVersion: db.schemaVersion,
-      appName: 'SpendWise',
+      appName: 'Paydial',
       createdAt: DateTime.now(),
       deviceInfo: Platform.operatingSystem,
     );
@@ -187,7 +187,7 @@ class BackupService {
     final jsonContent = await encodeBackup(backup, password: password);
 
     final dateStr = DateFormat('yyyyMMdd_HHmmss', 'en_US').format(backup.metadata.createdAt);
-    final file = await exportFiles.fileFor('SpendWise_Backup_$dateStr.json');
+    final file = await exportFiles.fileFor('Paydial_Backup_$dateStr.json');
     await file.writeAsString(jsonContent);
 
     final isArabic = Intl.defaultLocale?.startsWith('ar') == true;
@@ -195,10 +195,10 @@ class BackupService {
     final result = await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'application/json')],
-        subject: isArabic ? 'نسخة احتياطية لـ SpendWise $dateStr' : 'SpendWise Backup $dateStr',
+        subject: isArabic ? 'نسخة احتياطية لـ Paydial $dateStr' : 'Paydial Backup $dateStr',
         text: isArabic
-            ? 'نسخة احتياطية محلية لـ SpendWise أنشئت في $formattedDate'
-            : 'SpendWise local backup created on $formattedDate',
+            ? 'نسخة احتياطية محلية لـ Paydial أنشئت في $formattedDate'
+            : 'Paydial local backup created on $formattedDate',
       ),
     );
 

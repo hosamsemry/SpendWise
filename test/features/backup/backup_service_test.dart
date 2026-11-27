@@ -148,7 +148,7 @@ void main() {
 
       final backup = await service.createBackupData();
 
-      expect(backup.metadata.appName, equals('SpendWise'));
+      expect(backup.metadata.appName, equals('Paydial'));
       expect(backup.metadata.version, equals(1));
       expect(backup.metadata.schemaVersion, equals(6));
 
@@ -369,6 +369,28 @@ void main() {
         () => service.parseBackupString(foreignAppBackup),
         throwsA(isA<IncompatibleBackupException>()),
       );
+    });
+
+    test('backups made under the old app names still parse', () {
+      // Moving to the com.paydial.app ID means backup -> install -> restore,
+      // so a SpendWise (or money_tracker) backup must be accepted.
+      for (final oldName in ['SpendWise', 'money_tracker']) {
+        final legacy = '''
+        {
+          "metadata": {
+            "version": 1,
+            "schemaVersion": 4,
+            "appName": "$oldName",
+            "createdAt": "2026-10-17T12:00:00Z"
+          },
+          "data": {}
+        }
+        ''';
+        expect(
+          service.parseBackupString(legacy).metadata.appName,
+          oldName,
+        );
+      }
     });
   });
 }

@@ -41,9 +41,9 @@ class _BackupExportSettingsPageState
         'en_US',
       ).format(DateTime.now());
       await exportService.shareCsv(
-        fileName: 'spendwise_transactions_$nowStr.csv',
+        fileName: 'paydial_transactions_$nowStr.csv',
         csvContent: csv,
-        subject: 'SpendWise Transactions ($nowStr)',
+        subject: 'Paydial Transactions ($nowStr)',
       );
     } catch (e) {
       if (mounted) {
@@ -69,9 +69,9 @@ class _BackupExportSettingsPageState
       );
       final startStr = DateFormat('yyyyMMdd', 'en_US').format(cycle.startDate);
       await exportService.shareCsv(
-        fileName: 'spendwise_cycle_$startStr.csv',
+        fileName: 'paydial_cycle_$startStr.csv',
         csvContent: csv,
-        subject: 'SpendWise Budget Cycle (${cycle.formattedRange})',
+        subject: 'Paydial Budget Cycle (${cycle.formattedRange})',
       );
     } catch (e) {
       if (mounted) {
@@ -91,8 +91,8 @@ class _BackupExportSettingsPageState
         SnackBar(
           content: Text(
             context.l10n.isArabic
-                ? 'جارٍ تجهيز النسخة الاحتياطية لسبيند وايز...'
-                : 'Preparing SpendWise backup...',
+                ? 'جارٍ تجهيز النسخة الاحتياطية لباي دايل...'
+                : 'Preparing Paydial backup...',
           ),
           duration: const Duration(seconds: 1),
         ),
@@ -385,8 +385,8 @@ class _BackupExportSettingsPageState
                 ),
                 subtitle: Text(
                   context.l10n.isArabic
-                      ? 'حفظ نسخة كاملة من بياناتك (.spendwise) محلياً أو على السحابة'
-                      : 'Save complete snapshot (.spendwise) to storage or cloud',
+                      ? 'حفظ نسخة كاملة من بياناتك (.json) محلياً أو على السحابة'
+                      : 'Save complete snapshot (.json) to storage or cloud',
                   style: TextStyle(color: context.textSecondary, fontSize: 13),
                 ),
                 trailing: const Icon(Icons.share_outlined),

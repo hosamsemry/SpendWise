@@ -29,6 +29,8 @@ class WrongBackupPasswordException extends BackupException {
 /// AES-GCM associated data, so changing the salt, nonce, iterations or
 /// algorithm names makes decryption fail instead of silently changing them.
 class BackupCrypto {
+  // Kept from when the app was called SpendWise: it identifies the file
+  // format, and existing encrypted backups must keep opening.
   static const String formatId = 'spendwise-encrypted-backup';
   static const int formatVersion = 1;
   static const int defaultIterations = 600000;
@@ -106,7 +108,7 @@ class BackupCrypto {
     }
     if (env['version'] != formatVersion) {
       throw const IncompatibleBackupException(
-        'Encrypted backup was made by a newer version of SpendWise.',
+        'Encrypted backup was made by a newer version of Paydial.',
       );
     }
 

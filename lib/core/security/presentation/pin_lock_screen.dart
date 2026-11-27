@@ -80,8 +80,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     if (!_canUseBiometrics || _lockoutSeconds > 0) return;
     final bioService = ref.read(biometricServiceProvider);
     final reason = context.l10n.isArabic
-        ? 'المصادقة لإلغاء قفل سبيند وايز'
-        : 'Authenticate to unlock SpendWise';
+        ? 'المصادقة لإلغاء قفل باي دايل'
+        : 'Authenticate to unlock Paydial';
     final authenticated = await bioService.authenticate(reason: reason);
     if (authenticated && mounted) {
       await ref.read(securityServiceProvider).clearFailedAttempts();

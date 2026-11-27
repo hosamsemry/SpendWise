@@ -186,7 +186,7 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
     ref.watch(primaryCurrencyProvider);
 
     return MaterialApp(
-      title: 'SpendWise',
+      title: 'Paydial',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

@@ -12,7 +12,8 @@ import 'package:path_provider/path_provider.dart';
 class ExportFileStore {
   static const Duration maxAge = Duration(hours: 1);
 
-  /// Legacy exports left in the documents folder by earlier versions.
+  /// Legacy exports left in the documents folder by earlier versions (when
+  /// the app was called SpendWise).
   static final RegExp _legacyExportName = RegExp(
     r'^(SpendWise_Backup_.*\.json|spendwise_(transactions|cycle)_.*\.csv)$',
   );

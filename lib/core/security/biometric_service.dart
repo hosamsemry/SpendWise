@@ -46,7 +46,7 @@ class BiometricService {
 
   /// Prompts the system biometric sheet (fingerprint/face recognition).
   Future<bool> authenticate({
-    String reason = 'Authenticate to unlock SpendWise',
+    String reason = 'Authenticate to unlock Paydial',
   }) async {
     try {
       final isSupported = await isDeviceSupported();

@@ -17,8 +17,8 @@ import '../../test_helper.dart';
 void main() {
   setUpAll(setupTestSqlite);
   setUp(() => PackageInfo.setMockInitialValues(
-        appName: 'SpendWise',
-        packageName: 'com.spendwise.app',
+        appName: 'Paydial',
+        packageName: 'com.paydial.app',
         version: '1.0.2',
         buildNumber: '3',
         buildSignature: '',
@@ -31,7 +31,7 @@ void main() {
     'settings_nav_smart_detection': 'Smart Detection',
     'settings_nav_reminders': 'Reminders',
     'settings_nav_backup': 'Backup & Export',
-    'settings_nav_about': 'About SpendWise',
+    'settings_nav_about': 'About Paydial',
   };
 
   Future<AppDatabase> pumpHub(
@@ -217,8 +217,8 @@ void main() {
   testWidgets('About shows the version name only, without licences',
       (tester) async {
     PackageInfo.setMockInitialValues(
-      appName: 'SpendWise',
-      packageName: 'com.spendwise.app',
+      appName: 'Paydial',
+      packageName: 'com.paydial.app',
       version: '1.0.2',
       buildNumber: '2003', // split-per-ABI build number on device
       buildSignature: '',

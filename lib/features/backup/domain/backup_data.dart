@@ -16,6 +16,9 @@ class IncompatibleBackupException extends BackupException {
   const IncompatibleBackupException([super.message = 'Incompatible backup file version or application.']);
 }
 
+/// App names a backup may carry: the current one, then earlier names.
+const Set<String> compatibleAppNames = {'Paydial', 'SpendWise', 'money_tracker'};
+
 /// Metadata header describing the backup archive.
 class BackupMetadata {
   final int version;
@@ -50,8 +53,10 @@ class BackupMetadata {
       throw const InvalidBackupFormatException('Backup metadata missing required fields.');
     }
 
-    if (appName != 'SpendWise' && appName != 'money_tracker') {
-      throw IncompatibleBackupException('Backup is for app "$appName", expected SpendWise.');
+    // Paydial was called SpendWise (and money_tracker before that). Their
+    // backups are how users move data over to the new app ID, so keep them.
+    if (!compatibleAppNames.contains(appName)) {
+      throw IncompatibleBackupException('Backup is for app "$appName", expected Paydial.');
     }
 
     DateTime parsedDate;

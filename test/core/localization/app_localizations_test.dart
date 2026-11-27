@@ -7,7 +7,7 @@ void main() {
     test('English dictionary contains valid strings and currency', () {
       final l10n = AppLocalizations(const Locale('en'));
       expect(l10n.isArabic, isFalse);
-      expect(l10n.appName, 'SpendWise');
+      expect(l10n.appName, 'Paydial');
       expect(l10n.currencySymbol, 'EGP');
       expect(l10n.navDashboard, 'Dashboard');
       expect(l10n.navTransactions, 'Transactions');
@@ -29,7 +29,7 @@ void main() {
     test('Arabic dictionary contains correct Arabic translations and Egyptian pound symbol', () {
       final l10n = AppLocalizations(const Locale('ar'));
       expect(l10n.isArabic, isTrue);
-      expect(l10n.appName, 'سبيند وايز');
+      expect(l10n.appName, 'باي دايل');
       expect(l10n.currencySymbol, 'ج.م');
       expect(l10n.navDashboard, 'الرئيسية');
       expect(l10n.navTransactions, 'المعاملات');

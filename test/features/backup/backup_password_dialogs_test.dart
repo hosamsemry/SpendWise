@@ -33,7 +33,7 @@ BackupData _emptyBackup() => BackupData(
       metadata: BackupMetadata(
         version: 1,
         schemaVersion: 4,
-        appName: 'SpendWise',
+        appName: 'Paydial',
         createdAt: DateTime(2026, 11, 21),
       ),
       categories: const [],

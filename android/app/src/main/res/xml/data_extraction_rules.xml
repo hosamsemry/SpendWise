@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  SpendWise keeps all financial data on the device. Exclude everything from
+  Paydial keeps all financial data on the device. Exclude everything from
   Google cloud backup and from device-to-device transfer (Android 12+), where
   android:allowBackup="false" alone does not stop D2D transfer.
   Users move data with the in-app backup file instead.

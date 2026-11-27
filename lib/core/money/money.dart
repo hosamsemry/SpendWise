@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-/// Supported primary currencies for SpendWise, including a minimalist plain-numbers mode.
+/// Supported primary currencies for Paydial, including a minimalist plain-numbers mode.
 enum AppCurrency {
   egp('EGP', 'EGP', 'ج.م'),
   sar('SAR', 'SAR', 'ر.س'),

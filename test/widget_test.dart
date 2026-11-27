@@ -50,7 +50,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify InitialCycleSetupScreen is shown
-      expect(find.text('Welcome to SpendWise'), findsOneWidget);
+      expect(find.text('Welcome to Paydial'), findsOneWidget);
       expect(
         find.text(
           'Determine your monthly budget cycle start and end days to begin tracking your finances.',
@@ -86,7 +86,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify transition into MainNavigationShell
-      expect(find.text('SpendWise'), findsOneWidget);
+      expect(find.text('Paydial'), findsOneWidget);
       expect(find.text('CURRENT BUDGET CYCLE'), findsOneWidget);
       expect(find.text("TODAY'S SPENDING"), findsOneWidget);
 
@@ -189,7 +189,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Main app reached
-      expect(find.text('SpendWise'), findsOneWidget);
+      expect(find.text('Paydial'), findsOneWidget);
 
       // Check DB value was persisted
       final setting = await (db.select(db.appSettingsTable)
@@ -327,7 +327,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify app is now unlocked
-      expect(find.text('SpendWise'), findsOneWidget);
+      expect(find.text('Paydial'), findsOneWidget);
       expect(find.text('Enter App PIN'), findsNothing);
 
       final refreshCountBeforeShadeSwipe = container.read(refreshTriggerProvider);
@@ -339,7 +339,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify app is STILL unlocked AND screen did NOT unnecessarily refresh
-      expect(find.text('SpendWise'), findsOneWidget);
+      expect(find.text('Paydial'), findsOneWidget);
       expect(find.text('Enter App PIN'), findsNothing);
       expect(
         container.read(refreshTriggerProvider),
@@ -400,7 +400,7 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Confirm & Continue'));
       await tester.pumpAndSettle();
 
-      expect(find.text('SpendWise'), findsOneWidget);
+      expect(find.text('Paydial'), findsOneWidget);
 
       // 2. Record Salary Income (10,000 EGP) and rebalance Savings
       final catRepo1 = container1.read(categoryRepositoryProvider);

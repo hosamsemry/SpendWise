@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:money_tracker/core/money/money.dart';
 
-/// Centralized localization dictionary for SpendWise supporting English ('en') and Arabic ('ar').
+/// Centralized localization dictionary for Paydial supporting English ('en') and Arabic ('ar').
 class AppLocalizations {
   final Locale locale;
   AppLocalizations(this.locale);
@@ -18,7 +18,7 @@ class AppLocalizations {
   bool get isArabic => locale.languageCode == 'ar';
 
   // --- General & App ---
-  String get appName => isArabic ? 'سبيند وايز' : 'SpendWise';
+  String get appName => isArabic ? 'باي دايل' : 'Paydial';
   String get currencySymbol => Money.currentCurrency.symbol(isArabic: isArabic);
   String get cancel => isArabic ? 'إلغاء' : 'Cancel';
   String get save => isArabic ? 'حفظ' : 'Save';
@@ -64,7 +64,7 @@ class AppLocalizations {
   String get navSettings => isArabic ? 'الإعدادات' : 'Settings';
 
   // --- Language Selection Onboarding ---
-  String get welcomeTitle => isArabic ? 'مرحباً بك في سبيند وايز' : 'Welcome to SpendWise';
+  String get welcomeTitle => isArabic ? 'مرحباً بك في باي دايل' : 'Welcome to Paydial';
   String get welcomeSubtitle => isArabic
       ? 'اختر لغتك المفضلة للمتابعة'
       : 'Choose your preferred language to continue';
@@ -434,8 +434,8 @@ class AppLocalizations {
   String get editBill => isArabic ? 'تعديل الفاتورة' : 'Edit bill';
   String get noBillsYet => isArabic ? 'لا توجد فواتير بعد' : 'No bills yet';
   String get billsEmptyDescription => isArabic
-      ? 'أضف الإيجار والاشتراكات وفواتير الهاتف والإنترنت أو راتبك. سيذكّرك سبيند وايز قبل موعد كل منها ويحجز مبلغها من المبلغ الآمن للإنفاق اليومي.'
-      : 'Add rent, subscriptions, phone and internet, or your salary. SpendWise reminds you before each one is due and sets the money aside in your daily safe-to-spend.';
+      ? 'أضف الإيجار والاشتراكات وفواتير الهاتف والإنترنت أو راتبك. سيذكّرك باي دايل قبل موعد كل منها ويحجز مبلغها من المبلغ الآمن للإنفاق اليومي.'
+      : 'Add rent, subscriptions, phone and internet, or your salary. Paydial reminds you before each one is due and sets the money aside in your daily safe-to-spend.';
   String get addFirstBill => isArabic ? 'أضف أول فاتورة' : 'Add your first bill';
   String get monthlyBills => isArabic ? 'الفواتير شهرياً' : 'Bills per month';
   String get dueThisCycle => isArabic ? 'متبقٍ في هذه الدورة' : 'Still due this cycle';
@@ -582,7 +582,7 @@ class AppLocalizations {
       : 'Displayed on summary cards; lists use clean numbers';
   String get sectionSecurity => isArabic ? 'الأمان' : 'SECURITY';
   String get pinLock => isArabic ? 'قفل برمز PIN' : 'PIN Lock';
-  String get pinLockSubtitle => isArabic ? 'حماية التطبيق عند المغادرة' : 'Protect SpendWise when paused';
+  String get pinLockSubtitle => isArabic ? 'حماية التطبيق عند المغادرة' : 'Protect Paydial when paused';
   String get biometricLock => isArabic ? 'بصمة الإصبع / الوجه' : 'Biometric Unlock';
   String get changePin => isArabic ? 'تغيير رمز PIN' : 'Change PIN';
   String get disablePin => isArabic ? 'تعطيل رمز PIN' : 'Disable PIN';
@@ -593,13 +593,13 @@ class AppLocalizations {
   String get settingsPrivacySecurityTitle => isArabic ? 'الخصوصية والأمان' : 'Privacy & Security';
   String get settingsSmartDetectionTitle => isArabic ? 'الرصد الذكي' : 'Smart Detection';
   String get settingsRemindersTitle => isArabic ? 'التذكيرات' : 'Reminders';
-  String get aboutTitle => isArabic ? 'عن سبيند وايز' : 'About SpendWise';
+  String get aboutTitle => isArabic ? 'عن باي دايل' : 'About Paydial';
   String versionLabel(String version) => isArabic ? 'الإصدار $version' : 'Version $version';
   String get aboutTagline => isArabic ? 'إدارة ميزانية خاصة دون إنترنت' : 'Private, offline budgeting';
   String get aboutPrivacyTitle => isArabic ? 'خصوصيتك' : 'Your privacy';
   String get aboutPrivacyOffline => isArabic
-      ? 'تبقى جميع بياناتك على هذا الهاتف. لا يملك سبيند وايز صلاحية الاتصال بالإنترنت.'
-      : 'All your data stays on this phone. SpendWise has no internet access.';
+      ? 'تبقى جميع بياناتك على هذا الهاتف. لا يملك باي دايل صلاحية الاتصال بالإنترنت.'
+      : 'All your data stays on this phone. Paydial has no internet access.';
   String get aboutPrivacyNoTracking => isArabic
       ? 'لا حسابات ولا إعلانات ولا تحليلات ولا تتبع.'
       : 'No accounts, ads, analytics or tracking.';
@@ -665,8 +665,8 @@ class AppLocalizations {
       ? 'إذن قراءة إشعارات المعاملات'
       : 'Local Notification Access';
   String get smartDetectionDisclosureBody => isArabic
-      ? 'عند التفعيل، يقرأ سبيند وايز إشعارات البنوك والمحافظ (بما فيها إشعارات الرسائل القصيرة) محلياً على جهازك فقط لتجهيز المعاملات لتأكيدها قبل الحفظ.\n\nتتم المعالجة بدون إنترنت بالكامل ولا تغادر بياناتك هاتفك أبداً.\n\nملاحظة لأجهزة أندرويد 13+: عند التثبيت خارج المتجر، افتح معلومات التطبيق > النقاط الثلاث > السماح بالإعدادات المقيدة إذا كان الخيار معطلاً.'
-      : 'When enabled, SpendWise reads incoming bank, wallet, and SMS notifications strictly on-device to pre-fill transactions for your review before saving.\n\nAll parsing happens 100% offline—message data never leaves your phone.\n\nAndroid 13+ note: if sideloaded, open App Info > ⋮ > Allow restricted settings if the toggle is greyed out.';
+      ? 'عند التفعيل، يقرأ باي دايل إشعارات البنوك والمحافظ (بما فيها إشعارات الرسائل القصيرة) محلياً على جهازك فقط لتجهيز المعاملات لتأكيدها قبل الحفظ.\n\nتتم المعالجة بدون إنترنت بالكامل ولا تغادر بياناتك هاتفك أبداً.\n\nملاحظة لأجهزة أندرويد 13+: عند التثبيت خارج المتجر، افتح معلومات التطبيق > النقاط الثلاث > السماح بالإعدادات المقيدة إذا كان الخيار معطلاً.'
+      : 'When enabled, Paydial reads incoming bank, wallet, and SMS notifications strictly on-device to pre-fill transactions for your review before saving.\n\nAll parsing happens 100% offline—message data never leaves your phone.\n\nAndroid 13+ note: if sideloaded, open App Info > ⋮ > Allow restricted settings if the toggle is greyed out.';
   String get enableSmartDetection => isArabic ? 'تفعيل' : 'Enable';
   String get sourceAppsTitle => isArabic ? 'تطبيقات البنوك والمحافظ' : 'Bank & Wallet Apps';
   String sourceAppsSubtitle(int watchedCount) => isArabic
@@ -677,8 +677,8 @@ class AppLocalizations {
           ? 'SMS only • no apps added'
           : 'SMS + $watchedCount ${watchedCount == 1 ? 'app' : 'apps'}');
   String get sourceAppsExplainer => isArabic
-      ? 'يفحص سبيند وايز الرسائل القصيرة دائماً، لكنه لا يقبل إلا ما يبدو كإشعار بنكي حقيقي (مبلغ بعملة + بيانات بطاقة أو حساب). إشعارات التطبيقات الأخرى يتم تجاهلها ما لم تضف التطبيق هنا.'
-      : 'SpendWise always checks SMS, but only accepts messages that look like real bank alerts (an amount with a currency plus card or account details). Notifications from other apps are ignored unless you add the app here.';
+      ? 'يفحص باي دايل الرسائل القصيرة دائماً، لكنه لا يقبل إلا ما يبدو كإشعار بنكي حقيقي (مبلغ بعملة + بيانات بطاقة أو حساب). إشعارات التطبيقات الأخرى يتم تجاهلها ما لم تضف التطبيق هنا.'
+      : 'Paydial always checks SMS, but only accepts messages that look like real bank alerts (an amount with a currency plus card or account details). Notifications from other apps are ignored unless you add the app here.';
   String get suggestedSourceAppsHeader => isArabic ? 'مقترحة' : 'Suggested';
   String suggestedSourceAppHint(int count) => isArabic
       ? (count == 1 ? 'أرسل إشعاراً مالياً واحداً' : 'أرسل $count إشعارات مالية')
@@ -757,7 +757,7 @@ class AppLocalizations {
   String get enterAppPin => isArabic ? 'أدخل رمز PIN' : 'Enter App PIN';
   String get setAppPin => isArabic ? 'تعيين رمز PIN من 4 أرقام' : 'Set a 4-Digit PIN';
   String get confirmAppPin => isArabic ? 'تأكيد رمز PIN' : 'Confirm Your PIN';
-  String get unlockFinancesSubtitle => isArabic ? 'افتح حسابك المالي في سبيند وايز' : 'Unlock your SpendWise finances';
+  String get unlockFinancesSubtitle => isArabic ? 'افتح حسابك المالي في باي دايل' : 'Unlock your Paydial finances';
   String get choosePinSubtitle => isArabic ? 'اختر رمزاً من 4 أرقام لحماية تطبيقك' : 'Choose a 4-digit code to protect your app';
   String get reenterPinSubtitle => isArabic ? 'أعد إدخال رمز PIN المكون من 4 أرقام' : 'Re-enter your 4-digit PIN';
   String get pinsDoNotMatch => isArabic ? 'الرمزان غير متطابقين. حاول ثانية.' : 'PINs do not match. Try again.';
@@ -891,7 +891,7 @@ class AppLocalizations {
   String get newBudgetCycleNotificationBody => isArabic
       ? 'بدأت دورة ميزانيتك الجديدة اليوم! راجع مخصصات فئاتك.'
       : 'Your new budget cycle starts today! Review your category allocations.';
-  String get eveningCheckinNotificationTitle => isArabic ? 'تسجيل مصاريف المساء مع سبيند وايز 🌙' : 'SpendWise Evening Check-in 🌙';
+  String get eveningCheckinNotificationTitle => isArabic ? 'تسجيل مصاريف المساء مع باي دايل 🌙' : 'Paydial Evening Check-in 🌙';
   String get eveningCheckinNotificationBody => isArabic
       ? 'هل أنفقت أي شيء اليوم؟ انقر لتسجيل مصروفاتك.'
       : 'Did you spend anything today? Tap to record your expenses.';

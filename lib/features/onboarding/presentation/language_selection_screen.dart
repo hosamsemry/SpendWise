@@ -69,7 +69,7 @@ class _LanguageSelectionScreenState
 
                 // Dual-language header
                 Text(
-                  'Welcome to SpendWise\nمرحباً بك في سبيند وايز',
+                  'Welcome to Paydial\nمرحباً بك في باي دايل',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,

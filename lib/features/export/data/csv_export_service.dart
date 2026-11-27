@@ -130,7 +130,7 @@ class CsvExportService {
       ShareParams(
         files: [XFile(file.path)],
         subject: subject,
-        text: 'Exported from SpendWise: $subject',
+        text: 'Exported from Paydial: $subject',
       ),
     );
 
