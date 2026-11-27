@@ -744,12 +744,35 @@ class AppLocalizations {
       : 'Wrong password, or the file is damaged.';
   String get unlockBackupAction => isArabic ? 'فتح' : 'Unlock';
   String get restoreBackupDialogTitle => isArabic ? 'استعادة النسخة الاحتياطية؟' : 'Restore Backup?';
-  String get restoreWarning => isArabic
-      ? '⚠️ تحذير: الاستعادة ستستبدل جميع البيانات المالية الحالية على هذا الجهاز بمحتويات هذه النسخة. لا يمكن التراجع عن هذا الإجراء.'
-      : '⚠️ Warning: Restoring will overwrite all current financial data on this device with the contents of this backup. This cannot be undone.';
+  /// Shown in the restore dialog; [undoable] when a safety copy will be kept.
+  String restoreWarning({required bool undoable}) => isArabic
+      ? (undoable
+          ? '⚠️ تحذير: الاستعادة ستستبدل جميع البيانات المالية الحالية على هذا الجهاز بمحتويات هذه النسخة. تُحفظ بياناتك الحالية كنسخة أمان، فيمكنك التراجع من هذه الصفحة.'
+          : '⚠️ تحذير: الاستعادة ستستبدل جميع البيانات المالية الحالية على هذا الجهاز بمحتويات هذه النسخة. لا يمكن التراجع عن هذا الإجراء.')
+      : (undoable
+          ? '⚠️ Warning: Restoring will overwrite all current financial data on this device with the contents of this backup. Your current data is kept as a safety copy, so you can undo this from this page.'
+          : '⚠️ Warning: Restoring will overwrite all current financial data on this device with the contents of this backup. This cannot be undone.');
+  String get keepSafetyCopy => isArabic ? 'الاحتفاظ بنسخة أمان' : 'Keep a safety copy';
+  String get keepSafetyCopySubtitle => isArabic
+      ? 'حفظ بياناتك الحالية أولاً حتى يمكنك التراجع عن الاستعادة'
+      : 'Save your current data first so you can undo the restore';
   String restoreCompleted(int txCount, int catCount) => isArabic
       ? 'تمت الاستعادة بنجاح! تم استرجاع $txCount معاملة و $catCount فئة.'
       : 'Restore completed! Restored $txCount transactions and $catCount categories.';
+  String get undoRestoreTitle => isArabic ? 'التراجع عن آخر استعادة' : 'Undo last restore';
+  String undoRestoreSubtitle(String date) => isArabic
+      ? 'إرجاع بياناتك كما كانت قبل الاستعادة في $date'
+      : 'Bring back your data from before the restore on $date';
+  String get undoRestoreDialogTitle => isArabic ? 'التراجع عن آخر استعادة؟' : 'Undo last restore?';
+  String undoRestoreDialogBody(String date) => isArabic
+      ? 'ستعود بياناتك كما كانت قبل الاستعادة في $date، بما في ذلك رمز PIN. سيُحذف كل ما أُضيف بعد تلك الاستعادة.'
+      : 'Your data goes back to how it was before the restore on $date, including your PIN. Anything added since that restore will be removed.';
+  String get undoRestoreAction => isArabic ? 'تراجع' : 'Undo restore';
+  String get undoRestoreDone => isArabic
+      ? 'تم التراجع عن الاستعادة. عادت بياناتك السابقة.'
+      : 'Restore undone. Your previous data is back.';
+  String undoRestoreFailed(String e) =>
+      isArabic ? 'تعذّر التراجع عن الاستعادة: $e' : 'Could not undo the restore: $e';
   String get preservePin => isArabic ? 'الحفاظ على رمز PIN الحالي' : 'Preserve device PIN lock';
   String get preservePinSubtitle => isArabic ? 'الاحتفاظ برمز PIN المفعل حالياً' : 'Keep your currently active PIN code';
 

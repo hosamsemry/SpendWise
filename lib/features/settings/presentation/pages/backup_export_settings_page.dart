@@ -13,6 +13,7 @@ import 'package:money_tracker/core/providers/reminder_provider.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/core/providers/theme_provider.dart';
 import 'package:money_tracker/core/providers/transaction_providers.dart';
+import 'package:money_tracker/features/backup/data/safety_snapshot_store.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:money_tracker/features/backup/presentation/backup_password_dialogs.dart';
 import 'package:money_tracker/features/backup/presentation/backup_providers.dart';
@@ -30,6 +31,97 @@ class BackupExportSettingsPage extends ConsumerStatefulWidget {
 
 class _BackupExportSettingsPageState
     extends ConsumerState<BackupExportSettingsPage> {
+  /// The data saved automatically before the last restore, if any.
+  SafetySnapshot? _undoSnapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUndoSnapshot();
+  }
+
+  Future<void> _loadUndoSnapshot() async {
+    final snapshot =
+        await ref.read(backupServiceProvider).latestSafetySnapshot();
+    if (mounted) setState(() => _undoSnapshot = snapshot);
+  }
+
+  String _formatSnapshotDate(DateTime at) => DateFormat(
+        'MMM d, yyyy • h:mm a',
+        context.l10n.isArabic ? 'ar' : 'en',
+      ).format(at);
+
+  /// Reloads everything that depends on the database after its contents were
+  /// replaced (by a restore or an undo).
+  Future<void> _refreshAfterRestore() async {
+    ref.read(selectedCycleProvider.notifier).select(null);
+    ref.invalidate(budgetCycleStartDayProvider);
+    ref.invalidate(appLanguageProvider);
+    ref.invalidate(primaryCurrencyProvider);
+    ref.invalidate(currentCycleProvider);
+    ref.invalidate(allCyclesProvider);
+    ref.invalidate(cycleSummaryProvider);
+    ref.invalidate(transactionsForCycleProvider);
+
+    final cycleRepo = ref.read(budgetCycleRepositoryProvider);
+    final currentCycle = await cycleRepo.getCycleForDateOrNull(DateTime.now());
+    if (currentCycle != null) {
+      await cycleRepo.syncCategoriesForCycle(currentCycle.id);
+      await ref
+          .read(savingsSyncServiceProvider)
+          .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
+    }
+
+    ref.read(refreshTriggerProvider.notifier).trigger();
+    ref.invalidate(themeModeProvider);
+    ref.invalidate(dailyReminderProvider);
+    await _loadUndoSnapshot();
+  }
+
+  Future<void> _undoLastRestore() async {
+    final snapshot = _undoSnapshot;
+    if (snapshot == null) return;
+    final l10n = context.l10n;
+    final date = _formatSnapshotDate(snapshot.createdAt);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(l10n.undoRestoreDialogTitle),
+        content: Text(l10n.undoRestoreDialogBody(date)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: Text(l10n.undoRestoreAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(backupServiceProvider).undoLastRestore();
+      await _refreshAfterRestore();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.undoRestoreDone)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.undoRestoreFailed(e.toString())),
+            backgroundColor: context.overspentColor,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _exportAllTransactions() async {
     try {
       final exportService = ref.read(csvExportServiceProvider);
@@ -153,6 +245,7 @@ class _BackupExportSettingsPageState
       if (!mounted) return;
 
       bool keepCurrentPin = true;
+      bool keepSafetyCopy = true;
       final shouldRestore = await showDialog<bool>(
         context: context,
         builder: (dialogCtx) => StatefulBuilder(
@@ -255,9 +348,29 @@ class _BackupExportSettingsPageState
                         });
                       },
                     ),
+                    CheckboxListTile(
+                      key: const ValueKey('keep_safety_copy_checkbox'),
+                      contentPadding: EdgeInsets.zero,
+                      value: keepSafetyCopy,
+                      title: Text(
+                        context.l10n.keepSafetyCopy,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        context.l10n.keepSafetyCopySubtitle,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      activeColor: context.primaryColor,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          keepSafetyCopy = val ?? true;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 12),
                     Text(
-                      context.l10n.restoreWarning,
+                      context.l10n.restoreWarning(undoable: keepSafetyCopy),
                       style: TextStyle(
                         color: context.overspentColor,
                         fontSize: 12,
@@ -293,34 +406,12 @@ class _BackupExportSettingsPageState
       await backupService.restoreFromBackup(
         backupData,
         keepCurrentPin: keepCurrentPin,
+        takeSafetySnapshot: keepSafetyCopy,
       );
 
-      ref.read(selectedCycleProvider.notifier).select(null);
-      ref.invalidate(budgetCycleStartDayProvider);
-      ref.invalidate(appLanguageProvider);
-      ref.invalidate(primaryCurrencyProvider);
-      ref.invalidate(currentCycleProvider);
-      ref.invalidate(allCyclesProvider);
-      ref.invalidate(cycleSummaryProvider);
-      ref.invalidate(transactionsForCycleProvider);
-
-      final cycleRepo = ref.read(budgetCycleRepositoryProvider);
-      final currentCycle = await cycleRepo.getCycleForDateOrNull(
-        DateTime.now(),
-      );
-      if (currentCycle != null) {
-        await cycleRepo.syncCategoriesForCycle(currentCycle.id);
-        await ref
-            .read(savingsSyncServiceProvider)
-            .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
-      }
-
-      ref.read(refreshTriggerProvider.notifier).trigger();
-      ref.invalidate(themeModeProvider);
-      ref.invalidate(dailyReminderProvider);
+      await _refreshAfterRestore();
 
       if (mounted) {
-        setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -417,6 +508,33 @@ class _BackupExportSettingsPageState
                 trailing: const Icon(Icons.file_open_outlined),
                 onTap: _restoreBackup,
               ),
+              if (_undoSnapshot != null) ...[
+                const Divider(indent: 72, endIndent: 16),
+                ListTile(
+                  key: const ValueKey('undo_last_restore_tile'),
+                  leading: CircleAvatar(
+                    backgroundColor: context.warningLightColor,
+                    child: Icon(
+                      Icons.undo_rounded,
+                      color: context.warningColor,
+                    ),
+                  ),
+                  title: Text(
+                    context.l10n.undoRestoreTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    context.l10n.undoRestoreSubtitle(
+                      _formatSnapshotDate(_undoSnapshot!.createdAt),
+                    ),
+                    style: TextStyle(color: context.textSecondary, fontSize: 13),
+                  ),
+                  onTap: _undoLastRestore,
+                ),
+              ],
               const Divider(indent: 72, endIndent: 16),
               ListTile(
                 leading: CircleAvatar(
