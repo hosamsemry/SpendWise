@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render SpendWise launcher icons, splash and logo PNGs from the SVG sources.
+"""Render Paydial launcher icons, splash and logo PNGs from the SVG sources.
 
 Needs Google Chrome (headless) and ImageMagick 6 (`convert`) on PATH.
 Run from anywhere:  python3 tool/branding/render.py
@@ -14,8 +14,8 @@ RES = ROOT / "android/app/src/main/res"
 IMAGES = ROOT / "assets/images"
 FONT = ROOT / "assets/fonts/Outfit-ExtraBold.ttf"
 
-OBSIDIAN = "#0B0B0E"
-WORDMARK = "#C9A23F"  # mid gold: readable on the light (#F9F9FB) and dark (#0B0B0E) splash
+TILE = "#0D5A4E"  # deep pine icon tile
+WORDMARK = "#2E8C7A"  # mid pine: readable on the light (#F6F6F3) and dark (#1A1D20) splash
 
 MARK = (HERE / "mark.svg").read_text()
 MARK_MONO = (HERE / "mark_mono.svg").read_text()
@@ -35,8 +35,8 @@ def square(inner: str, bg: str = "") -> str:
 
 
 def badge(scale: float = 1.4) -> str:
-    """Mark on an obsidian disc, so it reads on light and dark screens."""
-    return f'<circle cx="54" cy="54" r="54" fill="{OBSIDIAN}"/>{scaled(MARK, scale)}'
+    """Mark on an pine disc, so it reads on light and dark screens."""
+    return f'<circle cx="54" cy="54" r="54" fill="{TILE}"/>{scaled(MARK, scale)}'
 
 
 def html(svg: str, w: int, h: int, extra: str = "") -> str:
@@ -54,7 +54,7 @@ def lockup(w: int, h: int, badge_px: int, font_px: int, gap: int) -> str:
         f'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">{badge()}</svg>',
         w, h,
         f'<div style="position:absolute;left:0;right:0;top:{top + badge_px + gap}px;text-align:center;'
-        f'font:800 {font_px}px/1 Outfit;letter-spacing:-0.01em;color:{WORDMARK}">SpendWise</div>',
+        f'font:800 {font_px}px/1 Outfit;letter-spacing:-0.01em;color:{WORDMARK}">Paydial</div>',
     )
 
 
@@ -93,8 +93,8 @@ def main() -> None:
         subprocess.run(["convert", str(mono_raw), "-colorspace", "gray", "-alpha", "copy",
                         "-fill", "white", "-colorize", "100", str(mono)], check=True)
 
-        # Legacy (pre-Android 8) icon: rounded obsidian tile, mark enlarged since it isn't masked.
-        tile = f'<rect x="4" y="4" width="100" height="100" rx="23" fill="{OBSIDIAN}"/>'
+        # Legacy (pre-Android 8) icon: rounded pine tile, mark enlarged since it isn't masked.
+        tile = f'<rect x="4" y="4" width="100" height="100" rx="23" fill="{TILE}"/>'
         legacy = tmp / "legacy.png"
         render(html(square(scaled(MARK, 1.3), tile).replace("<svg ", f'<svg width="{big}" height="{big}" ', 1), big, big), big, big, legacy, tmp)
 

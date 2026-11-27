@@ -2,8 +2,8 @@
   <!-- One-colour version: white shapes, black = transparent after rendering. -->
   <circle cx="54" cy="54" r="31" fill="none" stroke="#FFFFFF" stroke-width="3.2"/>
   <path d="M54,23v6" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M62.5,41 A9,9 0 1 0 54,54 A9,9 0 1 1 45.5,67" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="62.5" cy="41" r="5" fill="#FFFFFF"/>
-  <circle cx="45.5" cy="67" r="5" fill="#FFFFFF"/>
-  <circle cx="54" cy="54" r="5.5" fill="#FFFFFF" stroke="#000000" stroke-width="2.5"/>
+  <path d="M41.5,49.5 V73.5" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="54.25" cy="49.5" r="12.75" fill="none" stroke="#FFFFFF" stroke-width="7"/>
+  <path d="M53.12,50.63 L58.85,44.90" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="54.25" cy="49.5" r="3.8" fill="#FFFFFF"/>
 </svg>

@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
-  <!-- SpendWise "S handle" mark on the 108dp adaptive-icon grid; all shapes stay inside the 66dp safe zone. -->
-  <circle cx="54" cy="54" r="31" fill="none" stroke="#E5C158" stroke-width="3.2"/>
-  <path d="M54,23v6" stroke="#E5C158" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M62.5,41 A9,9 0 1 0 54,54 A9,9 0 1 1 45.5,67" fill="none" stroke="#E5C158" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="62.5" cy="41" r="5" fill="#E5C158"/>
-  <circle cx="45.5" cy="67" r="5" fill="#E5C158"/>
-  <circle cx="54" cy="54" r="5.5" fill="#A0182F" stroke="#0B0B0E" stroke-width="2.5"/>
+  <!-- Paydial mark on the 108dp adaptive-icon grid: a P whose bowl is a dial, gauge needle at 1:30 ("payday is coming"); the rim notch marks the start of each cycle. All shapes stay inside the 66dp safe zone. -->
+  <circle cx="54" cy="54" r="31" fill="none" stroke="#F4F2EC" stroke-width="3.2"/>
+  <path d="M54,23v6" stroke="#F4F2EC" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M41.5,49.5 V73.5" stroke="#F4F2EC" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="54.25" cy="49.5" r="12.75" fill="none" stroke="#F4F2EC" stroke-width="7"/>
+  <path d="M53.12,50.63 L58.85,44.90" stroke="#F4F2EC" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="54.25" cy="49.5" r="3.8" fill="#F4F2EC"/>
 </svg>
