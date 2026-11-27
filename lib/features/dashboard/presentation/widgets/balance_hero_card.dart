@@ -8,7 +8,7 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 
-class VelvetTitaniumHeroCard extends StatelessWidget {
+class BalanceHeroCard extends StatelessWidget {
   final BudgetCycle cycle;
   final CycleSummary summary;
   final DailySpendingSummary daily;
@@ -19,7 +19,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
   static const String _maskedHero = '••••••';
   static const String _maskedCompact = '••••';
 
-  const VelvetTitaniumHeroCard({
+  const BalanceHeroCard({
     super.key,
     required this.cycle,
     required this.summary,
@@ -59,98 +59,19 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark;
     final isNetPositive = summary.netRemainingTotal.inMinorUnits >= 0;
 
-    // Harmonized palette tokens for Dark (Velvet Titanium) & Light (Porcelain Silk & Champagne Gold)
-    final cardBorder = isDark
-        ? const Color(0xFFE5C158).withValues(alpha: 0.35)
-        : AppColors.border;
-
-    final cardShadows = isDark
-        ? [
-            BoxShadow(
-              color: const Color(0xFF7B1123).withValues(alpha: 0.25),
-              blurRadius: 28,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ]
-        : const <BoxShadow>[]; // light: flat card, hairline border only
-
-    final cardBaseGradient = isDark
-        ? const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF14141B),
-              Color(0xFF0F0F14),
-              Color(0xFF0B0B0E),
-            ],
-          )
-        : const LinearGradient(
-            colors: [AppColors.surface, AppColors.surface],
-          );
-
-    final ambientGlowTopRight = isDark
-        ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-        : Colors.transparent;
-
-    final ambientGlowBottomLeft = isDark
-        ? const Color(0xFF580F1A).withValues(alpha: 0.20)
-        : Colors.transparent;
-
-    final headerGold = isDark
-        ? const Color(0xFFE5C158)
-        : AppColors.textSecondary;
-
-    final textPrimary = isDark
-        ? const Color(0xFFF8FAFC)
-        : AppColors.textPrimary;
-
-    final textSecondary = isDark
-        ? const Color(0xFFB4BED0)
-        : AppColors.textSecondary;
-
-    final textMuted = isDark
-        ? const Color(0xFF8E9AB0)
-        : AppColors.textTertiary;
-
-    final overspentColor = isDark
-        ? const Color(0xFFF87171)
-        : AppColors.overspent;
-
-    final warningColor = isDark
-        ? const Color(0xFFFBBF24)
-        : AppColors.warning;
-
-    final dividerColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : AppColors.divider;
-
-    final separatorColor = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : AppColors.border;
-
-    final progressTrackColor = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : AppColors.surfaceVariant;
-
-    final paceGaugeTrackColor = isDark
-        ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-        : AppColors.surfaceVariant;
-
-    final paceGaugeProgressColor = isDark
-        ? const Color(0xFFE5C158)
-        : AppColors.gold;
-
-    final daysLeftTextColor = isDark
-        ? textPrimary
-        : AppColors.gold;
+    // Flat card on the surface colour with a hairline border. Colour is kept
+    // for meaning: the accent tracks the cycle, red only when overspent.
+    final accent = context.primaryColor;
+    final textPrimary = context.textPrimary;
+    final textSecondary = context.textSecondary;
+    final textMuted = context.textTertiary;
+    final overspentColor = context.overspentColor;
+    final warningColor = context.warningColor;
+    final dividerColor = context.dividerColor;
+    final separatorColor = context.borderColor;
+    final progressTrackColor = context.surfaceVariantColor;
 
     // Cycle days calculations
     final totalCycleDays = math.max(
@@ -171,90 +92,22 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(isDark ? 24 : 18),
-        border: Border.all(
-          color: cardBorder,
-          width: isDark ? 1.2 : 1,
-        ),
-        boxShadow: cardShadows,
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: context.borderColor),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(isDark ? 23 : 17),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge - 1),
         child: Stack(
           children: [
-            // 1. Base Layer Gradient
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: cardBaseGradient,
-                ),
-              ),
-            ),
-
-            // 2. Ambient Metallic Glow Mesh
-            Positioned(
-              top: -65,
-              right: -55,
-              width: 230,
-              height: 230,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      ambientGlowTopRight,
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -60,
-              left: -50,
-              width: 190,
-              height: 190,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      ambientGlowBottomLeft,
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Subtle top-edge sheen
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 1,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      isDark
-                          ? const Color(0xFFE5C158).withValues(alpha: 0.3)
-                          : Colors.transparent,
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
             // 3. Main Content
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(isDark ? 23 : 17),
-                splashColor: (isDark ? const Color(0xFFE5C158) : AppColors.primary).withValues(alpha: 0.06),
-                highlightColor: (isDark ? const Color(0xFFE5C158) : AppColors.primary).withValues(alpha: 0.03),
+                borderRadius:
+                    BorderRadius.circular(AppTheme.radiusLarge - 1),
+                splashColor: accent.withValues(alpha: 0.06),
+                highlightColor: accent.withValues(alpha: 0.03),
                 onTap: onToggleAmountsVisibility == null
                     ? null
                     : () {
@@ -280,10 +133,10 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.9,
-                                      color: headerGold,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.8,
+                                      color: textSecondary,
                                     ),
                                   ),
                                 ),
@@ -293,7 +146,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                       ? Icons.visibility_off_rounded
                                       : Icons.visibility_outlined,
                                   size: 14,
-                                  color: isAmountsHidden ? headerGold : textMuted,
+                                  color: isAmountsHidden ? accent : textMuted,
                                 ),
                               ],
                             ),
@@ -310,23 +163,9 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: !isNetPositive
-                                    ? (isDark
-                                        ? overspentColor.withValues(alpha: 0.16)
-                                        : AppColors.overspentLight)
-                                    : (isDark
-                                        ? const Color(0xFF7B1123).withValues(alpha: 0.35)
-                                        : AppColors.surfaceVariant),
+                                    ? context.overspentLightColor
+                                    : context.surfaceVariantColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: !isNetPositive
-                                      ? (isDark
-                                          ? overspentColor.withValues(alpha: 0.5)
-                                          : Colors.transparent)
-                                      : (isDark
-                                          ? const Color(0xFFE5C158).withValues(alpha: 0.45)
-                                          : Colors.transparent),
-                                  width: 0.9,
-                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -341,9 +180,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                           : (!isHistoricalCycle &&
                                                   daily.isOverDailyPace)
                                               ? warningColor
-                                              : (isDark
-                                                  ? const Color(0xFFE5C158)
-                                                  : AppColors.income),
+                                              : context.incomeColor,
                                     ),
                                   ),
                                   const SizedBox(width: 5),
@@ -386,9 +223,7 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                       letterSpacing: -0.2,
                                       color: !isNetPositive
                                           ? overspentColor
-                                          : (isDark
-                                              ? const Color(0xFFF8FAFC)
-                                              : AppColors.textPrimary),
+                                          : textPrimary,
                                     ),
                                   ),
                                 ],
@@ -414,9 +249,9 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                           .toFormattedString(showSign: true),
                                   keySuffix: 'remaining',
                                   style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: isAmountsHidden ? 2.0 : -0.5,
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: isAmountsHidden ? 2.0 : -0.8,
                                     color: isNetPositive
                                         ? textPrimary
                                         : overspentColor,
@@ -445,9 +280,9 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                           _PaceRingGauge(
                             cycleProgress: cycleTimeProgress,
                             daysRemaining: daysRemaining,
-                            progressColor: paceGaugeProgressColor,
-                            trackColor: paceGaugeTrackColor,
-                            textColor: daysLeftTextColor,
+                            progressColor: accent,
+                            trackColor: progressTrackColor,
+                            textColor: accent,
                             subtextColor: textSecondary,
                           ),
                         ],
@@ -469,30 +304,8 @@ class VelvetTitaniumHeroCard extends StatelessWidget {
                                 : (summary.totalSpent.inMinorUnits > 0
                                     ? 1.0
                                     : 0.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: isNetPositive
-                                      ? (isDark
-                                          ? const [
-                                              Color(0xFFE5C158),
-                                              Color(0xFFF7E29B),
-                                            ]
-                                          : const [
-                                              AppColors.primary,
-                                              AppColors.primary,
-                                            ])
-                                      : isDark
-                                          ? const [
-                                              Color(0xFFDC2626),
-                                              Color(0xFFEF4444),
-                                            ]
-                                          : const [
-                                              AppColors.overspent,
-                                              AppColors.overspent,
-                                            ],
-                                ),
-                              ),
+                            child: ColoredBox(
+                              color: isNetPositive ? accent : overspentColor,
                             ),
                           ),
                         ),
@@ -735,7 +548,7 @@ class _RingGaugePainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, trackPaint);
 
-    // Progress Arc (Champagne Gold)
+    // Progress arc
     final progressPaint = Paint()
       ..color = progressColor
       ..style = PaintingStyle.stroke

@@ -36,12 +36,12 @@ class _RemindersSettingsPageState extends ConsumerState<RemindersSettingsPage> {
                           children: [
                             CircleAvatar(
                               backgroundColor: reminderSettings.isEnabled
-                                  ? Colors.indigo.withValues(alpha: 0.12)
-                                  : Colors.grey.withValues(alpha: 0.12),
+                                  ? context.primaryLightColor
+                                  : context.surfaceVariantColor,
                               child: Icon(
                                 Icons.notifications_active_outlined,
                                 color: reminderSettings.isEnabled
-                                    ? Colors.indigo
+                                    ? context.primaryColor
                                     : context.textSecondary,
                               ),
                             ),

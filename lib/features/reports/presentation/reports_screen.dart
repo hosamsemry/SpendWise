@@ -185,25 +185,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       avatar: Icon(
         icon,
         size: 16,
-        color: isSelected
-            ? (context.isDark ? Colors.white : AppColors.primary)
-            : context.textSecondary,
+        color: isSelected ? context.primaryColor : context.textSecondary,
       ),
       label: Text(label),
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-        color: isSelected
-            ? (context.isDark ? Colors.white : AppColors.primary)
-            : context.textPrimary,
+        color: isSelected ? context.primaryColor : context.textPrimary,
       ),
       backgroundColor: context.surfaceColor,
-      selectedColor: context.isDark
-          ? AppColorsDark.gold.withValues(alpha: 0.18)
-          : AppColors.primaryLight,
+      selectedColor: context.primaryLightColor,
       side: BorderSide(
         color: isSelected
-            ? (context.isDark ? AppColorsDark.gold : AppColors.primary)
+            ? context.primaryColor
             : context.borderColor,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -462,9 +456,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: (sharePct / 100.0).clamp(0.0, 1.0),
-                          backgroundColor: isDark
-                              ? context.surfaceVariantColor
-                              : Colors.grey.shade100,
+                          backgroundColor: context.surfaceVariantColor,
                           valueColor: AlwaysStoppedAnimation<Color>(sliceColor),
                           minHeight: 6,
                         ),
@@ -831,9 +823,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       value: hasBudget
                           ? (pct! / 100.0).clamp(0.0, 1.0)
                           : (b.spentAmount.inMinorUnits > 0 ? 1.0 : 0.0),
-                      backgroundColor: context.isDark
-                          ? context.surfaceVariantColor
-                          : Colors.grey.shade100,
+                      backgroundColor: context.surfaceVariantColor,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         isOver ? context.overspentColor : context.primaryColor,
                       ),
@@ -925,18 +915,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.08),
+                  color: context.savingsLightColor,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.blue.withValues(alpha: 0.25),
-                  ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
                       size: 18,
-                      color: Colors.blue.shade700,
+                      color: context.savingsColor,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -944,9 +931,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         context.l10n.noTransactionsPreviousCycle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: context.isDark
-                              ? Colors.blue.shade200
-                              : Colors.blue.shade800,
+                          color: context.textPrimary,
                         ),
                       ),
                     ),
@@ -958,15 +943,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: context.isDark
-                    ? context.surfaceVariantColor
-                    : Colors.grey.shade100,
+                color: context.surfaceVariantColor,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: context.isDark
-                      ? context.borderColor
-                      : Colors.grey.shade300,
-                ),
               ),
               child: Row(
                 children: [
@@ -1242,7 +1220,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: prevMinor == 0
-                                  ? Colors.blue.withValues(alpha: 0.12)
+                                  ? context.savingsLightColor
                                   : (diffMinor > 0
                                       ? context.overspentColor.withValues(
                                           alpha: 0.12,
@@ -1251,9 +1229,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                           ? context.incomeColor.withValues(
                                               alpha: 0.12,
                                             )
-                                          : Colors.grey.withValues(
-                                              alpha: 0.12,
-                                            ))),
+                                          : context.surfaceVariantColor)),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -1268,7 +1244,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: prevMinor == 0
-                                    ? Colors.blue.shade700
+                                    ? context.savingsColor
                                     : (diffMinor > 0
                                         ? context.overspentColor
                                         : (diffMinor < 0

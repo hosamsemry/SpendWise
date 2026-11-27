@@ -117,8 +117,8 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
                           children: [
                             CircleAvatar(
                               backgroundColor: isPinEnabled
-                                  ? context.primaryColor.withValues(alpha: 0.12)
-                                  : Colors.grey.withValues(alpha: 0.12),
+                                  ? context.primaryLightColor
+                                  : context.surfaceVariantColor,
                               child: Icon(
                                 isPinEnabled
                                     ? Icons.lock_rounded

@@ -82,7 +82,7 @@ class _InitialCycleSetupScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.failedToSave(e.toString())),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: context.overspentColor,
           ),
         );
       }

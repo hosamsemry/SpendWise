@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 
@@ -14,8 +13,9 @@ class FloatingDockItem {
   });
 }
 
-/// A bespoke floating pill navigation dock with subtle blur, tactile active pill,
-/// and harmonized light/dark luxury styling.
+/// The app's bottom navigation: a flat bar on the surface colour with a
+/// hairline top border. The selected tab gets a small tinted indicator behind
+/// its icon and an accent-coloured label; nothing floats, blurs or glows.
 class FloatingDockNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -30,131 +30,71 @@ class FloatingDockNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark;
-
-    return ColoredBox(
-      color: context.backgroundColor,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        border: Border(top: BorderSide(color: context.borderColor)),
+      ),
       child: SafeArea(
         top: false,
-        left: false,
-        right: false,
-        bottom: true,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.45)
-                      : AppColors.primary.withValues(alpha: 0.06),
-                  blurRadius: isDark ? 24 : 16,
-                  offset: Offset(0, isDark ? 8 : 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xEB15151E)
-                        : const Color(0xF5FFFFFF),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColorsDark.gold.withValues(alpha: 0.22)
-                          : AppColors.border,
-                      width: 1.1,
-                    ),
-                  ),
-                  child: Row(
-                    children: List.generate(items.length, (index) {
-                      final item = items[index];
-                      final isSelected = index == selectedIndex;
+          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = index == selectedIndex;
+              final color =
+                  isSelected ? context.primaryColor : context.textSecondary;
 
-                      return Expanded(
-                        child: Semantics(
-                          selected: isSelected,
-                          button: true,
-                          label: item.label,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(22),
-                            onTap: () => onDestinationSelected(index),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutCubic,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? (isDark
-                                        ? AppColorsDark.gold.withValues(
-                                            alpha: 0.14,
-                                          )
-                                        : AppColors.primaryLight)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(22),
-                                border: isSelected
-                                    ? Border.all(
-                                        color: isDark
-                                            ? AppColorsDark.gold.withValues(
-                                                alpha: 0.35,
-                                              )
-                                            : Colors.transparent,
-                                        width: 1,
-                                      )
-                                    : Border.all(
-                                        color: Colors.transparent,
-                                        width: 1,
-                                      ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    isSelected ? item.selectedIcon : item.icon,
-                                    size: 22,
-                                    color: isSelected
-                                        ? context.primaryColor
-                                        : context.textSecondary,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    item.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      letterSpacing: -0.1,
-                                      color: isSelected
-                                          ? context.primaryColor
-                                          : context.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
+              return Expanded(
+                child: Semantics(
+                  selected: isSelected,
+                  button: true,
+                  label: item.label,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
+                    onTap: () => onDestinationSelected(index),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutCubic,
+                            width: 56,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? context.primaryLightColor
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Icon(
+                              isSelected ? item.selectedIcon : item.icon,
+                              size: 22,
+                              color: color,
                             ),
                           ),
-                        ),
-                      );
-                    }),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight:
+                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
           ),
         ),
       ),

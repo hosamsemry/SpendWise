@@ -487,12 +487,12 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
                   key: ValueKey('pending_confirm_${widget.item.id}'),
                   onPressed: _isSaving ? null : _confirm,
                   icon: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: context.onPrimaryColor,
                           ),
                         )
                       : const Icon(Icons.check_rounded, size: 18),

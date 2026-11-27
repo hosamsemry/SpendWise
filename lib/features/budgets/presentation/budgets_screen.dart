@@ -222,7 +222,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: context.isDark ? Colors.white : AppColors.textPrimary,
+                    color: context.textPrimary,
                   ),
                   decoration: InputDecoration(
                     labelText: context.l10n.budgetAmountForCycle,
@@ -501,7 +501,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: context.overspentColor,
-              foregroundColor: Colors.white,
+              foregroundColor: context.onOverspentColor,
             ),
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);

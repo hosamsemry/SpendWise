@@ -38,31 +38,10 @@ class CategoryDonutChart extends StatefulWidget {
     required this.onCategorySelected,
   });
 
-  static const List<Color> _darkPalette = [
-    Color(0xFFE5C158), // Champagne Gold
-    Color(0xFF10B981), // Emerald Mint
-    Color(0xFF60A5FA), // Sapphire Sky
-    Color(0xFFF97316), // Warm Coral Amber
-    Color(0xFFA78BFA), // Soft Amethyst
-    Color(0xFFF43F5E), // Velvet Rose
-    Color(0xFF2DD4BF), // Teal Aqua
-    Color(0xFFFBBF24), // Sunlit Honey
-  ];
-
-  static const List<Color> _lightPalette = [
-    Color(0xFFB8860B), // Rich Metallic Gold
-    Color(0xFF059669), // Deep Emerald
-    Color(0xFF2563EB), // Royal Cobalt
-    Color(0xFFEA580C), // Burnt Terracotta
-    Color(0xFF7C3AED), // Deep Violet
-    Color(0xFFE11D48), // Crimson Rose
-    Color(0xFF0D9488), // Deep Teal
-    Color(0xFFD97706), // Warm Amber
-  ];
-
-  /// Returns a harmonious, theme-adapted color for category index [index].
+  /// Returns the theme's chart colour for category index [index].
   static Color colorForIndex(int index, {required bool isDark}) {
-    final palette = isDark ? _darkPalette : _lightPalette;
+    final palette =
+        isDark ? AppTheme.chartPaletteDark : AppTheme.chartPaletteLight;
     return palette[index % palette.length];
   }
 
@@ -264,9 +243,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart>
                             baseStrokeWidth: _baseStrokeWidth,
                             selectedStrokeWidth: _selectedStrokeWidth,
                             selectedPopOut: _selectedPopOut,
-                            trackColor: isDark
-                                ? context.surfaceVariantColor.withValues(alpha: 0.45)
-                                : Colors.grey.shade100,
+                            trackColor: context.surfaceVariantColor,
                             isDark: isDark,
                           ),
                         );

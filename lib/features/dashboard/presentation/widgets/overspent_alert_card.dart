@@ -83,9 +83,7 @@ class OverspentAlertCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: context.isDark
-                          ? context.crimsonLightColor.withValues(alpha: 0.7)
-                          : context.overspentLightColor,
+                      color: context.overspentLightColor,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -287,7 +285,6 @@ class OverspentAlertCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (overspentBudgets.isEmpty) return const SizedBox.shrink();
 
-    final isDark = context.isDark;
     final categoryLine = _buildCategorySummaryLine(context);
 
     return Padding(
@@ -301,12 +298,10 @@ class OverspentAlertCard extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark
-                  ? context.crimsonLightColor.withValues(alpha: 0.6)
-                  : context.overspentLightColor,
+              color: context.overspentLightColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark ? context.crimsonColor : Colors.red.shade200,
+                color: context.overspentColor.withValues(alpha: 0.35),
               ),
             ),
             child: Row(

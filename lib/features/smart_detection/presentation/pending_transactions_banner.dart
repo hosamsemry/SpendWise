@@ -111,10 +111,10 @@ class PendingTransactionsBanner extends ConsumerWidget {
                       ),
                       child: Text(
                         context.l10n.reviewAndConfirm,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: context.onPrimaryColor,
                         ),
                       ),
                     ),

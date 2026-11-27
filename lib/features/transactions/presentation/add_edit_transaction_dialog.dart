@@ -676,18 +676,14 @@ class _AddEditTransactionDialogState
                 backgroundColor: _type == TransactionType.expense
                     ? context.primaryColor
                     : context.incomeColor,
-                foregroundColor: _type == TransactionType.expense && context.isDark
-                    ? Colors.black
-                    : Colors.white,
+                foregroundColor: context.onPrimaryColor,
               ),
               child: _isSaving
                   ? SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                        color: _type == TransactionType.expense
-                            ? context.onPrimaryColor
-                            : Colors.white,
+                        color: context.onPrimaryColor,
                         strokeWidth: 2,
                       ),
                     )

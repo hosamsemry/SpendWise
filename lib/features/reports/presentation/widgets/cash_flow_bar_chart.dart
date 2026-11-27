@@ -22,7 +22,8 @@ class _CashFlowBarChartState extends State<CashFlowBarChart> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final incomeColor = isDark ? AppColorsDark.income : AppColors.income;
-    final expenseColor = isDark ? AppColorsDark.overspent : AppColors.overspent;
+    // Spending is neutral; red is reserved for going over budget.
+    final expenseColor = isDark ? AppColorsDark.expense : AppColors.expense;
     final textSecondary = isDark
         ? AppColorsDark.textSecondary
         : AppColors.textSecondary;

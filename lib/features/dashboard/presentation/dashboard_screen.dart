@@ -24,7 +24,7 @@ import 'package:money_tracker/features/transactions/domain/transaction_model.dar
 import 'package:money_tracker/features/transactions/presentation/add_edit_transaction_dialog.dart';
 import 'widgets/near_limit_alert_card.dart';
 import 'widgets/overspent_alert_card.dart';
-import 'widgets/velvet_titanium_hero_card.dart';
+import 'widgets/balance_hero_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final VoidCallback onNavigateToTransactions;
@@ -186,7 +186,7 @@ class DashboardScreen extends ConsumerWidget {
                               loading: () => const SizedBox.shrink(),
                               error: (err, stack) => const SizedBox.shrink(),
                               data: (daily) {
-                                return VelvetTitaniumHeroCard(
+                                return BalanceHeroCard(
                                   cycle: cycle,
                                   summary: summary,
                                   daily: daily,
@@ -696,7 +696,6 @@ class DashboardScreen extends ConsumerWidget {
             ),
             action: SnackBarAction(
               label: context.l10n.undo,
-              textColor: Colors.amberAccent,
               onPressed: () async {
                 HapticFeedback.lightImpact();
                 await txService.delete(addedTx);
@@ -733,14 +732,13 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark;
     final accentColor = context.accentColor;
 
     return Container(
       key: const ValueKey('dashboard_cycle_switcher_bar'),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
       decoration: BoxDecoration(
-        color: isDark ? context.surfaceColor : Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isHistoricalCycle
@@ -748,13 +746,6 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
               : context.borderColor,
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.0),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -790,9 +781,7 @@ class _DashboardCycleSwitcherBar extends StatelessWidget {
                         fontSize: 9.5,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.8,
-                        color: isDark
-                            ? const Color(0xFFE5C158)
-                            : context.textSecondary,
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),

@@ -506,9 +506,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: context.isDark
-                                                  ? context.surfaceVariantColor
-                                                  : Colors.grey.shade100,
+                                              color: context.surfaceVariantColor,
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
@@ -565,15 +563,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.delete_outline,
-                                                color: Colors.white,
+                                                color: context.onOverspentColor,
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
                                                 context.l10n.delete,
                                                 style: TextStyle(
-                                                  color: Colors.white,
+                                                  color: context.onOverspentColor,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),

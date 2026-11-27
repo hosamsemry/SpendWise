@@ -238,7 +238,7 @@ class _SmartDetectionSettingsPageState
                                     ),
                                     label: Text('$suggestionCount'),
                                     backgroundColor: context.accentColor,
-                                    textColor: Colors.black,
+                                    textColor: context.onPrimaryColor,
                                   ),
                                 Icon(
                                   Icons.chevron_right,

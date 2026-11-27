@@ -195,8 +195,8 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
         ? AppColorsDark.textPrimary
         : AppColors.textPrimary;
     final dotEmptyColor = isDark
-        ? AppColorsDark.surfaceVariant
-        : AppColors.primaryContainer;
+        ? AppColorsDark.inputBorder
+        : AppColors.inputBorder;
 
     final title = widget.mode == PinMode.unlock
         ? context.l10n.enterAppPin
@@ -418,7 +418,6 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
     final btnBg = isDark
         ? AppColorsDark.surfaceVariant
         : AppColors.surfaceVariant;
-    final borderColor = isDark ? AppColorsDark.border : AppColors.border;
     final textColor = isDark
         ? AppColorsDark.textPrimary
         : AppColors.textPrimary;
@@ -429,7 +428,6 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
       decoration: BoxDecoration(
         color: btnBg,
         shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 1),
       ),
       child: InkWell(
         onTap: () => _onDigitPressed(digit),
@@ -439,7 +437,7 @@ class _PinLockScreenState extends ConsumerState<PinLockScreen>
             digit,
             style: TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               color: textColor,
             ),
           ),

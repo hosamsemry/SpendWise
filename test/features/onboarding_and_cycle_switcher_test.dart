@@ -13,7 +13,7 @@ import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart
 import 'package:money_tracker/features/categories/data/category_repository.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/dashboard/presentation/dashboard_screen.dart';
-import 'package:money_tracker/features/dashboard/presentation/widgets/velvet_titanium_hero_card.dart';
+import 'package:money_tracker/features/dashboard/presentation/widgets/balance_hero_card.dart';
 import 'package:money_tracker/features/transactions/data/transaction_repository.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import 'package:money_tracker/main.dart';
@@ -159,7 +159,7 @@ void main() {
       final switcherFinder = find.byKey(
         const ValueKey('dashboard_cycle_switcher_bar'),
       );
-      final heroFinder = find.byType(VelvetTitaniumHeroCard);
+      final heroFinder = find.byType(BalanceHeroCard);
       expect(switcherFinder, findsOneWidget);
       expect(
         tester.getTopLeft(switcherFinder).dy,

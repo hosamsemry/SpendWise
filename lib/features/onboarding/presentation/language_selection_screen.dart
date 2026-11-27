@@ -36,7 +36,7 @@ class _LanguageSelectionScreenState
                   ? 'فشل حفظ اللغة: $e'
                   : 'Error saving language: $e',
             ),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: context.overspentColor,
           ),
         );
       }

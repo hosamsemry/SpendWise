@@ -308,18 +308,18 @@ class _PresetsManagementScreenState
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColorsDark.overspent : AppColors.overspent,
+                    color: context.overspentColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.delete_outline, color: Colors.white),
+                      Icon(Icons.delete_outline, color: context.onOverspentColor),
                       const SizedBox(width: 8),
                       Text(
                         context.l10n.delete,
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.onOverspentColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -336,21 +336,15 @@ class _PresetsManagementScreenState
                     ),
                     leading: CircleAvatar(
                       backgroundColor: isIncome
-                          ? (isDark
-                                ? AppColorsDark.incomeLight
-                                : AppColors.incomeLight)
-                          : (isDark
-                                ? AppColorsDark.primaryLight
-                                : AppColors.primaryLight),
+                          ? context.incomeLightColor
+                          : context.surfaceVariantColor,
                       child: Icon(
                         isIncome
                             ? Icons.arrow_downward_rounded
                             : Icons.arrow_upward_rounded,
                         color: isIncome
-                            ? (isDark ? AppColorsDark.income : AppColors.income)
-                            : (isDark
-                                  ? AppColorsDark.primary
-                                  : AppColors.primary),
+                            ? context.incomeColor
+                            : context.textPrimary,
                       ),
                     ),
                     title: Text(

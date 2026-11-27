@@ -118,7 +118,7 @@ class _BackupExportSettingsPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.backupFailed(e.toString())),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: context.overspentColor,
           ),
         );
       }
@@ -164,9 +164,9 @@ class _BackupExportSettingsPageState
             return AlertDialog(
               title: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.amber,
+                    color: context.warningColor,
                     size: 28,
                   ),
                   const SizedBox(width: 10),
@@ -259,7 +259,7 @@ class _BackupExportSettingsPageState
                     Text(
                       context.l10n.restoreWarning,
                       style: TextStyle(
-                        color: Colors.redAccent.shade100,
+                        color: context.overspentColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -274,8 +274,8 @@ class _BackupExportSettingsPageState
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.overspentColor,
+                    foregroundColor: context.onOverspentColor,
                   ),
                   onPressed: () => Navigator.pop(dialogCtx, true),
                   child: Text(
@@ -339,7 +339,7 @@ class _BackupExportSettingsPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.restoreFailed(e.toString())),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: context.overspentColor,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -395,10 +395,10 @@ class _BackupExportSettingsPageState
               const Divider(indent: 72, endIndent: 16),
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.amber.withValues(alpha: 0.12),
-                  child: const Icon(
+                  backgroundColor: context.primaryLightColor,
+                  child: Icon(
                     Icons.settings_backup_restore_rounded,
-                    color: Colors.amber,
+                    color: context.primaryColor,
                   ),
                 ),
                 title: Text(
@@ -420,10 +420,10 @@ class _BackupExportSettingsPageState
               const Divider(indent: 72, endIndent: 16),
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.blue.withValues(alpha: 0.12),
-                  child: const Icon(
+                  backgroundColor: context.primaryLightColor,
+                  child: Icon(
                     Icons.table_chart_outlined,
-                    color: Colors.blue,
+                    color: context.primaryColor,
                   ),
                 ),
                 title: Text(
@@ -445,10 +445,10 @@ class _BackupExportSettingsPageState
               const Divider(indent: 72, endIndent: 16),
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.teal.withValues(alpha: 0.12),
-                  child: const Icon(
+                  backgroundColor: context.primaryLightColor,
+                  child: Icon(
                     Icons.pie_chart_outline_rounded,
-                    color: Colors.teal,
+                    color: context.primaryColor,
                   ),
                 ),
                 title: Text(
