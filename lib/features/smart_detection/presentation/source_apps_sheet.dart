@@ -41,7 +41,12 @@ class SourceAppsSheet extends ConsumerWidget {
       ),
       child: ListView(
         shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          28 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           Center(
             child: Container(

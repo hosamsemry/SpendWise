@@ -113,7 +113,8 @@ class DashboardScreen extends ConsumerWidget {
                 20,
                 20,
                 20,
-                24 + MediaQuery.of(context).padding.bottom,
+                // Room to scroll the last card clear of the add button.
+                96 + MediaQuery.of(context).padding.bottom,
               ),
               children: [
                 // 1. Financial Pulse Hero Card & Summary Metrics

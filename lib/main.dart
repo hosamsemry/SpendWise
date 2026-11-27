@@ -204,18 +204,24 @@ class _MoneyTrackerAppState extends ConsumerState<MoneyTrackerApp>
       ],
       // The lock is drawn above the root Navigator (not swapped into `home`),
       // so routes, dialogs and sheets opened before locking stay covered.
-      builder: (context, child) => Stack(
-        fit: StackFit.expand,
-        children: [
-          ?child,
-          if (!_securityChecked)
-            ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
-          if (isLocked) const _LockOverlay(),
-          if (!_recentsHiddenNatively &&
-              _lifecycle != null &&
-              _lifecycle != AppLifecycleState.resumed)
-            const PrivacyCover(),
-        ],
+      // Edge-to-edge: system bar icons follow the theme. App bars set their
+      // own status-bar style on top of this; screens without one (lock,
+      // onboarding) and the navigation bar use this region.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _systemBarsStyle(Theme.of(context).brightness),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ?child,
+            if (!_securityChecked)
+              ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+            if (isLocked) const _LockOverlay(),
+            if (!_recentsHiddenNatively &&
+                _lifecycle != null &&
+                _lifecycle != AppLifecycleState.resumed)
+              const PrivacyCover(),
+          ],
+        ),
       ),
       home: languageAsync.when(
               data: (locale) {
@@ -268,4 +274,20 @@ class _LockOverlay extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Transparent system bars with icons that contrast with the theme's
+/// background (light icons in dark mode, dark icons in light mode).
+SystemUiOverlayStyle _systemBarsStyle(Brightness themeBrightness) {
+  final isDark = themeBrightness == Brightness.dark;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarIconBrightness:
+        isDark ? Brightness.light : Brightness.dark,
+    systemNavigationBarContrastEnforced: false,
+  );
 }

@@ -273,7 +273,12 @@ class _BillDetailsSheet extends ConsumerWidget {
     final historyAsync = ref.watch(billHistoryProvider(bill.id));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        24 + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

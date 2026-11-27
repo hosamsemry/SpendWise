@@ -447,7 +447,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               16,
                               8,
                               16,
-                              24 + MediaQuery.of(context).padding.bottom,
+                              // Room to scroll the last row clear of the add button.
+                              96 + MediaQuery.of(context).padding.bottom,
                             ),
                             itemCount: dayGroups.length,
                             itemBuilder: (context, groupIndex) {
