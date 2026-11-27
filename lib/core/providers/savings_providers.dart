@@ -4,7 +4,11 @@ import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
+import 'package:money_tracker/features/savings/data/savings_goal_repository.dart';
 import 'package:money_tracker/features/savings/data/savings_vault_repository.dart';
+import 'package:money_tracker/features/savings/domain/savings_goal.dart';
+import 'package:money_tracker/features/savings/domain/savings_goal_service.dart';
+import 'package:money_tracker/features/savings/domain/savings_planner.dart';
 import 'package:money_tracker/features/savings/domain/savings_sync_service.dart';
 import 'package:money_tracker/features/savings/domain/savings_vault.dart';
 
@@ -25,6 +29,75 @@ class CycleCloseoutInfo {
 final savingsVaultRepositoryProvider = Provider<SavingsVaultRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return SavingsVaultRepository(db);
+});
+
+final savingsGoalRepositoryProvider = Provider<SavingsGoalRepository>((ref) {
+  return SavingsGoalRepository(ref.watch(databaseProvider));
+});
+
+/// Goal maths on the user's budget cycles.
+final savingsPlannerProvider = Provider<SavingsPlanner>((ref) {
+  return SavingsPlanner(ref.watch(budgetCycleRepositoryProvider).calculator);
+});
+
+/// Use this for every goal and vault money write. See [SavingsGoalService].
+final savingsGoalServiceProvider = Provider<SavingsGoalService>((ref) {
+  return SavingsGoalService(
+    vault: ref.watch(savingsVaultRepositoryProvider),
+    goals: ref.watch(savingsGoalRepositoryProvider),
+    planner: ref.watch(savingsPlannerProvider),
+  );
+});
+
+class GoalOverviewItem {
+  final GoalWithBalance goal;
+  final GoalForecast forecast;
+  const GoalOverviewItem({required this.goal, required this.forecast});
+}
+
+class SavingsOverview {
+  final Money total;
+  final Money unassigned;
+
+  /// Goals in fill order; achieved ones included.
+  final List<GoalOverviewItem> goals;
+  const SavingsOverview({required this.total, required this.unassigned, required this.goals});
+
+  List<GoalOverviewItem> get activeGoals => goals.where((g) => !g.goal.goal.isAchieved).toList();
+  List<GoalOverviewItem> get achievedGoals => goals.where((g) => g.goal.goal.isAchieved).toList();
+}
+
+/// The vault split into goals and Unassigned, with each goal's forecast.
+final savingsOverviewProvider = FutureProvider<SavingsOverview>((ref) async {
+  ref.watch(refreshTriggerProvider);
+  final vault = ref.watch(savingsVaultRepositoryProvider);
+  final service = ref.watch(savingsGoalServiceProvider);
+  final planner = ref.watch(savingsPlannerProvider);
+  final today = DateTime.now();
+
+  final goals = await service.goalsWithBalances();
+  final movements = await vault.getMovements();
+  final balances = await vault.bucketBalances();
+  var total = 0;
+  for (final b in balances.values) {
+    total += b.inMinorUnits;
+  }
+  return SavingsOverview(
+    total: Money.fromMinorUnits(total),
+    unassigned: balances[null] ?? const Money.zero(),
+    goals: [
+      for (final g in goals)
+        GoalOverviewItem(goal: g, forecast: planner.forecast(g, movements, today)),
+    ],
+  );
+});
+
+/// History of one goal (or Unassigned when [goalId] is null), newest first.
+final savingsHistoryProvider =
+    FutureProvider.family<List<SavingsMovement>, String?>((ref, goalId) async {
+  ref.watch(refreshTriggerProvider);
+  final all = await ref.watch(savingsVaultRepositoryProvider).getMovements();
+  return all.where((m) => m.goalId == goalId).toList();
 });
 
 /// Singleton provider for [SavingsSyncService].

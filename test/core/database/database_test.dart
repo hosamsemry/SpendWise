@@ -398,7 +398,7 @@ void main() {
   });
 
   test('upgrading a version 4 database adds the bill tables and keeps data', () async {
-    final dir = await Directory.systemTemp.createTemp('spendwise_migration');
+    final dir = await Directory.systemTemp.createTemp('paydial_migration');
     addTearDown(() => dir.delete(recursive: true));
     final file = File('${dir.path}/money_tracker.sqlite');
 
@@ -412,6 +412,8 @@ void main() {
             updatedAt: '2026-01-01',
           ),
         );
+    await v4.customStatement('DROP TABLE savings_movements');
+    await v4.customStatement('DROP TABLE savings_goals');
     await v4.customStatement('DROP TABLE bill_occurrences');
     await v4.customStatement('DROP TABLE recurring_bills');
     await v4.customStatement('PRAGMA user_version = 4');
@@ -443,5 +445,31 @@ void main() {
           ),
         );
     expect(await upgraded.select(upgraded.billOccurrencesTable).get(), hasLength(1));
+  });
+
+  test('upgrading to version 6 moves the vault balance into the savings history', () async {
+    final dir = await Directory.systemTemp.createTemp('paydial_migration_v6');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/money_tracker.sqlite');
+
+    final v5 = AppDatabase(NativeDatabase(file));
+    await v5.customStatement('DROP TABLE savings_movements');
+    await v5.customStatement('DROP TABLE savings_goals');
+    await v5.into(v5.appSettingsTable).insert(
+          AppSettingsTableCompanion.insert(key: legacyVaultBalanceKey, value: '185000'),
+        );
+    await v5.customStatement('PRAGMA user_version = 5');
+    await v5.close();
+
+    final upgraded = AppDatabase(NativeDatabase(file));
+    addTearDown(upgraded.close);
+    final movements = await upgraded.select(upgraded.savingsMovementsTable).get();
+    expect(movements.single.amountMinor, 185000);
+    expect(movements.single.kind, 'opening');
+    expect(movements.single.goalId, isNull);
+    final legacy = await (upgraded.select(upgraded.appSettingsTable)
+          ..where((t) => t.key.equals(legacyVaultBalanceKey)))
+        .get();
+    expect(legacy, isEmpty);
   });
 }

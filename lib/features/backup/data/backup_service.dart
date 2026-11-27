@@ -41,6 +41,8 @@ class BackupService {
     final notifications = await db.select(db.notificationEventsTable).get();
     final bills = await db.select(db.recurringBillsTable).get();
     final billOccurrences = await db.select(db.billOccurrencesTable).get();
+    final savingsGoals = await db.select(db.savingsGoalsTable).get();
+    final savingsMovements = await db.select(db.savingsMovementsTable).get();
 
     final metadata = BackupMetadata(
       version: 1,
@@ -133,6 +135,27 @@ class BackupService {
         'status': o.status,
         'transactionId': o.transactionId,
         'createdAt': o.createdAt,
+      }).toList(),
+      savingsGoals: savingsGoals.map((g) => {
+        'id': g.id,
+        'name': g.name,
+        'icon': g.icon,
+        'targetMinor': g.targetMinor,
+        'targetDate': g.targetDate,
+        'monthlyPlanMinor': g.monthlyPlanMinor,
+        'priority': g.priority,
+        'achievedAt': g.achievedAt,
+        'createdAt': g.createdAt,
+        'updatedAt': g.updatedAt,
+      }).toList(),
+      savingsMovements: savingsMovements.map((m) => {
+        'id': m.id,
+        'goalId': m.goalId,
+        'amountMinor': m.amountMinor,
+        'kind': m.kind,
+        'groupId': m.groupId,
+        'cycleId': m.cycleId,
+        'createdAt': m.createdAt,
       }).toList(),
     );
   }
@@ -239,6 +262,8 @@ class BackupService {
           .getSingleOrNull();
 
       // 2. Clear all tables in reverse foreign key dependency order
+      await db.delete(db.savingsMovementsTable).go();
+      await db.delete(db.savingsGoalsTable).go();
       await db.delete(db.billOccurrencesTable).go();
       await db.delete(db.recurringBillsTable).go();
       await db.delete(db.notificationEventsTable).go();
@@ -431,7 +456,44 @@ class BackupService {
         );
       }
 
-      // 10. Insert app settings
+      // 10. Insert savings goals and the vault history. A movement whose goal
+      // is missing counts as Unassigned, which keeps the vault total intact.
+      final restoredGoalIds = <String>{};
+      for (final row in backup.savingsGoals) {
+        final nowIso = DateTime.now().toIso8601String();
+        final id = row['id'] as String;
+        await db.into(db.savingsGoalsTable).insert(
+          SavingsGoalsTableCompanion.insert(
+            id: id,
+            name: row['name'] as String,
+            icon: Value(row['icon'] as String?),
+            targetMinor: row['targetMinor'] as int,
+            targetDate: Value(row['targetDate'] as String?),
+            monthlyPlanMinor: Value(row['monthlyPlanMinor'] as int?),
+            priority: Value(row['priority'] as int? ?? 0),
+            achievedAt: Value(row['achievedAt'] as String?),
+            createdAt: row['createdAt'] as String? ?? nowIso,
+            updatedAt: row['updatedAt'] as String? ?? nowIso,
+          ),
+        );
+        restoredGoalIds.add(id);
+      }
+      for (final row in backup.savingsMovements) {
+        final rawGoalId = row['goalId'] as String?;
+        await db.into(db.savingsMovementsTable).insert(
+          SavingsMovementsTableCompanion.insert(
+            id: row['id'] as String,
+            goalId: Value(rawGoalId != null && restoredGoalIds.contains(rawGoalId) ? rawGoalId : null),
+            amountMinor: row['amountMinor'] as int,
+            kind: row['kind'] as String? ?? 'deposit',
+            groupId: row['groupId'] as String? ?? (row['id'] as String),
+            cycleId: Value(row['cycleId'] as String?),
+            createdAt: row['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+
+      // 11. Insert app settings
       final restoredSettingKeys = <String>{};
       for (final row in backup.appSettings) {
         final key = row['key'] as String;
@@ -472,6 +534,9 @@ class BackupService {
           ),
         );
       }
+
+      // Backups from before schema 6 keep the vault as one number in settings.
+      await migrateLegacyVaultBalance(db);
 
       // Restore onboarding fallback settings only if missing from backup
       for (final fallback in fallbackOnboardingSettings) {

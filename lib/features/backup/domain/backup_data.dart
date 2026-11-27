@@ -83,6 +83,8 @@ class BackupData {
   final List<Map<String, dynamic>> notificationEvents;
   final List<Map<String, dynamic>> recurringBills;
   final List<Map<String, dynamic>> billOccurrences;
+  final List<Map<String, dynamic>> savingsGoals;
+  final List<Map<String, dynamic>> savingsMovements;
 
   const BackupData({
     required this.metadata,
@@ -95,6 +97,8 @@ class BackupData {
     this.notificationEvents = const [],
     this.recurringBills = const [],
     this.billOccurrences = const [],
+    this.savingsGoals = const [],
+    this.savingsMovements = const [],
   });
 
   int get transactionCount => transactions.length;
@@ -102,6 +106,7 @@ class BackupData {
   int get budgetCycleCount => budgetCycles.length;
   int get presetCount => transactionPresets.length;
   int get billCount => recurringBills.length;
+  int get savingsGoalCount => savingsGoals.length;
 
   Map<String, dynamic> toJson() => {
     'metadata': metadata.toJson(),
@@ -115,6 +120,8 @@ class BackupData {
       'notificationEvents': notificationEvents,
       'recurringBills': recurringBills,
       'billOccurrences': billOccurrences,
+      'savingsGoals': savingsGoals,
+      'savingsMovements': savingsMovements,
     },
   };
 
@@ -150,6 +157,8 @@ class BackupData {
       notificationEvents: parseList('notificationEvents'),
       recurringBills: parseList('recurringBills'),
       billOccurrences: parseList('billOccurrences'),
+      savingsGoals: parseList('savingsGoals'),
+      savingsMovements: parseList('savingsMovements'),
     );
   }
 
