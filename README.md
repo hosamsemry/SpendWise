@@ -200,6 +200,12 @@ flutter build apk --release --target-platform android-arm64 --split-per-abi --ob
 ```
 *Output: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (~23 MB)*
 
+Or run the same build through the release script, which also saves a named copy in the project root:
+```bash
+tool/build_release.sh
+```
+*Output: `Paydial-<version>-arm64.apk`, e.g. `Paydial-2.2.0+10-arm64.apk`*
+
 ---
 
 ## 🎨 Brand Identity
