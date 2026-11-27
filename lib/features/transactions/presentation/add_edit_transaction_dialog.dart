@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -64,6 +67,13 @@ class _AddEditTransactionDialogState
   String? _categoryError;
   bool _isSaving = false;
 
+  // Keeps the category chips above the keyboard while the amount is typed.
+  final _scrollController = ScrollController();
+  final _amountFocus = FocusNode();
+  final _amountKey = GlobalKey();
+  final _categoriesKey = GlobalKey();
+  double _lastKeyboardInset = 0;
+
   @override
   void initState() {
     super.initState();
@@ -88,7 +98,29 @@ class _AddEditTransactionDialogState
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _scrollController.dispose();
+    _amountFocus.dispose();
     super.dispose();
+  }
+
+  /// When the keyboard opens over the amount field, scroll just far enough
+  /// that the whole category chip block sits above the keyboard, without
+  /// pushing the amount field off the top. On small phones the amount field
+  /// lands at the top with as many chips as fit below it; any overflow cuts
+  /// off the least-used chips at the end (chips are sorted by frequency).
+  void _revealCategoryChips() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final amountBox = _amountKey.currentContext?.findRenderObject();
+    final chipsBox = _categoriesKey.currentContext?.findRenderObject();
+    if (amountBox == null || chipsBox == null) return;
+    final viewport = RenderAbstractViewport.of(amountBox);
+    final position = _scrollController.position;
+    final chipsEndAtBottom = viewport.getOffsetToReveal(chipsBox, 1.0).offset;
+    final amountAtTop = viewport.getOffsetToReveal(amountBox, 0.0).offset;
+    final target = math
+        .min(chipsEndAtBottom, amountAtTop)
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    if (target > position.pixels + 0.5) position.jumpTo(target);
   }
 
   Future<void> _pickDate() async {
@@ -398,6 +430,16 @@ class _AddEditTransactionDialogState
 
   @override
   Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    if (keyboardInset != _lastKeyboardInset) {
+      final opening = keyboardInset > _lastKeyboardInset;
+      _lastKeyboardInset = keyboardInset;
+      if (opening && _amountFocus.hasFocus) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _revealCategoryChips(),
+        );
+      }
+    }
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Container(
@@ -423,6 +465,7 @@ class _AddEditTransactionDialogState
             20,
       ),
       child: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -504,6 +547,8 @@ class _AddEditTransactionDialogState
 
             // Amount field
             TextField(
+              key: _amountKey,
+              focusNode: _amountFocus,
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -528,111 +573,114 @@ class _AddEditTransactionDialogState
             const SizedBox(height: 16),
 
             // Category selector (Required for expense; optional for income)
-            categoriesAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('${context.l10n.error}: $e'),
-              data: (categories) {
-                // Filter categories matching current transaction type
-                final typeFiltered = categories.where((c) {
-                  return _type == TransactionType.expense
-                      ? c.type.isExpense
-                      : c.type.isIncome;
-                }).toList();
+            KeyedSubtree(
+              key: _categoriesKey,
+              child: categoriesAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('${context.l10n.error}: $e'),
+                data: (categories) {
+                  // Filter categories matching current transaction type
+                  final typeFiltered = categories.where((c) {
+                    return _type == TransactionType.expense
+                        ? c.type.isExpense
+                        : c.type.isIncome;
+                  }).toList();
 
-                final categoryType = _type == TransactionType.expense
-                    ? CategoryType.expense
-                    : CategoryType.income;
+                  final categoryType = _type == TransactionType.expense
+                      ? CategoryType.expense
+                      : CategoryType.income;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _type == TransactionType.expense
-                              ? context.l10n.categoryLabelRequired
-                              : context.l10n.categoryLabelOptional,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: _categoryError != null
-                                ? context.overspentColor
-                                : context.textSecondary,
-                          ),
-                        ),
-                        if (_categoryError != null)
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Text(
-                            _categoryError!,
+                            _type == TransactionType.expense
+                                ? context.l10n.categoryLabelRequired
+                                : context.l10n.categoryLabelOptional,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: context.overspentColor,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _categoryError != null
+                                  ? context.overspentColor
+                                  : context.textSecondary,
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (_type == TransactionType.income)
-                          ChoiceChip(
-                            label: Text(context.l10n.uncategorized),
-                            selected: _selectedCategoryId == null,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedCategoryId = null;
-                                _categoryError = null;
-                              });
-                            },
-                          ),
-                        ...typeFiltered.map((cat) {
-                          final isSelected = _selectedCategoryId == cat.id;
-                          return ChoiceChip(
-                            label: Text(context.l10n.localizedCategoryName(cat.name)),
-                            selected: isSelected,
-                            selectedColor:
-                                context.primaryColor.withValues(alpha: 0.18),
-                            labelStyle: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isSelected
-                                  ? context.primaryColor
-                                  : context.textPrimary,
+                          if (_categoryError != null)
+                            Text(
+                              _categoryError!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.overspentColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedCategoryId = selected ? cat.id : null;
-                                _categoryError = null;
-                                if (selected &&
-                                    cat.type.isIncome &&
-                                    _amountController.text.trim().isEmpty &&
-                                    cat.defaultBudget.inMinorUnits > 0) {
-                                  _amountController.text = cat.defaultBudget
-                                      .toFormattedString(
-                                        includeCurrency: false,
-                                      );
-                                }
-                              });
-                            },
-                          );
-                        }),
-                        ActionChip(
-                          avatar: const Icon(Icons.add, size: 16),
-                          label: Text(context.l10n.newLabel),
-                          onPressed: () => _showQuickAddCategoryDialog(
-                            context,
-                            categoryType,
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (_type == TransactionType.income)
+                            ChoiceChip(
+                              label: Text(context.l10n.uncategorized),
+                              selected: _selectedCategoryId == null,
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedCategoryId = null;
+                                  _categoryError = null;
+                                });
+                              },
+                            ),
+                          ...typeFiltered.map((cat) {
+                            final isSelected = _selectedCategoryId == cat.id;
+                            return ChoiceChip(
+                              label: Text(context.l10n.localizedCategoryName(cat.name)),
+                              selected: isSelected,
+                              selectedColor:
+                                  context.primaryColor.withValues(alpha: 0.18),
+                              labelStyle: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? context.primaryColor
+                                    : context.textPrimary,
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedCategoryId = selected ? cat.id : null;
+                                  _categoryError = null;
+                                  if (selected &&
+                                      cat.type.isIncome &&
+                                      _amountController.text.trim().isEmpty &&
+                                      cat.defaultBudget.inMinorUnits > 0) {
+                                    _amountController.text = cat.defaultBudget
+                                        .toFormattedString(
+                                          includeCurrency: false,
+                                        );
+                                  }
+                                });
+                              },
+                            );
+                          }),
+                          ActionChip(
+                            avatar: const Icon(Icons.add, size: 16),
+                            label: Text(context.l10n.newLabel),
+                            onPressed: () => _showQuickAddCategoryDialog(
+                              context,
+                              categoryType,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
             const SizedBox(height: 16),
 
