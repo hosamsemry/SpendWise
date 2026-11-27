@@ -564,7 +564,11 @@ void main() {
       // 2. Import the backup on Device 2 (exact same flow as SettingsScreen._restoreBackup)
       final backupService2 = BackupService(db2);
       final parsedBackup = backupService2.parseBackupString(backupJson);
-      await backupService2.restoreFromBackup(parsedBackup, keepCurrentPin: true);
+      // Restore first writes a safety snapshot to disk: real I/O, so it runs
+      // outside the widget test's fake clock.
+      await tester.runAsync(
+        () => backupService2.restoreFromBackup(parsedBackup, keepCurrentPin: true),
+      );
 
       container2.read(selectedCycleProvider.notifier).select(null);
       container2.invalidate(budgetCycleStartDayProvider);

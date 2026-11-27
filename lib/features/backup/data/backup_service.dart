@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/security/security_service.dart';
 import 'package:money_tracker/features/backup/data/backup_crypto.dart';
+import 'package:money_tracker/features/backup/data/safety_snapshot_store.dart';
 import 'package:money_tracker/features/backup/domain/backup_data.dart';
 import 'package:money_tracker/core/files/export_file_store.dart';
 import 'package:share_plus/share_plus.dart';
@@ -23,12 +24,15 @@ class BackupService {
   final AppDatabase db;
   final BackupCrypto crypto;
   final ExportFileStore exportFiles;
+  final SafetySnapshotStore safetySnapshots;
 
   BackupService(
     this.db, {
     this.crypto = const BackupCrypto(),
     ExportFileStore? exportFiles,
-  }) : exportFiles = exportFiles ?? ExportFileStore();
+    SafetySnapshotStore? safetySnapshots,
+  }) : exportFiles = exportFiles ?? ExportFileStore(),
+       safetySnapshots = safetySnapshots ?? SafetySnapshotStore();
 
   /// Queries all tables from the database and packages them into a [BackupData] snapshot.
   Future<BackupData> createBackupData() async {
@@ -210,6 +214,28 @@ class BackupService {
   }
 
   /// When this device last exported a backup, or `null` if never.
+  /// The data from before the most recent restore, if it can still be put
+  /// back with [undoLastRestore].
+  Future<SafetySnapshot?> latestSafetySnapshot() => safetySnapshots.latest();
+
+  /// Puts back the data from before the last restore exactly as it was
+  /// (including the PIN), then discards that snapshot so a second undo goes
+  /// one restore further back.
+  Future<BackupData> undoLastRestore() async {
+    final snapshot = await safetySnapshots.latest();
+    if (snapshot == null) {
+      throw const BackupException('There is no restore to undo.');
+    }
+    final data = parseBackupString(await snapshot.file.readAsString());
+    await restoreFromBackup(
+      data,
+      keepCurrentPin: false,
+      takeSafetySnapshot: false,
+    );
+    await safetySnapshots.delete(snapshot);
+    return data;
+  }
+
   Future<DateTime?> lastBackupAt() async {
     final entry = await (db.select(db.appSettingsTable)
           ..where((tbl) => tbl.key.equals(lastBackupAtKey)))
@@ -244,7 +270,19 @@ class BackupService {
   ///
   /// If [keepCurrentPin] is true, currently configured device PIN credentials
   /// will be preserved rather than overwritten by the backup file.
-  Future<void> restoreFromBackup(BackupData backup, {bool keepCurrentPin = true}) async {
+  ///
+  /// Unless [takeSafetySnapshot] is false (the user can opt out in the
+  /// restore dialog), the current data is first saved as a safety snapshot so
+  /// the restore can be undone ([undoLastRestore]). If that snapshot cannot
+  /// be written, nothing is restored.
+  Future<void> restoreFromBackup(
+    BackupData backup, {
+    bool keepCurrentPin = true,
+    bool takeSafetySnapshot = true,
+  }) async {
+    if (takeSafetySnapshot) {
+      await safetySnapshots.save(await encodeBackup(await createBackupData()));
+    }
     await db.transaction(() async {
       // 1. Capture current PIN settings if preservation is requested, plus onboarding fallback settings
       List<AppSettingEntry> currentPinSettings = [];
