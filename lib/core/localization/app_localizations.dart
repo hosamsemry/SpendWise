@@ -332,6 +332,101 @@ class AppLocalizations {
   String get enterAmountGreaterThanZero => isArabic ? 'أدخل مبلغاً صالحاً أكبر من صفر' : 'Enter a valid amount greater than 0';
   String deletedPresetNotice(String title) => isArabic ? 'تم حذف القالب "$title"' : 'Deleted preset "$title"';
 
+  // --- Savings Goals ---
+  String get savingsGoalsTitle => isArabic ? 'أهداف الادخار' : 'Savings goals';
+  String get newGoal => isArabic ? 'هدف جديد' : 'New goal';
+  String get editGoal => isArabic ? 'تعديل الهدف' : 'Edit goal';
+  String get vaultTotal => isArabic ? 'إجمالي الخزينة' : 'Vault total';
+  String get unassignedSavings => isArabic ? 'غير مخصص' : 'Unassigned';
+  String get unassignedHint => isArabic
+      ? 'مدخرات لم تُخصص لهدف بعد.'
+      : 'Savings not given to a goal yet.';
+  String get addMoney => isArabic ? 'إضافة' : 'Add';
+  String get takeOutMoney => isArabic ? 'سحب' : 'Take out';
+  String get moveMoney => isArabic ? 'نقل' : 'Move';
+  String get goalsSectionHint => isArabic
+      ? 'اسحب لترتيب الأهداف: يُملأ الأول أولاً عند إغلاق الدورة.'
+      : 'Drag to reorder. At cycle close, the top goal is filled first.';
+  String get achievedGoals => isArabic ? 'أهداف تحققت' : 'Achieved';
+  String get noGoalsYet => isArabic ? 'امنح مدخراتك هدفاً' : 'Give your savings a purpose';
+  String get noGoalsDescription => isArabic
+      ? 'أنشئ أهدافاً مثل العيد أو سيارة أو صندوق طوارئ. عند إغلاق كل دورة، يذهب الفائض إلى خططها الشهرية أولاً.'
+      : 'Create goals like Eid, a car or an emergency fund. When each cycle closes, the surplus fills their monthly plans first.';
+  String get createFirstGoal => isArabic ? 'أنشئ أول هدف' : 'Create your first goal';
+  String goalProgress(String saved, String target) => isArabic ? '$saved من $target' : '$saved of $target';
+  String get goalOnTrack => isArabic ? 'على المسار' : 'On track';
+  String get goalBehind => isArabic ? 'متأخر' : 'Behind';
+  String get goalAchieved => isArabic ? 'تحقق' : 'Achieved';
+  String goalNeedsPerCycle(String amount, String date) => isArabic
+      ? 'يحتاج $amount كل دورة للوصول بحلول $date'
+      : 'Needs $amount a cycle to reach it by $date';
+  String goalProjection(String date) => isArabic ? 'بهذا المعدل: $date' : 'At this pace: $date';
+  String get goalNoPaceYet => isArabic ? 'لم يُدخر شيء مؤخراً' : 'Nothing saved recently';
+  String goalPlanLine(String amount) => isArabic ? 'الخطة: $amount كل دورة' : 'Plan: $amount a cycle';
+  String get goalNameLabel => isArabic ? 'اسم الهدف' : 'Goal name';
+  String get goalNameHint => isArabic ? 'مثل: العيد، سيارة، صندوق طوارئ' : 'e.g. Eid, Car, Emergency fund';
+  String get goalTargetLabel => isArabic ? 'المبلغ المستهدف' : 'Target amount';
+  String get goalTargetDateLabel => isArabic ? 'التاريخ المستهدف (اختياري)' : 'Target date (optional)';
+  String get noTargetDate => isArabic ? 'بدون تاريخ' : 'No date';
+  String get clearDate => isArabic ? 'إزالة التاريخ' : 'Clear date';
+  String get goalMonthlyPlanLabel => isArabic ? 'الخطة لكل دورة (اختياري)' : 'Plan per cycle (optional)';
+  String get goalMonthlyPlanHelper => isArabic
+      ? 'المبلغ الذي يأخذه هذا الهدف من فائض كل دورة.'
+      : 'What this goal takes from each cycle\'s surplus.';
+  String goalSuggestPlan(String amount) => isArabic ? 'استخدم $amount' : 'Use $amount';
+  String get goalStartingAmountLabel => isArabic ? 'ابدأ بمبلغ من غير المخصص' : 'Start with money from Unassigned';
+  String availableAmount(String amount) => isArabic ? 'المتاح: $amount' : 'Available: $amount';
+  String get goalIconLabel => isArabic ? 'الأيقونة' : 'Icon';
+  String get targetMustBePositive => isArabic ? 'أدخل مبلغاً مستهدفاً أكبر من صفر' : 'Enter a target greater than 0';
+  String get amountExceedsAvailable => isArabic ? 'المبلغ أكبر من المتاح' : 'That is more than is available';
+  String addMoneyTo(String name) => isArabic ? 'إضافة إلى "$name"' : 'Add to "$name"';
+  String takeOutFrom(String name) => isArabic ? 'سحب من "$name"' : 'Take out of "$name"';
+  String moveFrom(String name) => isArabic ? 'نقل من "$name"' : 'Move from "$name"';
+  String get moveToLabel => isArabic ? 'إلى' : 'To';
+  String get takeOutHint => isArabic
+      ? 'سحب المدخرات لا يُحتسب مصروفاً في ميزانية الدورة.'
+      : 'Taking savings out does not count as spending in your cycle budget.';
+  String savedToNotice(String amount, String name) => isArabic ? 'تمت إضافة $amount إلى "$name"' : 'Added $amount to "$name"';
+  String tookOutNotice(String amount, String name) => isArabic ? 'تم سحب $amount من "$name"' : 'Took $amount out of "$name"';
+  String movedNotice(String amount, String name) => isArabic ? 'تم نقل $amount إلى "$name"' : 'Moved $amount to "$name"';
+  String get undoNotPossible => isArabic
+      ? 'لا يمكن التراجع: تم نقل هذا المال أو إنفاقه.'
+      : "Can't undo: that money has already been moved or spent.";
+  String deleteGoalTitle(String name) => isArabic ? 'حذف "$name"؟' : 'Delete "$name"?';
+  String deleteGoalBody(String amount) => isArabic
+      ? 'سيعود $amount إلى غير المخصص. سيبقى السجل.'
+      : '$amount goes back to Unassigned. Its history is kept.';
+  String goalDeletedNotice(String name) => isArabic ? 'تم حذف "$name"' : 'Deleted "$name"';
+  String goalReachedTitle(String name) => isArabic ? 'وصلت إلى "$name"!' : 'You reached "$name"!';
+  String goalReachedBody(String amount) => isArabic
+      ? 'ادخرت $amount. أحسنت!'
+      : 'You saved $amount. Well done!';
+  String get great => isArabic ? 'رائع' : 'Great';
+  String get savingsHistory => isArabic ? 'السجل' : 'History';
+  String get noSavingsHistory => isArabic ? 'لا توجد حركات بعد.' : 'No activity yet.';
+  String savingsMovementLabel(String kind, bool isIn) {
+    switch (kind) {
+      case 'opening':
+        return isArabic ? 'الرصيد الافتتاحي' : 'Opening balance';
+      case 'sweep':
+        return isArabic ? 'فائض الدورة' : 'Cycle surplus';
+      case 'deposit':
+        return isArabic ? 'إضافة' : 'Added';
+      case 'withdraw':
+        return isArabic ? 'سحب' : 'Taken out';
+      default:
+        return isIn ? (isArabic ? 'نقل إليه' : 'Moved in') : (isArabic ? 'نقل منه' : 'Moved out');
+    }
+  }
+  String get sweepSplitTitle => isArabic ? 'توزيع الفائض' : 'Split the surplus';
+  String get editSplit => isArabic ? 'تعديل التوزيع' : 'Edit split';
+  String get applySplit => isArabic ? 'تطبيق' : 'Apply';
+  String splitExceedsSurplus(String amount) => isArabic
+      ? 'المجموع أكبر من الفائض ($amount)'
+      : 'That adds up to more than the surplus ($amount)';
+  String get vaultCardSubtitleEmpty => isArabic ? 'انقر لإضافة أهداف ادخار' : 'Tap to add savings goals';
+  String vaultCardGoalLine(String name, int percent) => isArabic ? '$name · $percent٪' : '$name · $percent%';
+
   // --- Bills & Subscriptions ---
   String get billsTitle => isArabic ? 'الفواتير والاشتراكات' : 'Bills & Subscriptions';
   String get addBill => isArabic ? 'إضافة فاتورة' : 'Add bill';

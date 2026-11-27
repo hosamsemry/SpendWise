@@ -6,7 +6,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
 import 'package:money_tracker/core/providers/privacy_provider.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
-import 'savings_vault_dialog.dart';
+import 'goals_screen.dart';
 
 class SavingsVaultCard extends ConsumerWidget {
   const SavingsVaultCard({super.key});
@@ -16,6 +16,7 @@ class SavingsVaultCard extends ConsumerWidget {
     ref.watch(primaryCurrencyProvider);
     final isAmountsHidden = ref.watch(dashboardAmountsHiddenProvider);
     final vaultAsync = ref.watch(savingsVaultProvider);
+    final topGoal = ref.watch(savingsOverviewProvider).value?.activeGoals.firstOrNull;
 
     return vaultAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -26,21 +27,17 @@ class SavingsVaultCard extends ConsumerWidget {
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(
-              color: context.isDark
-                  ? context.savingsColor.withValues(alpha: 0.3)
-                  : context.borderColor,
-            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge - 4),
+            side: BorderSide(color: context.borderColor),
           ),
-          color: context.isDark
-              ? const Color(0xFF14141B)
-              : context.surfaceColor,
+          color: context.surfaceColor,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
               HapticFeedback.lightImpact();
-              SavingsVaultDialog.show(context, vault);
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GoalsScreen()),
+              );
             },
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -49,7 +46,7 @@ class SavingsVaultCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: context.savingsColor.withValues(alpha: 0.12),
+                      color: context.savingsLightColor,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -92,13 +89,16 @@ class SavingsVaultCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          vault.lastSweepAmount != null
+                          topGoal != null
+                              ? context.l10n.vaultCardGoalLine(
+                                  topGoal.goal.goal.name,
+                                  (topGoal.goal.fraction * 100).floor(),
+                                )
+                              : vault.lastSweepAmount != null
                               ? (context.l10n.isArabic
                                   ? 'تم حفظ +${isAmountsHidden ? '••••' : vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)} مؤخراً'
                                   : 'Last swept +${isAmountsHidden ? '••••' : vault.lastSweepAmount!.toFormattedString(currencySymbol: context.l10n.currencySymbol)}')
-                              : (context.l10n.isArabic
-                                  ? 'انقر للإيداع أو سحب الأموال'
-                                  : 'Tap to deposit or withdraw funds'),
+                              : context.l10n.vaultCardSubtitleEmpty,
                           style: TextStyle(
                             fontSize: 11,
                             color: context.textSecondary,
