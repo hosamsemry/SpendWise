@@ -18,8 +18,12 @@ class RecurringBillsTable extends Table {
   )();
   // Denormalized so a bill still shows its category after it is deleted.
   TextColumn get categoryName => text().nullable()();
-  // Fixed amount, or the estimate (last amount paid) for variable bills.
+  // Fixed amount, or for a variable bill the estimate the user typed. The
+  // estimate shown is the latest existing payment made after [amountSetAt]
+  // (see RecurringBillRepository), so undoing a payment brings it back.
   IntColumn get amountMinor => integer()();
+  // When the user last set [amountMinor] (ISO-8601). Null = when created.
+  TextColumn get amountSetAt => text().nullable()();
   BoolColumn get isVariable => boolean().withDefault(const Constant(false))();
   // 'weekly' | 'monthly' | 'yearly' | 'every_cycle'
   TextColumn get frequency => text()();
@@ -29,6 +33,9 @@ class RecurringBillsTable extends Table {
   // Days before the due date to remind; null = no reminder.
   IntColumn get remindDaysBefore => integer().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  // The day the bill was paused ('YYYY-MM-DD'); null while active. Resuming
+  // skips only the due dates from this day on, not older overdue ones.
+  TextColumn get pausedAt => text().nullable()();
   TextColumn get note => text().nullable()();
   TextColumn get createdAt => text()();
   TextColumn get updatedAt => text()();

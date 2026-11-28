@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
+import 'package:money_tracker/core/database/pre_upgrade_snapshot.dart';
 import 'package:uuid/uuid.dart';
 import '../../test_helper.dart';
 
@@ -471,5 +472,68 @@ void main() {
           ..where((t) => t.key.equals(legacyVaultBalanceKey)))
         .get();
     expect(legacy, isEmpty);
+  });
+
+  test('upgrading to version 7 records when paused bills were paused', () async {
+    final dir = await Directory.systemTemp.createTemp('paydial_migration_v7');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/money_tracker.sqlite');
+
+    // A real v6 file: recurring_bills without the v7 columns.
+    final v6 = AppDatabase(NativeDatabase(file));
+    await v6.customStatement('ALTER TABLE recurring_bills DROP COLUMN paused_at');
+    await v6.customStatement('ALTER TABLE recurring_bills DROP COLUMN amount_set_at');
+    await v6.customStatement(
+      "INSERT INTO recurring_bills (id, title, type, amount_minor, is_variable, frequency, anchor_date, "
+      "is_active, created_at, updated_at) VALUES "
+      "('paused', 'Gym', 'income', 1000, 0, 'monthly', '2026-01-01', 0, '2026-01-01T10:00:00.000', '2026-03-05T18:30:00.000'), "
+      "('active', 'Rent', 'income', 2000, 1, 'monthly', '2026-01-01', 1, '2026-01-01T10:00:00.000', '2026-02-01T09:00:00.000')",
+    );
+    await v6.customStatement('PRAGMA user_version = 6');
+    await v6.close();
+
+    final upgraded = AppDatabase(NativeDatabase(file));
+    addTearDown(upgraded.close);
+    final rows = {for (final b in await upgraded.select(upgraded.recurringBillsTable).get()) b.id: b};
+    expect(rows['paused']!.pausedAt, '2026-03-05', reason: 'last change is the best guess');
+    expect(rows['active']!.pausedAt, isNull);
+    expect(rows['active']!.amountSetAt, '2026-02-01T09:00:00.000');
+  });
+
+  test('a copy of the database is kept before a schema upgrade', () async {
+    final dir = await Directory.systemTemp.createTemp('paydial_pre_upgrade');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/money_tracker.sqlite');
+    final snapshots = Directory('${dir.path}/safety_snapshots');
+
+    final old = AppDatabase(NativeDatabase(file));
+    await old.into(old.appSettingsTable).insert(
+          AppSettingsTableCompanion.insert(key: 'app_language', value: 'ar'),
+        );
+    await old.customStatement('PRAGMA user_version = 6');
+    await old.close();
+
+    final copy = snapshotBeforeUpgrade(database: file, into: snapshots, targetVersion: 7);
+    expect(copy, isNotNull);
+    expect(copy!.path, contains('pre_upgrade_v6_'));
+    final saved = AppDatabase(NativeDatabase(copy));
+    addTearDown(saved.close);
+    final lang = await (saved.select(saved.appSettingsTable)..where((t) => t.key.equals('app_language'))).getSingle();
+    expect(lang.value, 'ar');
+
+    // Nothing to do when already on the latest version.
+    expect(snapshotBeforeUpgrade(database: file, into: snapshots, targetVersion: 6), isNull);
+    // Only the newest copies are kept.
+    for (var i = 1; i <= 3; i++) {
+      snapshotBeforeUpgrade(
+        database: file,
+        into: snapshots,
+        targetVersion: 7,
+        now: DateTime(2027, 1, i),
+      );
+    }
+    final kept = snapshots.listSync().whereType<File>().map((f) => f.path.split('/').last).toList()..sort();
+    expect(kept, hasLength(2));
+    expect(kept.last, contains('${DateTime(2027, 1, 3).microsecondsSinceEpoch}'));
   });
 }

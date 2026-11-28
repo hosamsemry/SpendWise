@@ -32,8 +32,11 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? openConnection());
 
+  /// Bump with every schema change (and add an `onUpgrade` step).
+  static const int currentSchemaVersion = 7;
+
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => currentSchemaVersion;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -77,7 +80,37 @@ class AppDatabase extends _$AppDatabase {
         // lives in the movement history as an opening entry.
         await migrateLegacyVaultBalance(this);
       }
+      if (from < 7) {
+        // Skip columns that already exist (the table is created complete
+        // when upgrading from before v5).
+        final existing = {
+          for (final row in await customSelect('PRAGMA table_info(recurring_bills)').get())
+            row.read<String>('name'),
+        };
+        if (!existing.contains('amount_set_at')) {
+          await m.addColumn(recurringBillsTable, recurringBillsTable.amountSetAt);
+        }
+        if (!existing.contains('paused_at')) {
+          await m.addColumn(recurringBillsTable, recurringBillsTable.pausedAt);
+        }
+        await backfillBillPauseAndEstimateDates(this);
+      }
     },
+  );
+}
+
+/// v7 fills in what older versions didn't record: a paused bill's pause day
+/// (its last change is the best guess; if that is later than the real pause,
+/// a few missed dates show as overdue rather than silently disappearing) and
+/// when a bill's amount was set. Safe to run more than once, so restoring an
+/// older backup can use it too.
+Future<void> backfillBillPauseAndEstimateDates(AppDatabase db) async {
+  await db.customStatement(
+    'UPDATE recurring_bills SET paused_at = substr(updated_at, 1, 10) '
+    'WHERE is_active = 0 AND paused_at IS NULL',
+  );
+  await db.customStatement(
+    'UPDATE recurring_bills SET amount_set_at = updated_at WHERE amount_set_at IS NULL',
   );
 }
 

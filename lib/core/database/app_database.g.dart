@@ -3115,6 +3115,17 @@ class $RecurringBillsTableTable extends RecurringBillsTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _amountSetAtMeta = const VerificationMeta(
+    'amountSetAt',
+  );
+  @override
+  late final GeneratedColumn<String> amountSetAt = GeneratedColumn<String>(
+    'amount_set_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isVariableMeta = const VerificationMeta(
     'isVariable',
   );
@@ -3178,6 +3189,17 @@ class $RecurringBillsTableTable extends RecurringBillsTable
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _pausedAtMeta = const VerificationMeta(
+    'pausedAt',
+  );
+  @override
+  late final GeneratedColumn<String> pausedAt = GeneratedColumn<String>(
+    'paused_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -3217,11 +3239,13 @@ class $RecurringBillsTableTable extends RecurringBillsTable
     categoryId,
     categoryName,
     amountMinor,
+    amountSetAt,
     isVariable,
     frequency,
     anchorDate,
     remindDaysBefore,
     isActive,
+    pausedAt,
     note,
     createdAt,
     updatedAt,
@@ -3285,6 +3309,15 @@ class $RecurringBillsTableTable extends RecurringBillsTable
     } else if (isInserting) {
       context.missing(_amountMinorMeta);
     }
+    if (data.containsKey('amount_set_at')) {
+      context.handle(
+        _amountSetAtMeta,
+        amountSetAt.isAcceptableOrUnknown(
+          data['amount_set_at']!,
+          _amountSetAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_variable')) {
       context.handle(
         _isVariableMeta,
@@ -3320,6 +3353,12 @@ class $RecurringBillsTableTable extends RecurringBillsTable
       context.handle(
         _isActiveMeta,
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('paused_at')) {
+      context.handle(
+        _pausedAtMeta,
+        pausedAt.isAcceptableOrUnknown(data['paused_at']!, _pausedAtMeta),
       );
     }
     if (data.containsKey('note')) {
@@ -3377,6 +3416,10 @@ class $RecurringBillsTableTable extends RecurringBillsTable
         DriftSqlType.int,
         data['${effectivePrefix}amount_minor'],
       )!,
+      amountSetAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}amount_set_at'],
+      ),
       isVariable: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_variable'],
@@ -3397,6 +3440,10 @@ class $RecurringBillsTableTable extends RecurringBillsTable
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      pausedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}paused_at'],
+      ),
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -3426,11 +3473,13 @@ class RecurringBillEntry extends DataClass
   final String? categoryId;
   final String? categoryName;
   final int amountMinor;
+  final String? amountSetAt;
   final bool isVariable;
   final String frequency;
   final String anchorDate;
   final int? remindDaysBefore;
   final bool isActive;
+  final String? pausedAt;
   final String? note;
   final String createdAt;
   final String updatedAt;
@@ -3441,11 +3490,13 @@ class RecurringBillEntry extends DataClass
     this.categoryId,
     this.categoryName,
     required this.amountMinor,
+    this.amountSetAt,
     required this.isVariable,
     required this.frequency,
     required this.anchorDate,
     this.remindDaysBefore,
     required this.isActive,
+    this.pausedAt,
     this.note,
     required this.createdAt,
     required this.updatedAt,
@@ -3463,6 +3514,9 @@ class RecurringBillEntry extends DataClass
       map['category_name'] = Variable<String>(categoryName);
     }
     map['amount_minor'] = Variable<int>(amountMinor);
+    if (!nullToAbsent || amountSetAt != null) {
+      map['amount_set_at'] = Variable<String>(amountSetAt);
+    }
     map['is_variable'] = Variable<bool>(isVariable);
     map['frequency'] = Variable<String>(frequency);
     map['anchor_date'] = Variable<String>(anchorDate);
@@ -3470,6 +3524,9 @@ class RecurringBillEntry extends DataClass
       map['remind_days_before'] = Variable<int>(remindDaysBefore);
     }
     map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || pausedAt != null) {
+      map['paused_at'] = Variable<String>(pausedAt);
+    }
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
@@ -3490,6 +3547,9 @@ class RecurringBillEntry extends DataClass
           ? const Value.absent()
           : Value(categoryName),
       amountMinor: Value(amountMinor),
+      amountSetAt: amountSetAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amountSetAt),
       isVariable: Value(isVariable),
       frequency: Value(frequency),
       anchorDate: Value(anchorDate),
@@ -3497,6 +3557,9 @@ class RecurringBillEntry extends DataClass
           ? const Value.absent()
           : Value(remindDaysBefore),
       isActive: Value(isActive),
+      pausedAt: pausedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pausedAt),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -3515,11 +3578,13 @@ class RecurringBillEntry extends DataClass
       categoryId: serializer.fromJson<String?>(json['categoryId']),
       categoryName: serializer.fromJson<String?>(json['categoryName']),
       amountMinor: serializer.fromJson<int>(json['amountMinor']),
+      amountSetAt: serializer.fromJson<String?>(json['amountSetAt']),
       isVariable: serializer.fromJson<bool>(json['isVariable']),
       frequency: serializer.fromJson<String>(json['frequency']),
       anchorDate: serializer.fromJson<String>(json['anchorDate']),
       remindDaysBefore: serializer.fromJson<int?>(json['remindDaysBefore']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      pausedAt: serializer.fromJson<String?>(json['pausedAt']),
       note: serializer.fromJson<String?>(json['note']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
@@ -3535,11 +3600,13 @@ class RecurringBillEntry extends DataClass
       'categoryId': serializer.toJson<String?>(categoryId),
       'categoryName': serializer.toJson<String?>(categoryName),
       'amountMinor': serializer.toJson<int>(amountMinor),
+      'amountSetAt': serializer.toJson<String?>(amountSetAt),
       'isVariable': serializer.toJson<bool>(isVariable),
       'frequency': serializer.toJson<String>(frequency),
       'anchorDate': serializer.toJson<String>(anchorDate),
       'remindDaysBefore': serializer.toJson<int?>(remindDaysBefore),
       'isActive': serializer.toJson<bool>(isActive),
+      'pausedAt': serializer.toJson<String?>(pausedAt),
       'note': serializer.toJson<String?>(note),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
@@ -3553,11 +3620,13 @@ class RecurringBillEntry extends DataClass
     Value<String?> categoryId = const Value.absent(),
     Value<String?> categoryName = const Value.absent(),
     int? amountMinor,
+    Value<String?> amountSetAt = const Value.absent(),
     bool? isVariable,
     String? frequency,
     String? anchorDate,
     Value<int?> remindDaysBefore = const Value.absent(),
     bool? isActive,
+    Value<String?> pausedAt = const Value.absent(),
     Value<String?> note = const Value.absent(),
     String? createdAt,
     String? updatedAt,
@@ -3568,6 +3637,7 @@ class RecurringBillEntry extends DataClass
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
     categoryName: categoryName.present ? categoryName.value : this.categoryName,
     amountMinor: amountMinor ?? this.amountMinor,
+    amountSetAt: amountSetAt.present ? amountSetAt.value : this.amountSetAt,
     isVariable: isVariable ?? this.isVariable,
     frequency: frequency ?? this.frequency,
     anchorDate: anchorDate ?? this.anchorDate,
@@ -3575,6 +3645,7 @@ class RecurringBillEntry extends DataClass
         ? remindDaysBefore.value
         : this.remindDaysBefore,
     isActive: isActive ?? this.isActive,
+    pausedAt: pausedAt.present ? pausedAt.value : this.pausedAt,
     note: note.present ? note.value : this.note,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -3593,6 +3664,9 @@ class RecurringBillEntry extends DataClass
       amountMinor: data.amountMinor.present
           ? data.amountMinor.value
           : this.amountMinor,
+      amountSetAt: data.amountSetAt.present
+          ? data.amountSetAt.value
+          : this.amountSetAt,
       isVariable: data.isVariable.present
           ? data.isVariable.value
           : this.isVariable,
@@ -3604,6 +3678,7 @@ class RecurringBillEntry extends DataClass
           ? data.remindDaysBefore.value
           : this.remindDaysBefore,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      pausedAt: data.pausedAt.present ? data.pausedAt.value : this.pausedAt,
       note: data.note.present ? data.note.value : this.note,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -3619,11 +3694,13 @@ class RecurringBillEntry extends DataClass
           ..write('categoryId: $categoryId, ')
           ..write('categoryName: $categoryName, ')
           ..write('amountMinor: $amountMinor, ')
+          ..write('amountSetAt: $amountSetAt, ')
           ..write('isVariable: $isVariable, ')
           ..write('frequency: $frequency, ')
           ..write('anchorDate: $anchorDate, ')
           ..write('remindDaysBefore: $remindDaysBefore, ')
           ..write('isActive: $isActive, ')
+          ..write('pausedAt: $pausedAt, ')
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -3639,11 +3716,13 @@ class RecurringBillEntry extends DataClass
     categoryId,
     categoryName,
     amountMinor,
+    amountSetAt,
     isVariable,
     frequency,
     anchorDate,
     remindDaysBefore,
     isActive,
+    pausedAt,
     note,
     createdAt,
     updatedAt,
@@ -3658,11 +3737,13 @@ class RecurringBillEntry extends DataClass
           other.categoryId == this.categoryId &&
           other.categoryName == this.categoryName &&
           other.amountMinor == this.amountMinor &&
+          other.amountSetAt == this.amountSetAt &&
           other.isVariable == this.isVariable &&
           other.frequency == this.frequency &&
           other.anchorDate == this.anchorDate &&
           other.remindDaysBefore == this.remindDaysBefore &&
           other.isActive == this.isActive &&
+          other.pausedAt == this.pausedAt &&
           other.note == this.note &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -3675,11 +3756,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
   final Value<String?> categoryId;
   final Value<String?> categoryName;
   final Value<int> amountMinor;
+  final Value<String?> amountSetAt;
   final Value<bool> isVariable;
   final Value<String> frequency;
   final Value<String> anchorDate;
   final Value<int?> remindDaysBefore;
   final Value<bool> isActive;
+  final Value<String?> pausedAt;
   final Value<String?> note;
   final Value<String> createdAt;
   final Value<String> updatedAt;
@@ -3691,11 +3774,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     this.categoryId = const Value.absent(),
     this.categoryName = const Value.absent(),
     this.amountMinor = const Value.absent(),
+    this.amountSetAt = const Value.absent(),
     this.isVariable = const Value.absent(),
     this.frequency = const Value.absent(),
     this.anchorDate = const Value.absent(),
     this.remindDaysBefore = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.pausedAt = const Value.absent(),
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -3708,11 +3793,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     this.categoryId = const Value.absent(),
     this.categoryName = const Value.absent(),
     required int amountMinor,
+    this.amountSetAt = const Value.absent(),
     this.isVariable = const Value.absent(),
     required String frequency,
     required String anchorDate,
     this.remindDaysBefore = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.pausedAt = const Value.absent(),
     this.note = const Value.absent(),
     required String createdAt,
     required String updatedAt,
@@ -3732,11 +3819,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     Expression<String>? categoryId,
     Expression<String>? categoryName,
     Expression<int>? amountMinor,
+    Expression<String>? amountSetAt,
     Expression<bool>? isVariable,
     Expression<String>? frequency,
     Expression<String>? anchorDate,
     Expression<int>? remindDaysBefore,
     Expression<bool>? isActive,
+    Expression<String>? pausedAt,
     Expression<String>? note,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
@@ -3749,11 +3838,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
       if (categoryId != null) 'category_id': categoryId,
       if (categoryName != null) 'category_name': categoryName,
       if (amountMinor != null) 'amount_minor': amountMinor,
+      if (amountSetAt != null) 'amount_set_at': amountSetAt,
       if (isVariable != null) 'is_variable': isVariable,
       if (frequency != null) 'frequency': frequency,
       if (anchorDate != null) 'anchor_date': anchorDate,
       if (remindDaysBefore != null) 'remind_days_before': remindDaysBefore,
       if (isActive != null) 'is_active': isActive,
+      if (pausedAt != null) 'paused_at': pausedAt,
       if (note != null) 'note': note,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -3768,11 +3859,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     Value<String?>? categoryId,
     Value<String?>? categoryName,
     Value<int>? amountMinor,
+    Value<String?>? amountSetAt,
     Value<bool>? isVariable,
     Value<String>? frequency,
     Value<String>? anchorDate,
     Value<int?>? remindDaysBefore,
     Value<bool>? isActive,
+    Value<String?>? pausedAt,
     Value<String?>? note,
     Value<String>? createdAt,
     Value<String>? updatedAt,
@@ -3785,11 +3878,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       amountMinor: amountMinor ?? this.amountMinor,
+      amountSetAt: amountSetAt ?? this.amountSetAt,
       isVariable: isVariable ?? this.isVariable,
       frequency: frequency ?? this.frequency,
       anchorDate: anchorDate ?? this.anchorDate,
       remindDaysBefore: remindDaysBefore ?? this.remindDaysBefore,
       isActive: isActive ?? this.isActive,
+      pausedAt: pausedAt ?? this.pausedAt,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -3818,6 +3913,9 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     if (amountMinor.present) {
       map['amount_minor'] = Variable<int>(amountMinor.value);
     }
+    if (amountSetAt.present) {
+      map['amount_set_at'] = Variable<String>(amountSetAt.value);
+    }
     if (isVariable.present) {
       map['is_variable'] = Variable<bool>(isVariable.value);
     }
@@ -3832,6 +3930,9 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
     }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (pausedAt.present) {
+      map['paused_at'] = Variable<String>(pausedAt.value);
     }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
@@ -3857,11 +3958,13 @@ class RecurringBillsTableCompanion extends UpdateCompanion<RecurringBillEntry> {
           ..write('categoryId: $categoryId, ')
           ..write('categoryName: $categoryName, ')
           ..write('amountMinor: $amountMinor, ')
+          ..write('amountSetAt: $amountSetAt, ')
           ..write('isVariable: $isVariable, ')
           ..write('frequency: $frequency, ')
           ..write('anchorDate: $anchorDate, ')
           ..write('remindDaysBefore: $remindDaysBefore, ')
           ..write('isActive: $isActive, ')
+          ..write('pausedAt: $pausedAt, ')
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -8725,11 +8828,13 @@ typedef $$RecurringBillsTableTableCreateCompanionBuilder =
       Value<String?> categoryId,
       Value<String?> categoryName,
       required int amountMinor,
+      Value<String?> amountSetAt,
       Value<bool> isVariable,
       required String frequency,
       required String anchorDate,
       Value<int?> remindDaysBefore,
       Value<bool> isActive,
+      Value<String?> pausedAt,
       Value<String?> note,
       required String createdAt,
       required String updatedAt,
@@ -8743,11 +8848,13 @@ typedef $$RecurringBillsTableTableUpdateCompanionBuilder =
       Value<String?> categoryId,
       Value<String?> categoryName,
       Value<int> amountMinor,
+      Value<String?> amountSetAt,
       Value<bool> isVariable,
       Value<String> frequency,
       Value<String> anchorDate,
       Value<int?> remindDaysBefore,
       Value<bool> isActive,
+      Value<String?> pausedAt,
       Value<String?> note,
       Value<String> createdAt,
       Value<String> updatedAt,
@@ -8852,6 +8959,11 @@ class $$RecurringBillsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get amountSetAt => $composableBuilder(
+    column: $table.amountSetAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get isVariable => $composableBuilder(
     column: $table.isVariable,
     builder: (column) => ColumnFilters(column),
@@ -8874,6 +8986,11 @@ class $$RecurringBillsTableTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8975,6 +9092,11 @@ class $$RecurringBillsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get amountSetAt => $composableBuilder(
+    column: $table.amountSetAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isVariable => $composableBuilder(
     column: $table.isVariable,
     builder: (column) => ColumnOrderings(column),
@@ -8997,6 +9119,11 @@ class $$RecurringBillsTableTableOrderingComposer
 
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9067,6 +9194,11 @@ class $$RecurringBillsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get amountSetAt => $composableBuilder(
+    column: $table.amountSetAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isVariable => $composableBuilder(
     column: $table.isVariable,
     builder: (column) => column,
@@ -9087,6 +9219,9 @@ class $$RecurringBillsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<String> get pausedAt =>
+      $composableBuilder(column: $table.pausedAt, builder: (column) => column);
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
@@ -9192,11 +9327,13 @@ class $$RecurringBillsTableTableTableManager
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> categoryName = const Value.absent(),
                 Value<int> amountMinor = const Value.absent(),
+                Value<String?> amountSetAt = const Value.absent(),
                 Value<bool> isVariable = const Value.absent(),
                 Value<String> frequency = const Value.absent(),
                 Value<String> anchorDate = const Value.absent(),
                 Value<int?> remindDaysBefore = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<String?> pausedAt = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
@@ -9208,11 +9345,13 @@ class $$RecurringBillsTableTableTableManager
                 categoryId: categoryId,
                 categoryName: categoryName,
                 amountMinor: amountMinor,
+                amountSetAt: amountSetAt,
                 isVariable: isVariable,
                 frequency: frequency,
                 anchorDate: anchorDate,
                 remindDaysBefore: remindDaysBefore,
                 isActive: isActive,
+                pausedAt: pausedAt,
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -9226,11 +9365,13 @@ class $$RecurringBillsTableTableTableManager
                 Value<String?> categoryId = const Value.absent(),
                 Value<String?> categoryName = const Value.absent(),
                 required int amountMinor,
+                Value<String?> amountSetAt = const Value.absent(),
                 Value<bool> isVariable = const Value.absent(),
                 required String frequency,
                 required String anchorDate,
                 Value<int?> remindDaysBefore = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<String?> pausedAt = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 required String createdAt,
                 required String updatedAt,
@@ -9242,11 +9383,13 @@ class $$RecurringBillsTableTableTableManager
                 categoryId: categoryId,
                 categoryName: categoryName,
                 amountMinor: amountMinor,
+                amountSetAt: amountSetAt,
                 isVariable: isVariable,
                 frequency: frequency,
                 anchorDate: anchorDate,
                 remindDaysBefore: remindDaysBefore,
                 isActive: isActive,
+                pausedAt: pausedAt,
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

@@ -150,7 +150,7 @@ void main() {
 
       expect(backup.metadata.appName, equals('Paydial'));
       expect(backup.metadata.version, equals(1));
-      expect(backup.metadata.schemaVersion, equals(6));
+      expect(backup.metadata.schemaVersion, equals(7));
 
       expect(backup.categoryCount, equals(2));
       expect(backup.budgetCycleCount, equals(1));
