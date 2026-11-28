@@ -184,6 +184,14 @@ class RecurringBillRepository {
     return map;
   }
 
+  /// Ids of the transactions that paid a bill. Safe-to-spend already set
+  /// that money aside, so these don't count as day-to-day spending.
+  Future<Set<String>> getBillPaymentTransactionIds() async {
+    final occ = db.billOccurrencesTable;
+    final rows = await (db.select(occ)..where((t) => t.transactionId.isNotNull())).get();
+    return {for (final r in rows) r.transactionId!};
+  }
+
   /// Handled due dates of [billId], newest first, with payment amounts.
   Future<List<BillOccurrence>> getOccurrences(String billId) async {
     final occ = db.billOccurrencesTable;

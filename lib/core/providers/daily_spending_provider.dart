@@ -46,6 +46,9 @@ class DayGroupedTransactions {
 }
 
 /// Computes the total spending recorded today, transaction count, and daily safe pace
+///
+/// "Today" means day-to-day spending: transfers into the Savings envelope and
+/// bill payments are left out (see below).
 final todaySpendingSummaryProvider =
     FutureProvider<DailySpendingSummary>((ref) async {
   ref.watch(refreshTriggerProvider);
@@ -61,10 +64,16 @@ final todaySpendingSummaryProvider =
 
   // Fetch all transactions
   final allTxs = await txRepo.getAllTransactions();
+  final billPaymentIds = await billRepo.getBillPaymentTransactionIds();
 
-  // Filter today's expenses
+  // Today's day-to-day spending. Moving money into the Savings envelope is
+  // not spending, and bill payments were already set aside from the pace
+  // (as committed bills) before they were paid, so neither counts here.
   final todayExpenseTxs = allTxs.where((tx) {
     if (tx.type != TransactionType.expense) return false;
+    if (billPaymentIds.contains(tx.id)) return false;
+    final name = tx.categoryName;
+    if (name != null && isSavingsCategoryName(name)) return false;
     final d = tx.date;
     return d.year == todayDate.year &&
         d.month == todayDate.month &&
@@ -116,6 +125,12 @@ final todaySpendingSummaryProvider =
     cycleEnd: cycle.endDate,
   );
   spendableRemainingMinor -= committedBills.inMinorUnits;
+
+  // The pace is what was safe to spend per day as of this morning: add back
+  // today's day-to-day spending, which the budgets above already subtract.
+  // Otherwise every purchase would shrink today's own allowance, and spending
+  // exactly the amount shown would count as going over it.
+  spendableRemainingMinor += totalSpentMinor;
 
   if (spendableRemainingMinor > 0) {
     dailyPace = Money.fromMinorUnits(spendableRemainingMinor ~/ daysRemaining);

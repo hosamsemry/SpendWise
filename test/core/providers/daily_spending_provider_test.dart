@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
+import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
@@ -183,8 +184,49 @@ void main() {
 
       final summary = await container.read(todaySpendingSummaryProvider.future);
       final days = summary.daysRemainingInCycle!;
-      // Spendable = Food 3,000 - 600 spent = 2,400 (not 10,000 - 1,100).
-      expect(summary.dailyPace!.inMinorUnits, 240000 ~/ days);
+      // As of this morning: Food 3,000 spendable (not 10,000), so the pace is
+      // 3,000 / days. Moving 500 into Savings is not spending today.
+      expect(summary.dailyPace!.inMinorUnits, 300000 ~/ days);
+      expect(summary.totalSpentToday, Money.fromMajorUnits(600));
+      expect(summary.remainingToday.inMinorUnits, 300000 ~/ days - 60000);
+    });
+
+    test('spending exactly the safe amount keeps you on pace', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await db.close();
+      });
+
+      final food = await CategoryRepository(db).createCategory(
+        name: 'Food',
+        type: CategoryType.expense,
+        defaultBudget: Money.fromMajorUnits(3000),
+      );
+      await container
+          .read(budgetCycleRepositoryProvider)
+          .getOrCreateCycleForDate(DateTime.now());
+
+      final before = await container.read(todaySpendingSummaryProvider.future);
+      final pace = before.dailyPace!;
+      expect(before.remainingToday, pace);
+
+      await TransactionRepository(db).addTransaction(
+        type: TransactionType.expense,
+        amount: pace,
+        categoryId: food.id,
+        date: DateTime.now(),
+      );
+      container.read(refreshTriggerProvider.notifier).trigger();
+      final after = await container.read(todaySpendingSummaryProvider.future);
+
+      // Today's allowance doesn't shrink as you spend it.
+      expect(after.dailyPace, pace);
+      expect(after.isOverDailyPace, isFalse);
+      expect(after.remainingToday.inMinorUnits, 0);
     });
 
     test('Computes isOverDailyPace and remainingToday accurately', () {

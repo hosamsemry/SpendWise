@@ -268,6 +268,10 @@ void main() {
     final paid = await container.read(todaySpendingSummaryProvider.future);
     expect(paid.committedBills.inMinorUnits, 0);
     expect(paid.dailyPace!.inMinorUnits, (900000 - 30000) ~/ days);
+    // The money was set aside already, so paying doesn't count as spending
+    // today or push the day over its pace.
+    expect(paid.totalSpentToday.inMinorUnits, 0);
+    expect(paid.isOverDailyPace, isFalse);
   });
 
   test('backup restores bills and only the payments whose transactions exist', () async {
