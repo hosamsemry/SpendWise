@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/providers/daily_spending_provider.dart';
@@ -76,12 +77,12 @@ class BalanceHeroCard extends StatelessWidget {
     // Cycle days calculations
     final totalCycleDays = math.max(
       1,
-      cycle.endDate.difference(cycle.startDate).inDays + 1,
+      BudgetCycleCalculator.calendarDaysBetween(cycle.startDate, cycle.endDate) + 1,
     );
     final daysRemaining = isHistoricalCycle
         ? 0
         : (daily.daysRemainingInCycle ??
-                cycle.endDate.difference(DateTime.now()).inDays + 1)
+                BudgetCycleCalculator.calendarDaysBetween(DateTime.now(), cycle.endDate) + 1)
             .clamp(0, totalCycleDays);
     final daysElapsed =
         isHistoricalCycle ? totalCycleDays : (totalCycleDays - daysRemaining).clamp(0, totalCycleDays);

@@ -322,4 +322,21 @@ void main() {
       );
     });
   });
+
+  group('calendarDaysBetween', () {
+    // Run with TZ=Africa/Cairo to cover Egypt's DST switch (Apr 24, 2026, at
+    // midnight): local-midnight arithmetic loses a day there.
+    test('counts calendar days across a daylight-saving change', () {
+      expect(BudgetCycleCalculator.calendarDaysBetween(DateTime(2026, 4, 1), DateTime(2026, 4, 30)), 29);
+      expect(BudgetCycleCalculator.calendarDaysBetween(DateTime(2026, 10, 1), DateTime(2026, 10, 31)), 30);
+    });
+
+    test('ignores the time of day', () {
+      expect(
+        BudgetCycleCalculator.calendarDaysBetween(DateTime(2026, 11, 27, 15), DateTime(2026, 11, 28)),
+        1,
+      );
+      expect(BudgetCycleCalculator.calendarDaysBetween(DateTime(2026, 11, 28), DateTime(2026, 11, 27)), -1);
+    });
+  });
 }

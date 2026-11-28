@@ -15,6 +15,15 @@ class BudgetCycleCalculator {
   static int daysInMonth(int year, int month) =>
       DateTime(year, month + 1, 0).day;
 
+  /// Whole calendar days from [from] to [to] (negative if [to] is earlier),
+  /// ignoring the time of day. Counted in UTC so a daylight-saving change
+  /// (Egypt switches at midnight in late April) can't make a day 23 hours
+  /// long and lose it to `Duration.inDays` truncation.
+  static int calendarDaysBetween(DateTime from, DateTime to) =>
+      DateTime.utc(to.year, to.month, to.day)
+          .difference(DateTime.utc(from.year, from.month, from.day))
+          .inDays;
+
   /// Clamps [targetDay] to the maximum number of days in [month] of [year].
   static int clampedDay(int year, int month, int targetDay) {
     final maxDays = daysInMonth(year, month);

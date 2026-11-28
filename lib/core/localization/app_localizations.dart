@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
 import 'package:money_tracker/core/money/money.dart';
 
 /// Centralized localization dictionary for Paydial supporting English ('en') and Arabic ('ar').
@@ -615,9 +616,7 @@ class AppLocalizations {
     if (last == null) {
       return isArabic ? 'لم يتم النسخ الاحتياطي بعد' : 'Never backed up';
     }
-    final days = DateTime(now.year, now.month, now.day)
-        .difference(DateTime(last.year, last.month, last.day))
-        .inDays;
+    final days = BudgetCycleCalculator.calendarDaysBetween(last, now);
     if (days <= 0) return isArabic ? 'تم النسخ اليوم' : 'Backed up today';
     if (days == 1) return isArabic ? 'تم النسخ أمس' : 'Backed up yesterday';
     if (!isArabic) return 'Backed up $days days ago';
