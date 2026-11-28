@@ -8,7 +8,7 @@
 [![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2F%20Offline--First-0F5132)](https://github.com)
 [![Database](https://img.shields.io/badge/SQLite-Drift%20ORM-003B57?logo=sqlite&logoColor=white)](https://drift.simonbinder.eu)
-[![Tests](https://img.shields.io/badge/Tests-391%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
+[![Tests](https://img.shields.io/badge/Tests-419%20Passing%20(100%25)-16A34A?logo=checkmarx&logoColor=white)](test/)
 [![Security](https://img.shields.io/badge/Security-PBKDF2%20%2B%20AES--256--GCM%20%2B%20Biometrics-darkgreen)](lib/core/security/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -29,7 +29,7 @@
 - **Private App Switcher**: Balances are hidden from the recent-apps preview while your own screenshots keep working.
 
 ### 📅 Discrete Budget Cycle Engine
-- **Payday Alignment**: Configure custom cycle start days (e.g., the 25th) or traditional calendar months (the 1st).
+- **Payday Alignment**: Configure custom cycle start days (e.g., the 25th) or traditional calendar months (the 1st). Changing it later keeps your history consistent: the cycle it shortens keeps a fair share of its budget for its days, and bill payments stay matched to their cycles.
 - **Intelligent Calendar Transitions**: Automatic clamping for variable month lengths (28, 29, 30, and 31 days) with leap year awareness (e.g., February 29 vs 28).
 - **Immutable Historical Cycles**: Past budget cycles remain frozen snapshots unaffected by future budget changes.
 
@@ -48,7 +48,7 @@
 - **Unallocated Income Rebalancing**: Automatically allocates unbudgeted income straight to your Savings category.
 
 ### ⚡ Speed & Daily Workflow
-- **Daily Safe-to-Spend**: The dashboard shows how much you can spend today to finish the cycle on budget, with a pace gauge that warns when you are spending faster than planned. The Savings envelope is left out so it is never treated as spending money.
+- **Daily Safe-to-Spend**: The dashboard shows how much you can spend today to finish the cycle on budget, with a pace gauge that warns when you are spending faster than planned. The Savings envelope is left out so it is never treated as spending money. Today's allowance is set as of the morning, so spending it doesn't shrink it, and moving money into Savings or paying a bill doesn't count as today's spending.
 - **1-Tap Quick Presets**: Pin frequent expenses and income sources (e.g., "Coffee", "Salary", "Metro") for rapid 1-tap logging directly from the dashboard.
 - **Instant SnackBar Undo**: Deleted transactions and preset logs can be instantly restored in a single tap.
 - **Proactive Threshold Alerts**: Local Android notifications when a category reaches 80% and 100% of its budget. Alerts are re-checked whenever a budget is edited, and fire again if spending drops back under a threshold and crosses it later.
@@ -57,7 +57,8 @@
 ### 🧾 Bills & Subscriptions
 - **Recurring Bills and Income**: Rent, subscriptions, phone and internet, or your salary, repeating weekly, monthly, yearly, or **every cycle** on your payday.
 - **Confirm-First**: Bills due this week appear on the dashboard with **Paid** and **Skip**. Nothing is logged without your tap, and every payment can be undone.
-- **Variable Amounts**: Electricity or mobile bills ask for the amount when you pay, pre-filled with last time's.
+- **Variable Amounts**: Electricity or mobile bills ask for the amount when you pay, pre-filled with last time's. Undoing or deleting a payment brings back the estimate from before it.
+- **Pause and Resume**: Pausing hides a bill from due lists, reminders and safe-to-spend. Resuming skips only the dates missed while it was paused; anything already overdue stays overdue.
 - **Safe to Spend After Bills**: Unpaid bills due before the cycle ends are set aside from your daily safe-to-spend, so money already promised is never shown as free.
 - **Reminders**: A notification on the due date or 1, 3 or 7 days before, plus a monthly total of what your bills cost.
 
@@ -80,6 +81,8 @@
 
 ### 💾 Open Data Portability
 - **Password-Protected Backups**: Full database snapshot export and restore, encrypted with AES-256-GCM (PBKDF2-derived key) when you set a password, with schema validation and PIN preservation options.
+- **Undoable Restore**: Before a restore replaces your data, Paydial keeps a safety copy of it (on by default), so **Undo last restore** can put everything back.
+- **Safe Upgrades**: A copy of the database is kept before every app update that changes its structure.
 - **Backup Reminder**: Settings shows when you last backed up and nudges you when a backup is overdue.
 - **CSV Spreadsheets**: Export clean transaction ledgers and category cycle breakdowns formatted for spreadsheet analysis (Excel, Google Sheets).
 
