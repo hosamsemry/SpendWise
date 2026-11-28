@@ -166,4 +166,45 @@ void main() {
       });
     });
   });
+
+  group('BankMessageParser amount extraction', () {
+    final when = DateTime(2026, 11, 10, 12);
+    Money? amountOf(String text, {bool strict = false}) =>
+        BankMessageParser.parse(text, receivedAt: when, strict: strict)?.amount;
+
+    test('"LE" inside a word is not a currency', () {
+      for (final strict in [false, true]) {
+        expect(
+          amountOf('Your card ending 1234 was charged at APPLE 12 STORE for EGP 300.00', strict: strict),
+          Money.fromMajorUnits(300),
+        );
+        expect(amountOf('Purchase at TABLE 5 CAFE EGP 85.50 card 4321', strict: strict), Money.parse('85.50'));
+      }
+    });
+
+    test('a bad first match does not hide the real amount', () {
+      expect(
+        amountOf('Transfer sent to MOBILE 01001234567 with amount EGP 200 Ref 9988'),
+        Money.fromMajorUnits(200),
+      );
+    });
+
+    test('a balance mentioned first is not taken as the amount', () {
+      expect(
+        amountOf('Avl bal EGP 12,000.00. Your account was debited with EGP 500.00'),
+        Money.fromMajorUnits(500),
+      );
+      expect(
+        amountOf('رصيدك 9,000 ج.م. تم خصم 250 ج.م من بطاقتك رقم 1234'),
+        Money.fromMajorUnits(250),
+      );
+    });
+
+    test('a lone balance amount is still used when nothing else is found', () {
+      expect(
+        amountOf('Your account 1234 was credited. Available balance EGP 700'),
+        Money.fromMajorUnits(700),
+      );
+    });
+  });
 }

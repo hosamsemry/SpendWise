@@ -45,8 +45,10 @@ class BankMessageParser {
   // Currency-anchored amount patterns (checked in priority order before generic fallback)
   static final List<RegExp> _amountPatterns = [
     // e.g., EGP 100.01, SAR 250, USD 49.99, $120.50
+    // Letter codes must not start inside a word: "LE" in "APPLE 12" or
+    // "MOBILE 0100..." is not Egyptian pounds.
     RegExp(
-      r'(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\.E\.|\$|€|£)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)',
+      r'(?:(?<![A-Za-z])(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\.E\.)|\$|€|£)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)',
       caseSensitive: false,
     ),
     // e.g., 357.00 جم, 515.00 ج.م, 100.01 EGP, 500 ريال
@@ -77,6 +79,13 @@ class BankMessageParser {
 
   /// Number of leading [_amountPatterns] that are anchored to a currency.
   static const int _currencyAnchoredAmountPatterns = 2;
+
+  /// Words that introduce an account balance rather than the transaction
+  /// amount ("Avl bal EGP 12,000", "الرصيد المتاح 500 ج.م").
+  static final RegExp _balanceLeadIn = RegExp(
+    r'(?:(?<![A-Za-z])(?:bal|balance|avl|available)(?![A-Za-z])|رصيد)[^0-9]{0,20}$',
+    caseSensitive: false,
+  );
 
   static final List<RegExp> _referencePatterns = [
     RegExp(
@@ -192,17 +201,23 @@ class BankMessageParser {
     final patterns = currencyAnchoredOnly
         ? _amountPatterns.take(_currencyAnchoredAmountPatterns)
         : _amountPatterns;
+    // Try every match in priority order, not just the first: an earlier
+    // match can be a phone number or a balance. Amounts that follow a balance
+    // word are only used if nothing else is found.
+    Money? balanceFallback;
     for (final pattern in patterns) {
-      final match = pattern.firstMatch(normalized);
-      if (match != null) {
-        final rawNumber = match.group(1);
-        final parsed = Money.tryParse(rawNumber);
-        if (parsed != null && parsed.inMinorUnits > 0) {
-          return parsed;
+      for (final match in pattern.allMatches(normalized)) {
+        final parsed = Money.tryParse(match.group(1));
+        if (parsed == null || parsed.inMinorUnits <= 0) continue;
+        final before = normalized.substring(0, match.start);
+        if (_balanceLeadIn.hasMatch(before)) {
+          balanceFallback ??= parsed;
+          continue;
         }
+        return parsed;
       }
     }
-    return null;
+    return balanceFallback;
   }
 
   static String? _extractReferenceId(String normalized) {

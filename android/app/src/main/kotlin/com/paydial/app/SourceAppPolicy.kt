@@ -33,7 +33,8 @@ object SourceAppPolicy {
 
     private val CURRENCY_ANCHORED_AMOUNT = listOf(
         Regex(
-            "(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\\.E\\.|\\$|€|£)\\s*[0-9]",
+            // Letter codes must not start inside a word ("LE" in "SALE 50").
+            "(?:(?<![A-Za-z])(?:EGP|SAR|AED|USD|EUR|GBP|LE|L\\.E\\.)|\\$|€|£)\\s*[0-9]",
             RegexOption.IGNORE_CASE
         ),
         Regex(
