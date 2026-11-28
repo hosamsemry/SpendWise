@@ -233,4 +233,75 @@ void main() {
       expect(find.text('IPN transfer'), findsOneWidget);
     },
   );
+
+  group('confirming uses the category the card shows', () {
+    const merchant = 'كهرباء جنوب القاهرة';
+    String expenseAlert(String ref) =>
+        'تم خصم مبلغ 515.00 جم من حسابكم رقم 0140 عند $merchant يوم 10-29 مرجع التاجر $ref';
+    String incomeAlert(String ref) =>
+        'تم إضافة مبلغ 300.00 جم إلى حسابكم رقم 0140 عند $merchant يوم 10-30 مرجع التاجر $ref';
+
+    Future<void> openSheet(WidgetTester tester, AppDatabase db) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('en'), Locale('ar')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const Scaffold(body: PendingTransactionsSheet()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an income is not saved under a learned expense category', (tester) async {
+      final setup = await createSeededDb();
+      addTearDown(setup.db.close);
+      final repo = PendingTransactionRepository(setup.db);
+
+      // Learn merchant -> Utilities from an expense.
+      final first = await repo.ingestMessage(expenseAlert('111'));
+      await repo.markConfirmed(pending: first!, categoryId: setup.utilities.id);
+
+      // The same merchant now sends money in.
+      final income = await repo.ingestMessage(incomeAlert('222'));
+      expect(income!.suggestedCategoryId, setup.utilities.id);
+
+      await openSheet(tester, setup.db);
+      await tester.tap(find.byKey(ValueKey('pending_confirm_${income.id}')));
+      await tester.pumpAndSettle();
+
+      final txs = await TransactionRepository(setup.db).getAllTransactions();
+      expect(txs, hasLength(1));
+      expect(txs.single.categoryId, isNull);
+    });
+
+    testWidgets('a learned category that was deleted must be picked again', (tester) async {
+      final setup = await createSeededDb();
+      addTearDown(setup.db.close);
+      final repo = PendingTransactionRepository(setup.db);
+
+      final first = await repo.ingestMessage(expenseAlert('111'));
+      await repo.markConfirmed(pending: first!, categoryId: setup.utilities.id);
+      await CategoryRepository(setup.db).deleteCategory(setup.utilities.id);
+      final next = await repo.ingestMessage(expenseAlert('333'));
+      expect(next!.suggestedCategoryId, setup.utilities.id);
+
+      await openSheet(tester, setup.db);
+      await tester.tap(find.byKey(ValueKey('pending_confirm_${next.id}')));
+      await tester.pumpAndSettle();
+
+      // Asks for a category instead of failing on the missing one.
+      expect(find.text('Select category to confirm'), findsOneWidget);
+      expect(await TransactionRepository(setup.db).getAllTransactions(), isEmpty);
+      expect(find.byKey(ValueKey('pending_confirm_${next.id}')), findsOneWidget);
+    });
+  });
 }

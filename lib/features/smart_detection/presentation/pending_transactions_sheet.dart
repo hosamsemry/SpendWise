@@ -215,7 +215,9 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
       return;
     }
 
-    if (_type == TransactionType.expense && _selectedCategoryId == null) {
+    // Save exactly what the card shows: never a hidden, stale suggestion.
+    final categoryId = _effectiveCategoryId;
+    if (_type == TransactionType.expense && categoryId == null) {
       setState(() => _categoryError = context.l10n.selectCategoryHint);
       return;
     }
@@ -231,7 +233,7 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
         pending: widget.item,
         type: _type,
         amount: parsedAmount,
-        categoryId: _selectedCategoryId,
+        categoryId: categoryId,
         date: widget.item.transactionDate,
         note: _noteController.text.trim().isEmpty
             ? null
@@ -263,19 +265,24 @@ class _PendingItemCardState extends ConsumerState<_PendingItemCard> {
     if (mounted) widget.onDismissed();
   }
 
+  List<Category> get _matchingCategories => widget.allCategories.where((c) {
+        return _type == TransactionType.expense
+            ? c.type.isExpense
+            : c.type.isIncome;
+      }).toList();
+
+  /// The selected category if it still exists and fits the type. The learned
+  /// suggestion can point at a deleted category, or at one of the other type
+  /// (a merchant learned from an expense, now seen as income).
+  String? get _effectiveCategoryId =>
+      _matchingCategories.any((c) => c.id == _selectedCategoryId)
+          ? _selectedCategoryId
+          : null;
+
   @override
   Widget build(BuildContext context) {
-    final matchingCategories = widget.allCategories.where((c) {
-      return _type == TransactionType.expense
-          ? c.type.isExpense
-          : c.type.isIncome;
-    }).toList();
-
-    final effectiveSelectedId = matchingCategories.any(
-      (c) => c.id == _selectedCategoryId,
-    )
-        ? _selectedCategoryId
-        : null;
+    final matchingCategories = _matchingCategories;
+    final effectiveSelectedId = _effectiveCategoryId;
 
     return Container(
       padding: const EdgeInsets.all(14),
