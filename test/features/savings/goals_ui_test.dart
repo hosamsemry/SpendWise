@@ -11,6 +11,7 @@ import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'package:money_tracker/features/savings/presentation/cycle_closeout_card.dart';
+import 'package:money_tracker/features/savings/presentation/goal_form_sheet.dart';
 import 'package:money_tracker/features/savings/presentation/goals_screen.dart';
 import 'package:money_tracker/features/transactions/domain/transaction_model.dart';
 import '../../test_helper.dart';
@@ -197,5 +198,38 @@ void main() {
     await pump(tester, const GoalsScreen(), locale: const Locale('ar'));
     expect(find.text('أهداف الادخار'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a goal whose target date has passed can still open the date picker', (tester) async {
+    await boot();
+    addTearDown(teardown);
+    final service = container.read(savingsGoalServiceProvider);
+    final now = DateTime.now();
+    await service.createGoal(
+      name: 'Trip',
+      target: const Money.fromMinorUnits(100000),
+      targetDate: DateTime(now.year, now.month - 2, 1),
+    );
+    final trip = (await service.goalsWithBalances()).single;
+
+    await pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (ctx) => TextButton(
+            onPressed: () => showGoalForm(ctx, existing: trip),
+            child: const Text('edit'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('edit'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('goal_date_tile')));
+    await tester.tap(find.byKey(const ValueKey('goal_date_tile')));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(DatePickerDialog), findsOneWidget);
   });
 }

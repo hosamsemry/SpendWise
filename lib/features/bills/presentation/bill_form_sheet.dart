@@ -83,11 +83,17 @@ class _BillFormSheetState extends ConsumerState<BillFormSheet> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final firstDate = DateTime(now.year - 1, now.month, now.day);
+    final lastDate = DateTime(now.year + 3, 12, 31);
+    // An old bill's date can be before the picker's range (the picker
+    // asserts on that), so open it on the nearest allowed day.
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate,
-      firstDate: DateTime(now.year - 1, now.month, now.day),
-      lastDate: DateTime(now.year + 3, 12, 31),
+      initialDate: _dueDate.isBefore(firstDate)
+          ? firstDate
+          : (_dueDate.isAfter(lastDate) ? lastDate : _dueDate),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null) {
       setState(() {

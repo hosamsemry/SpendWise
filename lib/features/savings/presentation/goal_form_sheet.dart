@@ -96,11 +96,18 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final lastDate = DateTime(now.year + 30, 12, 31);
+    final initial = _targetDate ?? DateTime(now.year + 1, now.month, now.day);
+    // A goal whose target date has passed opens the picker on today: the
+    // picker asserts on an initial date before its first date.
     final picked = await showDatePicker(
       context: context,
-      initialDate: _targetDate ?? DateTime(now.year + 1, now.month, now.day),
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime(now.year + 30, 12, 31),
+      initialDate: initial.isBefore(firstDate)
+          ? firstDate
+          : (initial.isAfter(lastDate) ? lastDate : initial),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (picked != null) setState(() => _targetDate = picked);
   }

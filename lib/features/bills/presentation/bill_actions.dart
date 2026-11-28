@@ -67,7 +67,9 @@ Future<void> payBillDue(BuildContext context, BillDue due) async {
     messenger
       ..clearSnackBars()
       ..showSnackBar(SnackBar(content: Text(l10n.billCategoryMissing)));
-    if (context.mounted) await showBillForm(context, bill: due.bill);
+    if (context.mounted) {
+      await showBillForm(context, bill: due.bill, nextDue: due.dueDate);
+    }
   } catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(l10n.failedToSave(e.toString()))));
   }
