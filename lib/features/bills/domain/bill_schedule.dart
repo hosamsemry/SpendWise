@@ -1,18 +1,30 @@
+import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/date/budget_cycle_timeline.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/bills/domain/recurring_bill.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 
 /// Pure date logic for recurring bills: when they fall due, which due dates
 /// are still unpaid, how much is committed before the cycle ends, and when to
-/// remind. "Every cycle" bills follow [cycleCalculator] (the user's start day).
+/// remind.
+///
+/// "Every cycle" bills fall due on each cycle's start date. Past cycles come
+/// from [recordedCycles] (see [BudgetCycleTimeline]), so a start-day change
+/// doesn't rewrite history; cycles not recorded yet follow [cycleCalculator]
+/// (the user's start day). Without recorded cycles, everything is computed.
 class BillSchedule {
   final BudgetCycleCalculator cycleCalculator;
+  final List<BudgetCycle> recordedCycles;
 
   /// How far back unpaid due dates are still shown (and counted) as overdue.
   static const int overdueLookbackDays = 366;
 
-  const BillSchedule(this.cycleCalculator);
+  const BillSchedule(this.cycleCalculator, {this.recordedCycles = const []});
+
+  /// This schedule with the cycles recorded in the database.
+  BillSchedule withRecordedCycles(List<BudgetCycle> cycles) =>
+      BillSchedule(cycleCalculator, recordedCycles: cycles);
 
   static DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -61,11 +73,12 @@ class BillSchedule {
           if (!d.isBefore(start)) result.add(d);
         }
       case BillFrequency.everyCycle:
-        var cycle = cycleCalculator.getCycleForDate(start);
+        final timeline = BudgetCycleTimeline(cycleCalculator, recordedCycles);
+        var cycle = timeline.cycleContaining(start);
         while (!cycle.startDate.isAfter(end)) {
           final d = _day(cycle.startDate);
           if (!d.isBefore(start)) result.add(d);
-          cycle = cycleCalculator.getNextCycle(cycle);
+          cycle = timeline.next(cycle);
         }
     }
     return result;

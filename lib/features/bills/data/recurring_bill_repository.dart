@@ -15,24 +15,33 @@ class RecurringBillRepository {
 
   RecurringBillRepository(this.db, {Uuid? uuid}) : _uuid = uuid ?? const Uuid();
 
-  RecurringBill _toDomain(RecurringBillEntry e, {String? liveCategoryName}) {
+  RecurringBill _toDomain(
+    RecurringBillEntry e, {
+    String? liveCategoryName,
+    Money? estimateFromPayment,
+  }) {
     return RecurringBill(
       id: e.id,
       title: e.title,
       type: TransactionType.fromString(e.type),
       categoryId: e.categoryId,
       categoryName: liveCategoryName ?? e.categoryName,
-      amount: Money.fromMinorUnits(e.amountMinor),
+      amount: estimateFromPayment ?? Money.fromMinorUnits(e.amountMinor),
+      amountSetAt: _parseInstant(e.amountSetAt) ?? DateTime.parse(e.createdAt),
       isVariable: e.isVariable,
       frequency: BillFrequency.fromDb(e.frequency),
       anchorDate: BudgetCycleCalculator.parseDate(e.anchorDate),
       remindDaysBefore: e.remindDaysBefore,
       isActive: e.isActive,
+      pausedAt: e.pausedAt == null ? null : BudgetCycleCalculator.parseDate(e.pausedAt!),
       note: e.note,
       createdAt: DateTime.parse(e.createdAt),
       updatedAt: DateTime.parse(e.updatedAt),
     );
   }
+
+  static DateTime? _parseInstant(String? iso) =>
+      iso == null ? null : DateTime.tryParse(iso);
 
   /// All bills with their current category names, alphabetically.
   Future<List<RecurringBill>> getAllBills() async {
@@ -43,12 +52,44 @@ class RecurringBillRepository {
     ])
           ..orderBy([OrderingTerm.asc(bills.title)]))
         .get();
-    return rows
-        .map((row) => _toDomain(
-              row.readTable(bills),
-              liveCategoryName: row.readTableOrNull(categories)?.name,
-            ))
-        .toList();
+    final payments = await _latestPayments();
+    return rows.map((row) {
+      final e = row.readTable(bills);
+      Money? estimate;
+      if (e.isVariable) {
+        final setAt = _parseInstant(e.amountSetAt) ?? DateTime.parse(e.createdAt);
+        final latest = payments[e.id];
+        if (latest != null && !latest.at.isBefore(setAt)) estimate = latest.amount;
+      }
+      return _toDomain(
+        e,
+        liveCategoryName: row.readTableOrNull(categories)?.name,
+        estimateFromPayment: estimate,
+      );
+    }).toList();
+  }
+
+  /// Bill id → its most recent payment whose transaction still exists (so
+  /// undoing or deleting a payment falls back to the one before it), with
+  /// the transaction's current amount.
+  Future<Map<String, ({DateTime at, Money amount})>> _latestPayments() async {
+    final occ = db.billOccurrencesTable;
+    final txs = db.transactionsTable;
+    final rows = await (db.select(occ).join([
+      innerJoin(txs, txs.id.equalsExp(occ.transactionId)),
+    ])
+          ..where(occ.status.equals(BillOccurrenceStatus.paid.dbValue)))
+        .get();
+    final latest = <String, ({DateTime at, Money amount})>{};
+    for (final row in rows) {
+      final o = row.readTable(occ);
+      final at = DateTime.parse(o.createdAt);
+      final current = latest[o.billId];
+      if (current == null || at.isAfter(current.at)) {
+        latest[o.billId] = (at: at, amount: Money.fromMinorUnits(row.readTable(txs).amountMinor));
+      }
+    }
+    return latest;
   }
 
   Future<RecurringBill?> getBill(String id) async {
@@ -110,6 +151,7 @@ class RecurringBillRepository {
             categoryId: Value(catName == null ? null : categoryId),
             categoryName: Value(catName),
             amountMinor: amount.inMinorUnits,
+            amountSetAt: Value(now),
             isVariable: Value(isVariable),
             frequency: frequency.dbValue,
             anchorDate: BudgetCycleCalculator.formatDate(anchorDate),
@@ -131,38 +173,40 @@ class RecurringBillRepository {
       categoryId: bill.categoryId,
     );
     final catName = await _categoryName(bill.categoryId);
+    // Only a changed amount counts as the user setting it: saving the form
+    // with the shown estimate must not freeze it over later undos.
+    final current = await getBill(bill.id);
+    final amountChanged = current == null || current.amount != bill.amount;
+    final now = DateTime.now().toIso8601String();
     await (db.update(db.recurringBillsTable)..where((t) => t.id.equals(bill.id))).write(
       RecurringBillsTableCompanion(
         title: Value(bill.title.trim()),
         type: Value(bill.type.toDbString()),
         categoryId: Value(catName == null ? null : bill.categoryId),
         categoryName: Value(catName ?? bill.categoryName),
-        amountMinor: Value(bill.amount.inMinorUnits),
+        amountMinor: amountChanged
+            ? Value(bill.amount.inMinorUnits)
+            : const Value.absent(),
+        amountSetAt: amountChanged ? Value(now) : const Value.absent(),
         isVariable: Value(bill.isVariable),
         frequency: Value(bill.frequency.dbValue),
         anchorDate: Value(BudgetCycleCalculator.formatDate(bill.anchorDate)),
         remindDaysBefore: Value(bill.remindDaysBefore),
         isActive: Value(bill.isActive),
         note: Value(_cleanNote(bill.note)),
-        updatedAt: Value(DateTime.now().toIso8601String()),
+        updatedAt: Value(now),
       ),
     );
   }
 
-  Future<void> setActive(String id, bool isActive) async {
+  /// Pauses or resumes a bill. Pausing records [today] as the pause day.
+  Future<void> setActive(String id, bool isActive, {required DateTime today}) async {
     await (db.update(db.recurringBillsTable)..where((t) => t.id.equals(id))).write(
       RecurringBillsTableCompanion(
         isActive: Value(isActive),
+        pausedAt: Value(isActive ? null : BudgetCycleCalculator.formatDate(today)),
         updatedAt: Value(DateTime.now().toIso8601String()),
       ),
-    );
-  }
-
-  /// Stores [amount] as the new estimate of a variable bill.
-  Future<void> updateAmount(String id, Money amount) async {
-    if (amount.inMinorUnits <= 0) return;
-    await (db.update(db.recurringBillsTable)..where((t) => t.id.equals(id))).write(
-      RecurringBillsTableCompanion(amountMinor: Value(amount.inMinorUnits)),
     );
   }
 

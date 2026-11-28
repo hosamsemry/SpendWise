@@ -1,3 +1,4 @@
+import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/bills/data/bill_reminder_scheduler.dart';
 import 'package:money_tracker/features/bills/data/recurring_bill_repository.dart';
@@ -24,6 +25,11 @@ class BillService {
   final BillSchedule schedule;
   final BillReminderScheduler? reminders;
 
+  /// Loads the cycles recorded in the database, so "every cycle" bills keep
+  /// matching their past payments after a start-day change. Without it the
+  /// whole schedule is computed (fine for tests that never change it).
+  final Future<List<BudgetCycle>> Function()? recordedCycles;
+
   /// Clock override for tests.
   final DateTime Function() clock;
 
@@ -32,8 +38,15 @@ class BillService {
     required this.transactions,
     required this.schedule,
     this.reminders,
+    this.recordedCycles,
     DateTime Function()? clock,
   }) : clock = clock ?? DateTime.now;
+
+  /// [schedule] with the recorded cycles loaded.
+  Future<BillSchedule> scheduleFor() async {
+    final load = recordedCycles;
+    return load == null ? schedule : schedule.withRecordedCycles(await load());
+  }
 
   DateTime get _today {
     final n = clock();
@@ -44,7 +57,7 @@ class BillService {
   /// overdue ones first.
   Future<List<BillDue>> dueItems({int daysAhead = 7}) async {
     final today = _today;
-    return schedule.unpaidDues(
+    return (await scheduleFor()).unpaidDues(
       bills: await repo.getAllBills(),
       handled: await repo.getHandledDueDates(),
       today: today,
@@ -54,7 +67,7 @@ class BillService {
 
   /// Unpaid expense bills due by [cycleEnd] (overdue included).
   Future<Money> committedUntil(DateTime cycleEnd) async {
-    return schedule.committedUntil(
+    return (await scheduleFor()).committedUntil(
       bills: await repo.getAllBills(),
       handled: await repo.getHandledDueDates(),
       today: _today,
@@ -64,7 +77,8 @@ class BillService {
 
   /// Logs the payment of [due] as a transaction dated [paidOn] (default
   /// today) and marks the due date paid. For a variable bill, [amount]
-  /// becomes the estimate for next time.
+  /// becomes the estimate for next time: the estimate is read from the latest
+  /// payment, so undoing or deleting it brings the previous estimate back.
   Future<TransactionModel> pay(BillDue due, {Money? amount, DateTime? paidOn}) async {
     final bill = due.bill;
     final value = amount ?? bill.amount;
@@ -84,9 +98,6 @@ class BillService {
       status: BillOccurrenceStatus.paid,
       transactionId: tx.id,
     );
-    if (bill.isVariable && value.inMinorUnits != bill.amount.inMinorUnits) {
-      await repo.updateAmount(bill.id, value);
-    }
     await rescheduleReminders();
     return tx;
   }
@@ -143,15 +154,20 @@ class BillService {
   }
 
   /// Pausing hides a bill from due lists, reminders and safe-to-spend.
-  /// Resuming skips the due dates that passed while it was paused, so they
-  /// don't all come back as overdue.
+  /// Resuming skips the due dates from the pause day until yesterday, so they
+  /// don't come back as overdue. Dates that were already overdue before the
+  /// pause stay overdue.
   Future<void> setActive(RecurringBill bill, bool isActive) async {
+    final today = _today;
     if (isActive && !bill.isActive) {
-      final today = _today;
       final handled = (await repo.getHandledDueDates())[bill.id] ?? const <String>{};
+      final lookback =
+          today.subtract(const Duration(days: BillSchedule.overdueLookbackDays));
+      final pausedOn = bill.pausedAt;
+      final schedule = await scheduleFor();
       final missed = schedule.dueDatesBetween(
         bill,
-        today.subtract(const Duration(days: BillSchedule.overdueLookbackDays)),
+        pausedOn != null && pausedOn.isAfter(lookback) ? pausedOn : lookback,
         today.subtract(const Duration(days: 1)),
       );
       for (final d in missed) {
@@ -163,7 +179,7 @@ class BillService {
         );
       }
     }
-    await repo.setActive(bill.id, isActive);
+    await repo.setActive(bill.id, isActive, today: today);
     await rescheduleReminders();
   }
 
@@ -179,6 +195,7 @@ class BillService {
     if (scheduler == null) return;
     final now = clock();
     final handled = await repo.getHandledDueDates();
+    final schedule = await scheduleFor();
     for (final bill in await repo.getAllBills()) {
       final next = schedule.nextReminder(
         bill: bill,

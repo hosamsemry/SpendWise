@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -392,5 +393,31 @@ void main() {
         );
       }
     });
+  });
+
+  test('bill pause days and estimate dates survive a backup, and old backups get them filled in', () async {
+    await db.customStatement(
+      "INSERT INTO recurring_bills (id, title, type, amount_minor, is_variable, frequency, anchor_date, "
+      "is_active, paused_at, amount_set_at, created_at, updated_at) VALUES "
+      "('gym', 'Gym', 'income', 1000, 1, 'monthly', '2026-01-01', 0, '2026-02-10', '2026-01-05T08:00:00.000', "
+      "'2026-01-01T10:00:00.000', '2026-03-05T18:30:00.000')",
+    );
+    final backup = await service.createBackupData();
+    await service.restoreFromBackup(backup);
+    var gym = await db.select(db.recurringBillsTable).getSingle();
+    expect(gym.pausedAt, '2026-02-10');
+    expect(gym.amountSetAt, '2026-01-05T08:00:00.000');
+
+    // A backup from before schema 7 has neither field.
+    final json = backup.toJson();
+    final bills = ((json['data'] as Map)['recurringBills'] as List).cast<Map<String, dynamic>>();
+    for (final b in bills) {
+      b.remove('pausedAt');
+      b.remove('amountSetAt');
+    }
+    await service.restoreFromBackup(service.parseBackupString(jsonEncode(json)));
+    gym = await db.select(db.recurringBillsTable).getSingle();
+    expect(gym.pausedAt, '2026-03-05', reason: 'paused bills use their last change');
+    expect(gym.amountSetAt, '2026-03-05T18:30:00.000');
   });
 }

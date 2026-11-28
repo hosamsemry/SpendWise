@@ -2,6 +2,9 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/features/bills/domain/bill_schedule.dart';
+import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/bill_providers.dart';
@@ -308,5 +311,146 @@ void main() {
 
     await backupService.restoreFromBackup(trimmed);
     expect((await repo.getHandledDueDates())[bill.id], {'2026-03-01'});
+  });
+
+  group('pausing', () {
+    test('dates already overdue before the pause stay overdue after resuming', () async {
+      final bill = await service(DateTime(2026, 2, 20)).create(
+        title: 'Internet',
+        type: TransactionType.expense,
+        categoryId: housing.id,
+        amount: const Money.fromMinorUnits(45000),
+        frequency: BillFrequency.monthly,
+        anchorDate: DateTime(2026, 1, 15),
+      );
+      // Jan 15 and Feb 15 are unpaid when the bill is paused on Feb 20.
+      await service(DateTime(2026, 2, 20)).setActive(bill, false);
+      final paused = (await container.read(recurringBillRepositoryProvider).getAllBills()).single;
+      expect(paused.pausedAt, DateTime(2026, 2, 20));
+
+      final later = service(DateTime(2026, 4, 10));
+      await later.setActive(paused, true);
+      final dates = (await later.dueItems()).map((d) => d.dueDate).toList();
+      // Mar 15 passed while paused (skipped); the old overdue ones remain.
+      expect(dates, [DateTime(2026, 1, 15), DateTime(2026, 2, 15), DateTime(2026, 4, 15)]);
+      final resumed = (await container.read(recurringBillRepositoryProvider).getAllBills()).single;
+      expect(resumed.pausedAt, isNull);
+    });
+
+    test('a date due on the day of pausing is skipped on resume', () async {
+      final bill = await service(DateTime(2026, 2, 20)).create(
+        title: 'Gym',
+        type: TransactionType.expense,
+        categoryId: food.id,
+        amount: const Money.fromMinorUnits(30000),
+        frequency: BillFrequency.monthly,
+        anchorDate: DateTime(2026, 2, 20),
+      );
+      await service(DateTime(2026, 2, 20)).setActive(bill, false);
+      final paused = (await container.read(recurringBillRepositoryProvider).getAllBills()).single;
+      final later = service(DateTime(2026, 3, 1));
+      await later.setActive(paused, true);
+      expect((await later.dueItems(daysAhead: 30)).map((d) => d.dueDate), [DateTime(2026, 3, 20)]);
+    });
+  });
+
+  group('variable bill estimate', () {
+    Future<RecurringBill> electricity() async => (await container
+            .read(recurringBillRepositoryProvider)
+            .getAllBills())
+        .single;
+
+    Future<BillService> setUpBill() async {
+      final s = service(DateTime(2026, 3, 5));
+      await s.create(
+        title: 'Electricity',
+        type: TransactionType.expense,
+        categoryId: housing.id,
+        amount: const Money.fromMinorUnits(40000),
+        isVariable: true,
+        frequency: BillFrequency.monthly,
+        anchorDate: DateTime(2026, 3, 5),
+      );
+      return s;
+    }
+
+    test('undoing a payment brings the previous estimate back', () async {
+      final s = await setUpBill();
+      final tx = await s.pay((await s.dueItems()).single, amount: const Money.fromMinorUnits(52500));
+      expect((await electricity()).amount.inMinorUnits, 52500);
+      await s.undoPay(tx);
+      expect((await electricity()).amount.inMinorUnits, 40000);
+    });
+
+    test('deleting the payment on the Transactions screen does too', () async {
+      final s = await setUpBill();
+      final tx = await s.pay((await s.dueItems()).single, amount: const Money.fromMinorUnits(52500));
+      await container.read(transactionServiceProvider).delete(tx);
+      expect((await electricity()).amount.inMinorUnits, 40000);
+    });
+
+    test('an estimate typed after a payment wins; saving it unchanged does not', () async {
+      final s = await setUpBill();
+      final tx = await s.pay((await s.dueItems()).single, amount: const Money.fromMinorUnits(52500));
+
+      // Saving the form with the shown estimate doesn't freeze it.
+      final shown = await electricity();
+      await s.update(RecurringBill(
+        id: shown.id, title: 'Electricity (home)', type: shown.type, categoryId: shown.categoryId,
+        amount: shown.amount, isVariable: true, frequency: shown.frequency, anchorDate: shown.anchorDate,
+        createdAt: shown.createdAt, updatedAt: shown.updatedAt,
+      ));
+      await s.undoPay(tx);
+      expect((await electricity()).amount.inMinorUnits, 40000);
+
+      // Typing a new estimate after a payment replaces it.
+      final again = await s.pay((await s.dueItems()).single, amount: const Money.fromMinorUnits(52500));
+      final bill = await electricity();
+      await s.update(RecurringBill(
+        id: bill.id, title: bill.title, type: bill.type, categoryId: bill.categoryId,
+        amount: const Money.fromMinorUnits(60000), isVariable: true, frequency: bill.frequency,
+        anchorDate: bill.anchorDate, createdAt: bill.createdAt, updatedAt: bill.updatedAt,
+      ));
+      expect((await electricity()).amount.inMinorUnits, 60000);
+      await s.undoPay(again);
+      expect((await electricity()).amount.inMinorUnits, 60000);
+    });
+  });
+
+  test('"every cycle" bills keep their payments after the start day changes', () async {
+    final old = BudgetCycleRepository(db, calculator: const BudgetCycleCalculator(startDay: 25));
+    final repo = container.read(recurringBillRepositoryProvider);
+    for (final d in [DateTime(2026, 9, 26), DateTime(2026, 10, 26), DateTime(2026, 11, 26)]) {
+      await old.getOrCreateCycleForDate(d);
+    }
+    final rent = await repo.createBill(
+      title: 'Rent',
+      type: TransactionType.expense,
+      categoryId: housing.id,
+      amount: const Money.fromMinorUnits(500000),
+      frequency: BillFrequency.everyCycle,
+      anchorDate: DateTime(2026, 9, 25),
+    );
+    // Paid every cycle on the old start day.
+    for (final d in [DateTime(2026, 9, 25), DateTime(2026, 10, 25), DateTime(2026, 11, 25)]) {
+      await repo.recordOccurrence(billId: rent.id, dueDate: d, status: BillOccurrenceStatus.skipped);
+    }
+
+    final today = DateTime(2026, 11, 28);
+    final current = await BudgetCycleRepository(db, calculator: const BudgetCycleCalculator(startDay: 1))
+        .realignCyclesOnStartDayChange(1, today: today);
+    expect(current.startDate, DateTime(2026, 11, 1));
+
+    final s = BillService(
+      repo: repo,
+      transactions: container.read(transactionServiceProvider),
+      schedule: const BillSchedule(BudgetCycleCalculator(startDay: 1)),
+      recordedCycles: old.getAllCycles,
+      clock: () => today,
+    );
+    // Nothing overdue: the moved cycle's payment moved with it to Nov 1.
+    expect((await s.dueItems()).map((d) => d.dueDate), [DateTime(2026, 12, 1)]);
+    expect((await s.committedUntil(DateTime(2026, 11, 30))).inMinorUnits, 0);
+    expect((await repo.getHandledDueDates())[rent.id], contains('2026-11-01'));
   });
 }

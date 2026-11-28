@@ -157,6 +157,8 @@ class _BillFormSheetState extends ConsumerState<BillFormSheet> {
           anchorDate: anchor,
           remindDaysBefore: _remindDaysBefore,
           isActive: existing.isActive,
+          pausedAt: existing.pausedAt,
+          amountSetAt: existing.amountSetAt,
           note: _note.text,
           createdAt: existing.createdAt,
           updatedAt: existing.updatedAt,

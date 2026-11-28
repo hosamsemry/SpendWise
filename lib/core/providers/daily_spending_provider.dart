@@ -118,7 +118,9 @@ final todaySpendingSummaryProvider =
   }
 
   // Money promised to bills due before the cycle ends is not free to spend.
-  final committedBills = billSchedule.committedUntil(
+  final committedBills = billSchedule
+      .withRecordedCycles(await cycleRepo.getAllCycles())
+      .committedUntil(
     bills: await billRepo.getAllBills(),
     handled: await billRepo.getHandledDueDates(),
     today: todayDate,

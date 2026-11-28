@@ -123,11 +123,13 @@ class BackupService {
         'categoryId': b.categoryId,
         'categoryName': b.categoryName,
         'amountMinor': b.amountMinor,
+        'amountSetAt': b.amountSetAt,
         'isVariable': b.isVariable,
         'frequency': b.frequency,
         'anchorDate': b.anchorDate,
         'remindDaysBefore': b.remindDaysBefore,
         'isActive': b.isActive,
+        'pausedAt': b.pausedAt,
         'note': b.note,
         'createdAt': b.createdAt,
         'updatedAt': b.updatedAt,
@@ -464,11 +466,13 @@ class BackupService {
             categoryId: Value(validCatId),
             categoryName: Value(row['categoryName'] as String?),
             amountMinor: row['amountMinor'] as int,
+            amountSetAt: Value(row['amountSetAt'] as String?),
             isVariable: Value(row['isVariable'] as bool? ?? false),
             frequency: row['frequency'] as String? ?? 'monthly',
             anchorDate: row['anchorDate'] as String,
             remindDaysBefore: Value(row['remindDaysBefore'] as int?),
             isActive: Value(row['isActive'] as bool? ?? true),
+            pausedAt: Value(row['pausedAt'] as String?),
             note: Value(row['note'] as String?),
             createdAt: row['createdAt'] as String? ?? nowIso,
             updatedAt: row['updatedAt'] as String? ?? nowIso,
@@ -575,6 +579,8 @@ class BackupService {
 
       // Backups from before schema 6 keep the vault as one number in settings.
       await migrateLegacyVaultBalance(db);
+      // Backups from before schema 7 don't carry pause days or estimate dates.
+      await backfillBillPauseAndEstimateDates(db);
 
       // Restore onboarding fallback settings only if missing from backup
       for (final fallback in fallbackOnboardingSettings) {

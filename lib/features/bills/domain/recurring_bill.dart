@@ -37,8 +37,14 @@ class RecurringBill {
   final String? categoryId;
   final String? categoryName;
 
-  /// The fixed amount, or for a variable bill the estimate (last amount paid).
+  /// The fixed amount, or for a variable bill the estimate: the latest
+  /// payment that still exists and was made after [amountSetAt], otherwise
+  /// the amount the user typed.
   final Money amount;
+
+  /// When the user last set the amount (for variable bills, payments made
+  /// after this replace the estimate). Null for bills not yet saved.
+  final DateTime? amountSetAt;
   final bool isVariable;
   final BillFrequency frequency;
 
@@ -49,6 +55,9 @@ class RecurringBill {
   /// Days before the due date to send a reminder; `null` = no reminder.
   final int? remindDaysBefore;
   final bool isActive;
+
+  /// The day the bill was paused; null while active.
+  final DateTime? pausedAt;
   final String? note;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -65,6 +74,8 @@ class RecurringBill {
     required this.anchorDate,
     this.remindDaysBefore,
     this.isActive = true,
+    this.pausedAt,
+    this.amountSetAt,
     this.note,
     required this.createdAt,
     required this.updatedAt,

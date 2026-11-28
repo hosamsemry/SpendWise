@@ -14,6 +14,8 @@ final recurringBillRepositoryProvider = Provider<RecurringBillRepository>((ref) 
 });
 
 /// Bill dates, using the user's cycle start day for "every cycle" bills.
+/// Load the recorded cycles into it ([BillSchedule.withRecordedCycles], or
+/// [BillService.scheduleFor]) before computing past "every cycle" dates.
 final billScheduleProvider = Provider<BillSchedule>((ref) {
   return BillSchedule(ref.watch(budgetCycleRepositoryProvider).calculator);
 });
@@ -29,6 +31,7 @@ final billServiceProvider = Provider<BillService>((ref) {
     transactions: ref.watch(transactionServiceProvider),
     schedule: ref.watch(billScheduleProvider),
     reminders: ref.watch(billReminderSchedulerProvider),
+    recordedCycles: ref.watch(budgetCycleRepositoryProvider).getAllCycles,
   );
 });
 
@@ -68,7 +71,6 @@ class BillsOverview {
 final billsOverviewProvider = FutureProvider<BillsOverview>((ref) async {
   ref.watch(refreshTriggerProvider);
   final repo = ref.watch(recurringBillRepositoryProvider);
-  final schedule = ref.watch(billScheduleProvider);
   final cycleRepo = ref.watch(budgetCycleRepositoryProvider);
 
   final now = DateTime.now();
@@ -76,6 +78,9 @@ final billsOverviewProvider = FutureProvider<BillsOverview>((ref) async {
   final bills = await repo.getAllBills();
   final handled = await repo.getHandledDueDates();
   final cycle = await cycleRepo.getOrCreateCycleForDate(today);
+  final schedule = ref
+      .watch(billScheduleProvider)
+      .withRecordedCycles(await cycleRepo.getAllCycles());
 
   final unpaid = schedule.unpaidDues(
     bills: bills,
