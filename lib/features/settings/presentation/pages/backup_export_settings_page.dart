@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:money_tracker/app/theme/app_theme.dart';
 import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
+import 'package:money_tracker/core/providers/bill_providers.dart';
+import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/language_provider.dart';
@@ -55,6 +58,8 @@ class _BackupExportSettingsPageState
   /// replaced (by a restore or an undo).
   Future<void> _refreshAfterRestore() async {
     ref.read(selectedCycleProvider.notifier).select(null);
+    // The dashboard may be showing a cycle that no longer exists.
+    ref.read(dashboardCycleProvider.notifier).select(null);
     ref.invalidate(budgetCycleStartDayProvider);
     ref.invalidate(appLanguageProvider);
     ref.invalidate(primaryCurrencyProvider);
@@ -71,6 +76,18 @@ class _BackupExportSettingsPageState
           .read(savingsSyncServiceProvider)
           .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
     }
+
+    // The restored data may have another start day and other bills.
+    final startDay = await ref.read(budgetCycleStartDayProvider.future);
+    if (startDay != null) {
+      await ref.read(notificationServiceProvider).scheduleCycleStartReminder(
+            nextCycleReminderTime(
+              BudgetCycleCalculator(startDay: startDay),
+              DateTime.now(),
+            ),
+          );
+    }
+    await ref.read(billServiceProvider).rescheduleReminders();
 
     ref.read(refreshTriggerProvider.notifier).trigger();
     ref.invalidate(themeModeProvider);

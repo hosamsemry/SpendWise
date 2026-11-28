@@ -55,6 +55,7 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
                     onPinCreated: (confirmedPin) async {
                       await security.setPin(confirmedPin);
                       if (confirmCtx.mounted) Navigator.pop(confirmCtx);
+                      if (!mounted) return;
                       setState(() {});
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -81,6 +82,7 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
             onUnlocked: () async {
               await security.resetPin();
               if (ctx.mounted) Navigator.pop(ctx);
+              if (!mounted) return;
               setState(() {});
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -227,7 +229,7 @@ class _SecuritySettingsPageState extends ConsumerState<SecuritySettingsPage> {
                                     if (!authenticated) return;
                                   }
                                   await bioService.setBiometricsEnabled(val);
-                                  setState(() {});
+                                  if (mounted) setState(() {});
                                 },
                               ),
                             ],
