@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/date/budget_cycle_timeline.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/features/budgets/data/budget_cycle_repository.dart';
 import 'package:money_tracker/features/categories/data/category_repository.dart';
@@ -105,6 +106,26 @@ void main() {
       100000,
       reason: 'past cycles keep their own snapshot',
     );
+    expect(
+      (await repo(1).getCycleBudgets(old.id))[food.id]?.inMinorUnits,
+      12532, // 55,500 * 7 / 31 days kept, rounded
+      reason: 'the shortened cycle keeps a share of its budget for its days',
+    );
+    // Its "previous cycle" is the shortened one, not September's.
+    expect((await repo(1).getPreviousRecordedCycle(current))?.id, old.id);
+    await expectNoOverlaps();
+  });
+
+  test('the timeline gives the same cycle getOrCreate would create in a gap', () async {
+    await repo(25).getOrCreateCycleForDate(today); // Oct 25..Nov 24
+    await repo(1).realignCyclesOnStartDayChange(1, today: today);
+    final recorded = await repo(1).getAllCycles();
+    final predicted = BudgetCycleTimeline(const BudgetCycleCalculator(startDay: 1), recorded)
+        .cycleContaining(DateTime(2026, 10, 10));
+    final created = await repo(1).getOrCreateCycleForDate(DateTime(2026, 10, 10));
+    expect(predicted.startDate, created.startDate);
+    expect(predicted.endDate, created.endDate);
+    expect(created.endDateString, '2026-10-24', reason: 'shrunk to end before the truncated cycle');
     await expectNoOverlaps();
   });
 

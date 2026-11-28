@@ -6,6 +6,7 @@ import 'package:money_tracker/core/localization/app_localizations.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:money_tracker/core/notifications/notification_service.dart';
 import 'package:money_tracker/core/providers/currency_provider.dart';
+import 'package:money_tracker/core/providers/bill_providers.dart';
 import 'package:money_tracker/core/providers/cycle_providers.dart';
 import 'package:money_tracker/core/providers/database_providers.dart';
 import 'package:money_tracker/core/providers/savings_providers.dart';
@@ -241,13 +242,23 @@ class _BudgetMoneySettingsPageState
                             DateTime.now(),
                           ),
                         );
-                    final currentCycle = await ref
-                        .read(budgetCycleRepositoryProvider)
-                        .getCycleForDateOrNull(DateTime.now());
+                    // "Every cycle" bills fall due on the start day.
+                    await ref.read(billServiceProvider).rescheduleReminders();
+                    // Realigning changed the current cycle and shortened the
+                    // one before it (with prorated budgets): re-sync their
+                    // Savings envelopes and re-check budget alerts.
+                    final cycleRepo = ref.read(budgetCycleRepositoryProvider);
+                    final currentCycle =
+                        await cycleRepo.getCycleForDateOrNull(DateTime.now());
                     if (currentCycle != null) {
-                      await ref
-                          .read(savingsSyncServiceProvider)
-                          .syncSavingsBudgetForCycle(cycleId: currentCycle.id);
+                      final previous =
+                          await cycleRepo.getPreviousRecordedCycle(currentCycle);
+                      for (final cycle in [?previous, currentCycle]) {
+                        await ref
+                            .read(savingsSyncServiceProvider)
+                            .syncSavingsBudgetForCycle(cycleId: cycle.id);
+                        await ref.read(budgetAlertServiceProvider).reevaluate(cycle);
+                      }
                     }
                     // Realigning can move or delete cycles: drop any stale
                     // selections pointing at them.

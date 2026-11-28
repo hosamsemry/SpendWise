@@ -758,6 +758,9 @@ class AppLocalizations {
   String restoreCompleted(int txCount, int catCount) => isArabic
       ? 'تمت الاستعادة بنجاح! تم استرجاع $txCount معاملة و $catCount فئة.'
       : 'Restore completed! Restored $txCount transactions and $catCount categories.';
+  String previousCycleShorter(int days) => isArabic
+      ? 'كانت الدورة السابقة $days ${days <= 10 ? 'أيام' : 'يوماً'} فقط، لذا الأرقام غير قابلة للمقارنة مباشرة.'
+      : 'The previous cycle was only $days days, so the totals aren\'t directly comparable.';
   String get undoRestoreTitle => isArabic ? 'التراجع عن آخر استعادة' : 'Undo last restore';
   String undoRestoreSubtitle(String date) => isArabic
       ? 'إرجاع بياناتك كما كانت قبل الاستعادة في $date'

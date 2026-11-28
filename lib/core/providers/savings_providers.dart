@@ -138,10 +138,10 @@ final pendingCycleCloseoutProvider =
   final cycleRepo = ref.watch(budgetCycleRepositoryProvider);
 
   final currentCycle = await ref.watch(currentCycleProvider.future);
-  final prevCycle = cycleRepo.calculator.getPreviousCycle(currentCycle);
 
-  // 1. Check if previous cycle was actually recorded in database
-  final dbPrevCycle = await cycleRepo.getCycleForDateOrNull(prevCycle.startDate);
+  // 1. The recorded cycle just before the current one (by date, so it is
+  // right after a start-day change too). None recorded: nothing to close.
+  final dbPrevCycle = await cycleRepo.getPreviousRecordedCycle(currentCycle);
   if (dbPrevCycle == null) return null;
 
   // 2. Check if user already swept or dismissed this cycle

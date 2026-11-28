@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
+import 'package:money_tracker/core/date/budget_cycle_timeline.dart';
 import 'package:money_tracker/features/budgets/domain/cycle_summary.dart';
 import 'package:money_tracker/features/categories/domain/category.dart';
 import 'database_providers.dart';
@@ -131,6 +132,18 @@ final dashboardCycleProvider =
     NotifierProvider<DashboardCycleNotifier, BudgetCycle?>(
       DashboardCycleNotifier.new,
     );
+
+/// The cycle just before [cycle]: the recorded one if any (right after a
+/// start-day change too), otherwise where it would be on the timeline.
+final previousCycleProvider =
+    FutureProvider.family<BudgetCycle, BudgetCycle>((ref, cycle) async {
+  ref.watch(refreshTriggerProvider);
+  final cycleRepo = ref.watch(budgetCycleRepositoryProvider);
+  final recorded = await cycleRepo.getPreviousRecordedCycle(cycle);
+  if (recorded != null) return recorded;
+  return BudgetCycleTimeline(cycleRepo.calculator, await cycleRepo.getAllCycles())
+      .previous(cycle);
+});
 
 /// Computes the complete [CycleSummary] for a specific [cycle]
 final cycleSummaryProvider = FutureProvider.family<CycleSummary, BudgetCycle>((

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:money_tracker/core/database/app_database.dart';
 import 'package:money_tracker/core/date/budget_cycle.dart';
 import 'package:money_tracker/core/date/budget_cycle_calculator.dart';
+import 'package:money_tracker/core/date/budget_cycle_timeline.dart';
 import 'package:money_tracker/core/money/money.dart';
 import 'package:uuid/uuid.dart';
 
@@ -73,32 +74,20 @@ class BudgetCycleRepository {
     }
 
     final target = DateTime(date.year, date.month, date.day);
-    final computed = calculator.getCycleForDate(date);
 
     return db.transaction(() async {
-      final all = await db.select(db.budgetCyclesTable).get();
+      final recorded =
+          (await db.select(db.budgetCyclesTable).get()).map(_toDomain).toList();
 
       // Re-check inside the transaction for race-condition idempotency.
-      for (final row in all) {
-        final cycle = _toDomain(row);
+      for (final cycle in recorded) {
         if (cycle.contains(target)) return cycle;
       }
 
       // Never overlap recorded cycles (e.g. one truncated by a start-day
-      // change): shrink the computed range to the gap around [target].
-      var start = computed.startDate;
-      var end = computed.endDate;
-      for (final row in all) {
-        final cycle = _toDomain(row);
-        if (cycle.endDate.isBefore(target) && !cycle.endDate.isBefore(start)) {
-          start = _addDays(cycle.endDate, 1);
-        }
-        if (cycle.startDate.isAfter(target) && !cycle.startDate.isAfter(end)) {
-          end = _addDays(cycle.startDate, -1);
-        }
-      }
-
-      return _insertCycle(start, end);
+      // change): the timeline shrinks the computed range to fit the gap.
+      final cycle = BudgetCycleTimeline(calculator, recorded).cycleContaining(target);
+      return _insertCycle(cycle.startDate, cycle.endDate);
     });
   }
 
@@ -167,11 +156,14 @@ class BudgetCycleRepository {
   ///
   /// With the new current cycle N = [S, E] (for [today], default now):
   /// 1. Cycles entirely before S are kept untouched (frozen history).
-  /// 2. A cycle that started before S and runs into it is truncated to S-1.
+  /// 2. A cycle that started before S and runs into it is truncated to S-1,
+  ///    and its budgets shrink in proportion to the days it keeps (a full
+  ///    month's budget over a few days would make its surplus look huge).
   /// 3. A cycle starting inside N (typically the old current cycle) is moved
-  ///    onto N, keeping its id, budgets and alert history. If none exists,
-  ///    N is created with the budgets of the cycle that was current before
-  ///    the change (falling back to category defaults).
+  ///    onto N, keeping its id, budgets and alert history; "every cycle"
+  ///    bill payments recorded on its old start date move with it. If none
+  ///    exists, N is created with the budgets of the cycle that was current
+  ///    before the change (falling back to category defaults).
   /// 4. Any other cycle starting on/after S (future cycles laid out with the
   ///    old start day) is deleted with its budgets and alert events; it is
   ///    recreated on the new schedule when needed. Transactions are keyed by
@@ -203,10 +195,20 @@ class BudgetCycleRepository {
       for (final cycle in cycles) {
         if (cycle.startDate.isBefore(s)) {
           if (!cycle.endDate.isBefore(s)) {
-            await _setRange(cycle.id, cycle.startDate, _addDays(s, -1));
+            final newEnd = _addDays(s, -1);
+            await _setRange(cycle.id, cycle.startDate, newEnd);
+            await _prorateBudgets(
+              cycle.id,
+              keptDays: BudgetCycleCalculator.calendarDaysBetween(cycle.startDate, newEnd) + 1,
+              originalDays:
+                  BudgetCycleCalculator.calendarDaysBetween(cycle.startDate, cycle.endDate) + 1,
+            );
           }
         } else if (reused == null && !cycle.startDate.isAfter(e)) {
           await _setRange(cycle.id, s, e);
+          if (!cycle.startDate.isAtSameMomentAs(s)) {
+            await _moveEveryCycleBillDates(from: cycle.startDate, to: s);
+          }
           reused = BudgetCycle(id: cycle.id, startDate: s, endDate: e);
         } else {
           await _deleteCycle(cycle.id);
@@ -216,6 +218,50 @@ class BudgetCycleRepository {
       return reused ?? await _insertCycle(s, e, budgetsMinor: carriedBudgets);
     });
   }
+
+  /// Scales every budget of [cycleId] by [keptDays] / [originalDays], rounded
+  /// half up to whole minor units.
+  Future<void> _prorateBudgets(
+    String cycleId, {
+    required int keptDays,
+    required int originalDays,
+  }) async {
+    if (keptDays >= originalDays || originalDays <= 0) return;
+    final rows = await (db.select(db.categoryBudgetsTable)
+          ..where((tbl) => tbl.cycleId.equals(cycleId)))
+        .get();
+    final now = DateTime.now().toIso8601String();
+    for (final row in rows) {
+      final scaled =
+          (row.budgetAmountMinor * keptDays * 2 + originalDays) ~/ (2 * originalDays);
+      await (db.update(db.categoryBudgetsTable)..where((tbl) => tbl.id.equals(row.id)))
+          .write(CategoryBudgetsTableCompanion(
+        budgetAmountMinor: Value(scaled),
+        updatedAt: Value(now),
+      ));
+    }
+  }
+
+  /// "Every cycle" bills fall due on a cycle's start date, so when a cycle
+  /// moves, its paid / skipped records move with it. A record already on the
+  /// new date wins (OR IGNORE keeps the unique (bill, date) constraint).
+  Future<void> _moveEveryCycleBillDates({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    await db.customStatement(
+      'UPDATE OR IGNORE bill_occurrences SET due_date = ? '
+      'WHERE due_date = ? AND bill_id IN '
+      "(SELECT id FROM recurring_bills WHERE frequency = 'every_cycle')",
+      [BudgetCycleCalculator.formatDate(to), BudgetCycleCalculator.formatDate(from)],
+    );
+  }
+
+  /// The recorded cycle just before [cycle] (the one containing the day
+  /// before it starts), or null if that day has no recorded cycle. Unlike
+  /// the calculator's previous cycle, this is right after a start-day change.
+  Future<BudgetCycle?> getPreviousRecordedCycle(BudgetCycle cycle) =>
+      getCycleForDateOrNull(_addDays(cycle.startDate, -1));
 
   Future<void> _setRange(String cycleId, DateTime start, DateTime end) async {
     await (db.update(db.budgetCyclesTable)..where((tbl) => tbl.id.equals(cycleId)))

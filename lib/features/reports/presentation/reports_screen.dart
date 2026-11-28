@@ -843,11 +843,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     BudgetCycle activeCycle,
     CycleSummary currentSummary,
   ) {
-    final startDayAsync = ref.watch(budgetCycleStartDayProvider);
-    final startDay = startDayAsync.value ?? 1;
-    final calculator = BudgetCycleCalculator(startDay: startDay);
-    final prevCycle = calculator.getPreviousCycle(activeCycle);
+    final prevCycleAsync = ref.watch(previousCycleProvider(activeCycle));
+    final prevCycle = prevCycleAsync.value;
+    if (prevCycle == null) {
+      return prevCycleAsync.hasError
+          ? Text('${context.l10n.error}: ${prevCycleAsync.error}')
+          : const Center(child: CircularProgressIndicator());
+    }
     final prevSummaryAsync = ref.watch(cycleSummaryProvider(prevCycle));
+    final activeDays =
+        BudgetCycleCalculator.calendarDaysBetween(activeCycle.startDate, activeCycle.endDate) + 1;
+    final prevDays =
+        BudgetCycleCalculator.calendarDaysBetween(prevCycle.startDate, prevCycle.endDate) + 1;
+    // Months differ by up to 3 days; more than that means the previous cycle
+    // was cut short (e.g. by a start-day change), so totals aren't like for like.
+    final prevIsShorter = prevDays < activeDays - 3;
 
     return prevSummaryAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -909,6 +919,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (prevIsShorter && !isFirstCycleBaseline)
+              Container(
+                key: const ValueKey('previous_cycle_shorter_note'),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: context.surfaceVariantColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: context.textSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.l10n.previousCycleShorter(prevDays),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (isFirstCycleBaseline)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
